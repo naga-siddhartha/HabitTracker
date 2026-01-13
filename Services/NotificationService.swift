@@ -1,96 +1,73 @@
 import Foundation
+#if canImport(UserNotifications)
 import UserNotifications
+#endif
 
-/// Service for managing habit reminders and notifications
-class NotificationService: ObservableObject {
+// Lightweight struct for notifications (doesn't need SwiftData)
+struct NotificationHabit {
+    let id: UUID
+    let name: String
+    let frequency: HabitFrequency
+    let reminderTimes: [Date]
+    let reminderNames: [String]
+    let reminderSounds: [ReminderSound]
+    let activeDays: Set<Weekday>
+}
+
+final class NotificationService {
     static let shared = NotificationService()
     
-    private let habitService = HabitService.shared
-    
     private init() {
+        #if canImport(UserNotifications) && !os(macOS)
         requestAuthorization()
+        #endif
     }
     
-    /// Request notification authorization
     func requestAuthorization() {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { granted, error in
-            if let error = error {
-                print("Notification authorization error: \(error)")
-            }
-        }
+        #if canImport(UserNotifications)
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
+        #endif
     }
     
-    /// Schedule reminders for a habit
-    func scheduleReminders(for habit: Habit) {
-        // Remove existing notifications for this habit
+    func scheduleReminders(for habit: NotificationHabit) {
+        #if canImport(UserNotifications)
         removeReminders(for: habit.id)
-        
         guard !habit.reminderTimes.isEmpty else { return }
         
         let calendar = Calendar.current
         
-        for reminderTime in habit.reminderTimes {
+        for (index, reminderTime) in habit.reminderTimes.enumerated() {
             let timeComponents = calendar.dateComponents([.hour, .minute], from: reminderTime)
+            let reminderName = habit.reminderNames.indices.contains(index) ? habit.reminderNames[index] : "Reminder"
+            let sound = habit.reminderSounds.indices.contains(index) ? habit.reminderSounds[index] : .default
             
-            // Create notification content
             let content = UNMutableNotificationContent()
-            content.title = "Habit Reminder"
+            content.title = reminderName
             content.body = "Time to work on: \(habit.name)"
-            content.sound = .default
-            content.categoryIdentifier = "HABIT_REMINDER"
+            content.sound = notificationSound(for: sound)
             content.userInfo = ["habitId": habit.id.uuidString]
             
-            // Create trigger based on habit frequency
             var dateComponents = DateComponents()
             dateComponents.hour = timeComponents.hour
             dateComponents.minute = timeComponents.minute
             
             switch habit.frequency {
             case .daily:
-                // Daily reminder
                 let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
                 let request = UNNotificationRequest(
-                    identifier: "\(habit.id.uuidString)-\(timeComponents.hour ?? 0)-\(timeComponents.minute ?? 0)",
+                    identifier: "\(habit.id.uuidString)-\(index)",
                     content: content,
                     trigger: trigger
                 )
                 UNUserNotificationCenter.current().add(request)
                 
             case .weekly:
-                // Weekly reminder on active days
-                if let activeDays = habit.activeDays, !activeDays.isEmpty {
-                    for weekday in activeDays {
-                        dateComponents.weekday = weekday.rawValue
-                        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
-                        let request = UNNotificationRequest(
-                            identifier: "\(habit.id.uuidString)-\(weekday.rawValue)-\(timeComponents.hour ?? 0)-\(timeComponents.minute ?? 0)",
-                            content: content,
-                            trigger: trigger
-                        )
-                        UNUserNotificationCenter.current().add(request)
-                    }
-                } else {
-                    // All days of week
-                    for weekday in Weekday.allCases {
-                        dateComponents.weekday = weekday.rawValue
-                        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
-                        let request = UNNotificationRequest(
-                            identifier: "\(habit.id.uuidString)-\(weekday.rawValue)-\(timeComponents.hour ?? 0)-\(timeComponents.minute ?? 0)",
-                            content: content,
-                            trigger: trigger
-                        )
-                        UNUserNotificationCenter.current().add(request)
-                    }
-                }
-                
-            case .custom:
-                // For custom patterns, schedule for all days (pattern logic handled elsewhere)
-                // Or schedule based on pattern analysis
-                for weekday in Weekday.allCases {
+                let days = habit.activeDays.isEmpty ? Set(Weekday.allCases) : habit.activeDays
+                for weekday in days {
                     dateComponents.weekday = weekday.rawValue
                     let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
                     let request = UNNotificationRequest(
-                        identifier: "\(habit.id.uuidString)-\(weekday.rawValue)-\(timeComponents.hour ?? 0)-\(timeComponents.minute ?? 0)",
+                        identifier: "\(habit.id.uuidString)-\(index)-\(weekday.rawValue)",
                         content: content,
                         trigger: trigger
                     )
@@ -98,29 +75,33 @@ class NotificationService: ObservableObject {
                 }
             }
         }
+        #endif
     }
     
-    /// Remove all reminders for a habit
     func removeReminders(for habitId: UUID) {
+        #if canImport(UserNotifications)
         UNUserNotificationCenter.current().getPendingNotificationRequests { requests in
-            let identifiers = requests
-                .filter { $0.content.userInfo["habitId"] as? String == habitId.uuidString }
-                .map { $0.identifier }
-            
-            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: identifiers)
+            let ids = requests.filter { $0.identifier.hasPrefix(habitId.uuidString) }.map(\.identifier)
+            UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ids)
         }
+        #endif
     }
     
-    /// Update reminders for all habits
-    func updateAllReminders() {
-        let habits = habitService.getActiveHabits()
-        for habit in habits {
-            scheduleReminders(for: habit)
-        }
-    }
-    
-    /// Cancel all notifications
     func cancelAllNotifications() {
+        #if canImport(UserNotifications)
         UNUserNotificationCenter.current().removeAllPendingNotificationRequests()
+        #endif
     }
+    
+    #if canImport(UserNotifications)
+    private func notificationSound(for sound: ReminderSound) -> UNNotificationSound? {
+        switch sound {
+        case .default: .default
+        case .chime: UNNotificationSound(named: UNNotificationSoundName("chime.aiff"))
+        case .bell: UNNotificationSound(named: UNNotificationSoundName("bell.aiff"))
+        case .alert: UNNotificationSound(named: UNNotificationSoundName("alert.aiff"))
+        case .none: nil
+        }
+    }
+    #endif
 }

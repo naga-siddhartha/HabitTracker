@@ -1,12 +1,10 @@
 import SwiftUI
+import SwiftData
 
 struct HabitDetailView: View {
-    let habit: Habit
-    @StateObject private var habitService = HabitService.shared
-    @StateObject private var streakService = StreakService.shared
-    @StateObject private var calendarViewModel = CalendarViewModel()
+    @Bindable var habit: Habit
     @State private var showingEditView = false
-    @State private var selectedDate = Date()
+    @State private var selectedDate = Date.now
     
     var body: some View {
         ScrollView {
@@ -15,7 +13,7 @@ struct HabitDetailView: View {
                 HStack {
                     if let iconName = habit.iconName {
                         Image(systemName: iconName)
-                            .foregroundColor(habit.color.color)
+                            .foregroundStyle(habit.color.color)
                             .font(.system(size: 60))
                     } else {
                         Circle()
@@ -28,10 +26,10 @@ struct HabitDetailView: View {
                             .font(.largeTitle)
                             .bold()
                         
-                        if let description = habit.description {
-                            Text(description)
+                        if let desc = habit.habitDescription {
+                            Text(desc)
                                 .font(.subheadline)
-                                .foregroundColor(.secondary)
+                                .foregroundStyle(.secondary)
                         }
                     }
                     
@@ -40,82 +38,74 @@ struct HabitDetailView: View {
                 .padding()
                 
                 // Streak Info
-                if let streak = streakService.getStreak(for: habit.id) {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Streak")
-                            .font(.headline)
-                        
-                        HStack {
-                            VStack(alignment: .leading) {
-                                Text("Current")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Text("\(streak.currentStreak)")
-                                    .font(.title)
-                                    .bold()
-                            }
-                            
-                            Spacer()
-                            
-                            VStack(alignment: .trailing) {
-                                Text("Longest")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                                Text("\(streak.longestStreak)")
-                                    .font(.title)
-                                    .bold()
-                            }
+                if let streak = habit.streak {
+                    HStack {
+                        VStack(alignment: .leading) {
+                            Text("Current").font(.caption).foregroundStyle(.secondary)
+                            Text("\(streak.currentStreak)").font(.title).bold()
+                        }
+                        Spacer()
+                        VStack(alignment: .trailing) {
+                            Text("Longest").font(.caption).foregroundStyle(.secondary)
+                            Text("\(streak.longestStreak)").font(.title).bold()
                         }
                     }
                     .padding()
-                    .background(Color(UIColor.systemGray6))
-                    .cornerRadius(12)
+                    .background(Color.systemGray6)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                     .padding(.horizontal)
                 }
                 
                 // Today's Status
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Today")
-                        .font(.headline)
-                        .padding(.horizontal)
+                    Text("Today").font(.headline).padding(.horizontal)
                     
-                    Button(action: {
-                        calendarViewModel.toggleHabitCompletion(habit, on: Date())
-                    }) {
+                    let completed = habit.isCompleted(on: .now)
+                    
+                    Button {
+                        withAnimation(.snappy(duration: 0.3)) {
+                            HabitStore.shared.toggleCompletion(for: habit, on: .now)
+                        }
+                    } label: {
                         HStack {
-                            Image(systemName: habitService.isHabitCompleted(habitId: habit.id, date: Date()) ? "checkmark.circle.fill" : "circle")
+                            Image(systemName: completed ? "checkmark.circle.fill" : "circle")
                                 .font(.title2)
-                            Text(habitService.isHabitCompleted(habitId: habit.id, date: Date()) ? "Completed" : "Mark as Complete")
+                                .contentTransition(.symbolEffect(.replace))
+                            Text(completed ? "Completed" : "Mark as Complete")
                                 .font(.headline)
                             Spacer()
                         }
                         .padding()
-                        .background(habitService.isHabitCompleted(habitId: habit.id, date: Date()) ? habit.color.color.opacity(0.2) : Color(UIColor.systemGray6))
-                        .foregroundColor(habitService.isHabitCompleted(habitId: habit.id, date: Date()) ? habit.color.color : .primary)
-                        .cornerRadius(12)
+                        .background(completed ? habit.color.color.opacity(0.2) : Color.systemGray6)
+                        .foregroundStyle(completed ? habit.color.color : .primary)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
+                    .sensoryFeedback(.success, trigger: completed)
                     .padding(.horizontal)
                 }
                 
-                // Calendar View
+                // Calendar
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("Calendar")
-                        .font(.headline)
-                        .padding(.horizontal)
-                    
-                    // Simple month view
+                    Text("Calendar").font(.headline).padding(.horizontal)
                     MonthCalendarView(habit: habit, selectedDate: $selectedDate)
                 }
+                
+                // Contribution Graph
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Activity").font(.headline).padding(.horizontal)
+                    
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        ContributionGraphView(habit: habit, weeks: 26)
+                            .padding(.horizontal)
+                    }
+                }
+                .padding(.vertical)
             }
         }
         .navigationTitle(habit.name)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                Button("Edit") {
-                    showingEditView = true
-                }
-            }
+            Button("Edit") { showingEditView = true }
         }
         .sheet(isPresented: $showingEditView) {
             AddEditHabitView(habit: habit)
@@ -124,7 +114,8 @@ struct HabitDetailView: View {
 }
 
 #Preview {
-    NavigationView {
-        HabitDetailView(habit: Habit(name: "Morning Run", description: "Run 5km every morning"))
+    NavigationStack {
+        HabitDetailView(habit: Habit(name: "Morning Run", description: "Run 5km"))
     }
+    .modelContainer(for: Habit.self, inMemory: true)
 }

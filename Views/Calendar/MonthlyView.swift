@@ -1,160 +1,155 @@
 import SwiftUI
+import SwiftData
 
 struct MonthlyView: View {
-    @StateObject private var viewModel = CalendarViewModel()
-    @State private var selectedDate = Date()
+    @Query(filter: #Predicate<Habit> { !$0.isArchived }) private var habits: [Habit]
+    @State private var currentMonth = Date.now
+    @State private var selectedDate = Date.now
+    
+    private let calendar = Calendar.current
+    private let columns = Array(repeating: GridItem(.flexible()), count: 7)
     
     var body: some View {
-        VStack(spacing: 0) {
-            // Month selector
+        VStack {
+            // Month navigation
             HStack {
-                Button(action: { changeMonth(by: -1) }) {
-                    Image(systemName: "chevron.left")
-                }
-                
+                Button { changeMonth(by: -1) } label: { Image(systemName: "chevron.left") }
                 Spacer()
-                
-                Text(monthText)
-                    .font(.headline)
-                
+                Text(currentMonth, format: .dateTime.month(.wide).year()).font(.headline)
                 Spacer()
-                
-                Button(action: { changeMonth(by: 1) }) {
-                    Image(systemName: "chevron.right")
-                }
+                Button { changeMonth(by: 1) } label: { Image(systemName: "chevron.right") }
             }
             .padding()
             
-            // Calendar
-            ScrollView {
-                VStack(spacing: 16) {
-                    // Calendar grid
-                    let monthDates = viewModel.getMonthDates(containing: selectedDate)
-                    
-                    // Weekday headers
-                    HStack(spacing: 0) {
-                        ForEach(["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"], id: \.self) { day in
-                            Text(day)
-                                .font(.caption)
-                                .foregroundColor(.secondary)
-                                .frame(maxWidth: .infinity)
-                        }
-                    }
+            // Weekday headers
+            LazyVGrid(columns: columns, spacing: 4) {
+                ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { day in
+                    Text(day).font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .padding(.horizontal)
+            
+            // Days grid
+            LazyVGrid(columns: columns, spacing: 4) {
+                ForEach(daysInMonth, id: \.self) { date in
+                    MonthDayCell(date: date, habits: habits, currentMonth: currentMonth, isSelected: calendar.isDate(date, inSameDayAs: selectedDate))
+                        .onTapGesture { selectedDate = date }
+                }
+            }
+            .padding(.horizontal)
+            
+            Divider().padding()
+            
+            // Selected day habits
+            VStack(alignment: .leading) {
+                Text(selectedDate, format: .dateTime.weekday(.wide).month().day())
+                    .font(.headline)
                     .padding(.horizontal)
-                    
-                    // Calendar grid
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 4) {
-                        ForEach(monthDates, id: \.self) { date in
-                            MonthlyDayCell(
-                                date: date,
-                                habits: viewModel.habits,
-                                isSelected: Calendar.current.isDate(date, inSameDayAs: selectedDate),
-                                isCurrentMonth: Calendar.current.isDate(date, equalTo: selectedDate, toGranularity: .month)
-                            )
-                            .onTapGesture {
-                                selectedDate = date
-                            }
-                        }
-                    }
-                    .padding()
-                    
-                    // Habits summary
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Habits Summary")
-                            .font(.headline)
-                            .padding(.horizontal)
-                        
-                        ForEach(viewModel.habits) { habit in
-                            MonthlyHabitSummary(
-                                habit: habit,
-                                month: viewModel.getMonthDates(containing: selectedDate)
-                            )
-                        }
-                    }
-                }
-            }
-        }
-        .navigationTitle("Monthly View")
-    }
-    
-    private var monthText: String {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "MMMM yyyy"
-        return formatter.string(from: selectedDate)
-    }
-    
-    private func changeMonth(by months: Int) {
-        if let newDate = Calendar.current.date(byAdding: .month, value: months, to: selectedDate) {
-            selectedDate = newDate
-        }
-    }
-}
-
-struct MonthlyDayCell: View {
-    let date: Date
-    let habits: [Habit]
-    let isSelected: Bool
-    let isCurrentMonth: Bool
-    @StateObject private var habitService = HabitService.shared
-    
-    private var completedHabits: [Habit] {
-        habits.filter { habitService.isHabitCompleted(habitId: $0.id, date: date) }
-    }
-    
-    var body: some View {
-        VStack(spacing: 2) {
-            Text("\(Calendar.current.component(.day, from: date))")
-                .font(.system(size: 12, weight: isSelected ? .bold : .regular))
-                .foregroundColor(isCurrentMonth ? (isSelected ? .white : .primary) : .secondary)
-            
-            // Habit indicators
-            HStack(spacing: 2) {
-                ForEach(Array(completedHabits.prefix(3)), id: \.id) { habit in
-                    Circle()
-                        .fill(habit.color.color)
-                        .frame(width: 4, height: 4)
-                }
                 
-                if completedHabits.count > 3 {
-                    Text("+\(completedHabits.count - 3)")
-                        .font(.system(size: 8))
-                        .foregroundColor(.secondary)
+                let activeHabits = habits.filter { $0.isActive(on: selectedDate) }
+                if activeHabits.isEmpty {
+                    Text("No habits scheduled").foregroundStyle(.secondary).padding()
+                } else {
+                    ForEach(activeHabits) { habit in
+                        MonthlyHabitRow(habit: habit, date: selectedDate)
+                    }
                 }
             }
-        }
-        .frame(width: 40, height: 50)
-        .background(isSelected ? Color.blue.opacity(0.3) : Color.clear)
-        .cornerRadius(6)
-        .opacity(isCurrentMonth ? 1.0 : 0.3)
-    }
-}
-
-struct MonthlyHabitSummary: View {
-    let habit: Habit
-    let month: [Date]
-    @StateObject private var viewModel = CalendarViewModel()
-    
-    var body: some View {
-        HStack {
-            Circle()
-                .fill(habit.color.color)
-                .frame(width: 12, height: 12)
-            
-            Text(habit.name)
-                .font(.subheadline)
             
             Spacer()
-            
-            Text("\(viewModel.getCompletionCount(for: habit, in: month)) days")
-                .font(.caption)
-                .foregroundColor(.secondary)
         }
-        .padding(.horizontal)
+        .navigationTitle("Monthly")
+    }
+    
+    private var daysInMonth: [Date] {
+        guard let monthStart = currentMonth.startOfMonth,
+              let daysInMonth = calendar.range(of: .day, in: .month, for: currentMonth)?.count else { return [] }
+        
+        let firstWeekday = calendar.component(.weekday, from: monthStart)
+        var dates: [Date] = (0..<(firstWeekday - 1)).compactMap {
+            calendar.date(byAdding: .day, value: -($0 + 1), to: monthStart)
+        }.reversed()
+        
+        dates += (0..<daysInMonth).compactMap { calendar.date(byAdding: .day, value: $0, to: monthStart) }
+        
+        let remaining = 42 - dates.count
+        if let last = dates.last {
+            dates += (1...remaining).compactMap { calendar.date(byAdding: .day, value: $0, to: last) }
+        }
+        return dates
+    }
+    
+    private func changeMonth(by value: Int) {
+        if let newMonth = calendar.date(byAdding: .month, value: value, to: currentMonth) {
+            currentMonth = newMonth
+        }
+    }
+}
+
+struct MonthDayCell: View {
+    let date: Date
+    let habits: [Habit]
+    let currentMonth: Date
+    let isSelected: Bool
+    
+    private let calendar = Calendar.current
+    
+    private var isCurrentMonth: Bool {
+        calendar.isDate(date, equalTo: currentMonth, toGranularity: .month)
+    }
+    
+    private var completionRatio: Double {
+        let active = habits.filter { $0.isActive(on: date) }
+        guard !active.isEmpty else { return 0 }
+        let completed = active.filter { $0.isCompleted(on: date) }.count
+        return Double(completed) / Double(active.count)
+    }
+    
+    var body: some View {
+        ZStack {
+            Circle()
+                .fill(Color.green.opacity(completionRatio * 0.8))
+                .opacity(isCurrentMonth ? 1 : 0.3)
+            
+            Text("\(calendar.component(.day, from: date))")
+                .font(.caption)
+                .foregroundStyle(isCurrentMonth ? .primary : .secondary)
+        }
+        .frame(height: 36)
+        .background(isSelected ? Color.blue.opacity(0.3) : .clear)
+        .clipShape(Circle())
+    }
+}
+
+struct MonthlyHabitRow: View {
+    @Bindable var habit: Habit
+    let date: Date
+    
+    private var isCompleted: Bool { habit.isCompleted(on: date) }
+    
+    var body: some View {
+        Button {
+            withAnimation(.snappy(duration: 0.3)) {
+                HabitStore.shared.toggleCompletion(for: habit, on: date)
+            }
+        } label: {
+            HStack {
+                Circle().fill(habit.color.color).frame(width: 12, height: 12)
+                Text(habit.name)
+                Spacer()
+                Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                    .foregroundStyle(isCompleted ? habit.color.color : .secondary)
+                    .contentTransition(.symbolEffect(.replace))
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+        }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.success, trigger: isCompleted)
     }
 }
 
 #Preview {
-    NavigationView {
-        MonthlyView()
-    }
+    NavigationStack { MonthlyView() }
+        .modelContainer(for: Habit.self, inMemory: true)
 }

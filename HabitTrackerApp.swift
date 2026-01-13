@@ -1,89 +1,86 @@
 import SwiftUI
+import SwiftData
 
 @main
 struct HabitTrackerApp: App {
-    @StateObject private var habitService = HabitService.shared
-    @StateObject private var streakService = StreakService.shared
-    @StateObject private var notificationService = NotificationService.shared
+    let store = HabitStore.shared
     
     init() {
-        // Initialize services
-        _ = HabitService.shared
-        _ = StreakService.shared
-        _ = NotificationService.shared
-        
-        // Update all streaks on app launch
-        StreakService.shared.updateAllStreaks()
+        store.updateAllStreaks()
     }
     
     var body: some Scene {
         WindowGroup {
+            #if os(watchOS)
+            WatchMainView()
+            #else
             MainTabView()
-                .environmentObject(habitService)
-                .environmentObject(streakService)
-                .environmentObject(notificationService)
+            #endif
         }
+        .modelContainer(store.modelContainer)
+        
+        #if os(macOS)
+        Settings {
+            SettingsView()
+        }
+        #endif
     }
 }
 
+#if !os(watchOS)
 struct MainTabView: View {
-    @State private var selectedTab = 0
-    
     var body: some View {
-        TabView(selection: $selectedTab) {
-            TodayView()
-                .tabItem {
-                    Label("Today", systemImage: "calendar")
-                }
-                .tag(0)
-            
-            HabitListView()
-                .tabItem {
-                    Label("Habits", systemImage: "list.bullet")
-                }
-                .tag(1)
-            
-            CalendarContainerView()
-                .tabItem {
-                    Label("Calendar", systemImage: "calendar.badge.clock")
-                }
-                .tag(2)
-            
-            StatisticsView()
-                .tabItem {
-                    Label("Statistics", systemImage: "chart.bar")
-                }
-                .tag(3)
+        TabView {
+            #if os(iOS)
+            Tab("Today", systemImage: "calendar") {
+                TodayView()
+            }
+            Tab("Habits", systemImage: "list.bullet") {
+                HabitListView()
+            }
+            Tab("Calendar", systemImage: "calendar.badge.clock") {
+                CalendarContainerView()
+            }
+            Tab("Statistics", systemImage: "chart.bar") {
+                StatisticsView()
+            }
+            Tab("Settings", systemImage: "gear") {
+                SettingsView()
+            }
+            #else
+            TodayView().tabItem { Label("Today", systemImage: "calendar") }
+            HabitListView().tabItem { Label("Habits", systemImage: "list.bullet") }
+            CalendarContainerView().tabItem { Label("Calendar", systemImage: "calendar.badge.clock") }
+            StatisticsView().tabItem { Label("Statistics", systemImage: "chart.bar") }
+            #endif
         }
     }
 }
 
 struct CalendarContainerView: View {
-    @State private var selectedView: CalendarViewModel.CalendarViewType = .monthly
+    @State private var selectedView: CalendarViewType = .monthly
+    
+    enum CalendarViewType: String, CaseIterable {
+        case daily = "Daily", weekly = "Weekly", monthly = "Monthly", yearly = "Yearly"
+    }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             VStack {
                 Picker("View", selection: $selectedView) {
-                    Text("Daily").tag(CalendarViewModel.CalendarViewType.daily)
-                    Text("Weekly").tag(CalendarViewModel.CalendarViewType.weekly)
-                    Text("Monthly").tag(CalendarViewModel.CalendarViewType.monthly)
-                    Text("Yearly").tag(CalendarViewModel.CalendarViewType.yearly)
+                    ForEach(CalendarViewType.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                 }
                 .pickerStyle(.segmented)
                 .padding()
                 
                 switch selectedView {
-                case .daily:
-                    DailyView()
-                case .weekly:
-                    WeeklyView()
-                case .monthly:
-                    MonthlyView()
-                case .yearly:
-                    YearlyView()
+                case .daily: DailyView()
+                case .weekly: WeeklyView()
+                case .monthly: MonthlyView()
+                case .yearly: YearlyView()
                 }
             }
         }
     }
 }
+#endif

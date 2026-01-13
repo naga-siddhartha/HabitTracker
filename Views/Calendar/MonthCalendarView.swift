@@ -1,108 +1,144 @@
 import SwiftUI
+import SwiftData
 
 struct MonthCalendarView: View {
-    let habit: Habit
+    @Bindable var habit: Habit
     @Binding var selectedDate: Date
-    @StateObject private var habitService = HabitService.shared
-    @StateObject private var calendarViewModel = CalendarViewModel()
+    @State private var currentMonth = Date.now
+    
+    private let calendar = Calendar.current
+    private let columns = Array(repeating: GridItem(.flexible()), count: 7)
     
     var body: some View {
-        let monthDates = calendarViewModel.getMonthDates(containing: selectedDate)
-        let calendar = Calendar.current
-        
-        VStack(spacing: 0) {
-            // Month header
+        VStack(spacing: 16) {
+            // Month navigation
             HStack {
-                Button(action: { changeMonth(by: -1) }) {
+                Button { changeMonth(by: -1) } label: {
                     Image(systemName: "chevron.left")
                 }
-                
                 Spacer()
-                
-                Text(selectedDate.mediumDateString)
+                Text(currentMonth, format: .dateTime.month(.wide).year())
                     .font(.headline)
-                
                 Spacer()
-                
-                Button(action: { changeMonth(by: 1) }) {
+                Button { changeMonth(by: 1) } label: {
                     Image(systemName: "chevron.right")
-                }
-            }
-            .padding()
-            
-            // Weekday headers
-            HStack(spacing: 0) {
-                ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { day in
-                    Text(day)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .frame(maxWidth: .infinity)
                 }
             }
             .padding(.horizontal)
             
-            // Calendar grid
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 7), spacing: 8) {
-                ForEach(monthDates, id: \.self) { date in
-                    CalendarDayView(
+            // Weekday headers
+            LazyVGrid(columns: columns, spacing: 8) {
+                ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { day in
+                    Text(day)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            
+            // Days grid
+            LazyVGrid(columns: columns, spacing: 8) {
+                ForEach(daysInMonth, id: \.self) { date in
+                    DayCell(
                         date: date,
                         habit: habit,
-                        isSelected: calendar.isDate(date, inSameDayAs: selectedDate),
-                        isCurrentMonth: calendar.isDate(date, equalTo: selectedDate, toGranularity: .month)
+                        isCurrentMonth: calendar.isDate(date, equalTo: currentMonth, toGranularity: .month),
+                        isSelected: calendar.isDate(date, inSameDayAs: selectedDate)
                     )
                     .onTapGesture {
                         selectedDate = date
-                        if calendarViewModel.isHabitActive(habit: habit, on: date) {
-                            calendarViewModel.toggleHabitCompletion(habit, on: date)
+                        if habit.isActive(on: date) {
+                            withAnimation(.snappy(duration: 0.3)) {
+                                HabitStore.shared.toggleCompletion(for: habit, on: date)
+                            }
                         }
                     }
+                    .sensoryFeedback(.selection, trigger: selectedDate)
                 }
             }
-            .padding()
         }
-        .background(Color(UIColor.systemBackground))
-        .cornerRadius(12)
+        .padding()
+        .background(Color.systemBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
         .padding(.horizontal)
     }
     
-    private func changeMonth(by months: Int) {
-        if let newDate = Calendar.current.date(byAdding: .month, value: months, to: selectedDate) {
-            selectedDate = newDate
+    private var daysInMonth: [Date] {
+        guard let monthStart = currentMonth.startOfMonth,
+              let daysInMonth = calendar.range(of: .day, in: .month, for: currentMonth)?.count else { return [] }
+        
+        let firstWeekday = calendar.component(.weekday, from: monthStart)
+        let startOffset = firstWeekday - 1
+        
+        var dates: [Date] = (0..<startOffset).compactMap {
+            calendar.date(byAdding: .day, value: -($0 + 1), to: monthStart)
+        }.reversed()
+        
+        dates += (0..<daysInMonth).compactMap {
+            calendar.date(byAdding: .day, value: $0, to: monthStart)
+        }
+        
+        let remaining = 42 - dates.count
+        if let last = dates.last {
+            dates += (1...remaining).compactMap {
+                calendar.date(byAdding: .day, value: $0, to: last)
+            }
+        }
+        return dates
+    }
+    
+    private func changeMonth(by value: Int) {
+        if let newMonth = calendar.date(byAdding: .month, value: value, to: currentMonth) {
+            currentMonth = newMonth
         }
     }
 }
 
-struct CalendarDayView: View {
+struct DayCell: View {
     let date: Date
     let habit: Habit
-    let isSelected: Bool
     let isCurrentMonth: Bool
-    @StateObject private var habitService = HabitService.shared
-    @StateObject private var calendarViewModel = CalendarViewModel()
+    let isSelected: Bool
     
-    private var isCompleted: Bool {
-        habitService.isHabitCompleted(habitId: habit.id, date: date)
-    }
-    
-    private var isActive: Bool {
-        calendarViewModel.isHabitActive(habit: habit, on: date)
-    }
+    private var isCompleted: Bool { habit.isCompleted(on: date) }
+    private var isSkipped: Bool { habit.isSkipped(on: date) }
+    private var isToday: Bool { Calendar.current.isDateInToday(date) }
     
     var body: some View {
-        VStack(spacing: 4) {
-            Text("\(Calendar.current.component(.day, from: date))")
-                .font(.system(size: 14, weight: isSelected ? .bold : .regular))
-                .foregroundColor(isCurrentMonth ? (isSelected ? .white : .primary) : .secondary)
+        ZStack {
+            Circle()
+                .fill(fillColor)
+                .opacity(isCurrentMonth ? 1 : 0.3)
             
-            if isActive {
-                Circle()
-                    .fill(isCompleted ? habit.color.color : Color(UIColor.systemGray4))
-                    .frame(width: 6, height: 6)
+            if isSkipped {
+                Image(systemName: "forward.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.white)
+            } else {
+                Text("\(Calendar.current.component(.day, from: date))")
+                    .font(.caption)
+                    .foregroundStyle(isCompleted ? .white : (isCurrentMonth ? .primary : .secondary))
             }
         }
-        .frame(width: 40, height: 40)
-        .background(isSelected ? habit.color.color : Color.clear)
-        .cornerRadius(8)
-        .opacity(isCurrentMonth ? 1.0 : 0.3)
+        .frame(width: 32, height: 32)
+        .overlay {
+            if isToday {
+                Circle().stroke(habit.color.color, lineWidth: 2)
+            }
+        }
+        .background(isSelected ? habit.color.color.opacity(0.2) : .clear)
+        .clipShape(Circle())
+        .scaleEffect(isCompleted ? 1.1 : 1.0)
+        .animation(.spring(duration: 0.2), value: isCompleted)
     }
+    
+    private var fillColor: Color {
+        if isCompleted { return habit.color.color }
+        if isSkipped { return .orange }
+        return Color.systemGray4
+    }
+}
+
+#Preview {
+    MonthCalendarView(habit: Habit(name: "Test"), selectedDate: .constant(.now))
+        .modelContainer(for: Habit.self, inMemory: true)
 }

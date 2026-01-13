@@ -1,57 +1,117 @@
 import SwiftUI
+import SwiftData
 
 struct HabitListView: View {
-    @StateObject private var viewModel = HabitListViewModel()
+    @Query(sort: \.createdAt, order: .reverse) private var allHabits: [Habit]
+    @Environment(\.modelContext) private var modelContext
     @State private var showingAddHabit = false
+    @State private var showingTemplates = false
+    @State private var showArchived = false
+    @State private var searchText = ""
+    
+    private var habits: [Habit] {
+        allHabits.filter { showArchived || !$0.isArchived }
+    }
+    
+    private var filteredHabits: [Habit] {
+        guard !searchText.isEmpty else { return habits }
+        return habits.filter {
+            $0.name.localizedCaseInsensitiveContains(searchText) ||
+            ($0.habitDescription?.localizedCaseInsensitiveContains(searchText) ?? false)
+        }
+    }
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             List {
-                ForEach(viewModel.filteredHabits) { habit in
+                ForEach(filteredHabits) { habit in
                     NavigationLink(destination: HabitDetailView(habit: habit)) {
                         HabitRowView(habit: habit)
                     }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) {
+                            withAnimation {
+                                NotificationService.shared.removeReminders(for: habit.id)
+                                HabitStore.shared.deleteHabit(habit)
+                            }
+                        } label: {
+                            Label("Delete", systemImage: "trash")
+                        }
+                        
+                        Button {
+                            withAnimation {
+                                habit.isArchived.toggle()
+                                HabitStore.shared.save()
+                            }
+                        } label: {
+                            Label(habit.isArchived ? "Unarchive" : "Archive", systemImage: "archivebox")
+                        }
+                        .tint(.orange)
+                    }
+                    .swipeActions(edge: .leading, allowsFullSwipe: true) {
+                        Button {
+                            withAnimation(.snappy(duration: 0.3)) {
+                                HabitStore.shared.toggleCompletion(for: habit, on: .now)
+                            }
+                        } label: {
+                            Label(habit.isCompleted(on: .now) ? "Undo" : "Complete", systemImage: habit.isCompleted(on: .now) ? "arrow.uturn.backward" : "checkmark")
+                        }
+                        .tint(habit.isCompleted(on: .now) ? .gray : .green)
+                    }
                 }
-                .onDelete(perform: deleteHabits)
             }
+            .animation(.smooth, value: filteredHabits.count)
             .navigationTitle("Habits")
-            .searchable(text: $viewModel.searchText)
+            .searchable(text: $searchText)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { showingAddHabit = true }) {
+                ToolbarItem(placement: .primaryAction) {
+                    Menu {
+                        Button { showingAddHabit = true } label: {
+                            Label("Create Custom", systemImage: "plus")
+                        }
+                        Button { showingTemplates = true } label: {
+                            Label("From Template", systemImage: "square.grid.2x2")
+                        }
+                    } label: {
                         Image(systemName: "plus")
                     }
                 }
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button(action: { viewModel.toggleArchiveFilter() }) {
-                        Text(viewModel.showArchived ? "Show Active" : "Show Archived")
+                ToolbarItem(placement: .topBarLeading) {
+                    Button(showArchived ? "Hide Archived" : "Show Archived") {
+                        withAnimation { showArchived.toggle() }
                     }
                 }
             }
             .sheet(isPresented: $showingAddHabit) {
                 AddEditHabitView()
             }
-        }
-    }
-    
-    private func deleteHabits(at offsets: IndexSet) {
-        for index in offsets {
-            let habit = viewModel.filteredHabits[index]
-            viewModel.deleteHabit(habit)
+            .sheet(isPresented: $showingTemplates) {
+                HabitTemplatesView()
+            }
+            .overlay {
+                if filteredHabits.isEmpty {
+                    ContentUnavailableView {
+                        Label("No Habits", systemImage: "list.bullet")
+                    } description: {
+                        Text("Add a habit to get started")
+                    } actions: {
+                        Button("Browse Templates") { showingTemplates = true }
+                            .buttonStyle(.borderedProminent)
+                    }
+                }
+            }
         }
     }
 }
 
 struct HabitRowView: View {
     let habit: Habit
-    @StateObject private var streakService = StreakService.shared
     
     var body: some View {
         HStack {
-            // Icon
             if let iconName = habit.iconName {
                 Image(systemName: iconName)
-                    .foregroundColor(habit.color.color)
+                    .foregroundStyle(habit.color.color)
                     .font(.title2)
             } else {
                 Circle()
@@ -63,22 +123,16 @@ struct HabitRowView: View {
                 Text(habit.name)
                     .font(.headline)
                 
-                if let description = habit.description {
-                    Text(description)
+                if let desc = habit.habitDescription {
+                    Text(desc)
                         .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundStyle(.secondary)
                 }
                 
-                // Streak info
-                if let streak = streakService.getStreak(for: habit.id) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "flame.fill")
-                            .foregroundColor(.orange)
-                            .font(.caption)
-                        Text("\(streak.currentStreak) day streak")
-                            .font(.caption)
-                            .foregroundColor(.secondary)
-                    }
+                if let streak = habit.streak, streak.currentStreak > 0 {
+                    Label("\(streak.currentStreak) day streak", systemImage: "flame.fill")
+                        .font(.caption)
+                        .foregroundStyle(.orange)
                 }
             }
             
@@ -90,4 +144,5 @@ struct HabitRowView: View {
 
 #Preview {
     HabitListView()
+        .modelContainer(for: Habit.self, inMemory: true)
 }
