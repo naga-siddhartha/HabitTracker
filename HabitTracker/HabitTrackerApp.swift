@@ -1,32 +1,77 @@
-//
-//  HabitTrackerApp.swift
-//  HabitTracker
-//
-//  Created by nagasid on 1/13/26.
-//
-
 import SwiftUI
 import SwiftData
 
 @main
 struct HabitTrackerApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
-
+    let store = HabitStore.shared
+    
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            #if os(watchOS)
+            WatchMainView()
+            #else
+            MainTabView()
+            #endif
         }
-        .modelContainer(sharedModelContainer)
+        .modelContainer(store.modelContainer)
+        
+        #if os(macOS)
+        Settings {
+            SettingsView()
+        }
+        #endif
     }
 }
+
+#if !os(watchOS)
+struct MainTabView: View {
+    var body: some View {
+        TabView {
+            #if os(iOS)
+            TodayView()
+                .tabItem { Label("Today", systemImage: "calendar") }
+            HabitListView()
+                .tabItem { Label("Habits", systemImage: "list.bullet") }
+            CalendarContainerView()
+                .tabItem { Label("Calendar", systemImage: "calendar.badge.clock") }
+            StatisticsView()
+                .tabItem { Label("Statistics", systemImage: "chart.bar") }
+            SettingsView()
+                .tabItem { Label("Settings", systemImage: "gear") }
+            #else
+            TodayView().tabItem { Label("Today", systemImage: "calendar") }
+            HabitListView().tabItem { Label("Habits", systemImage: "list.bullet") }
+            CalendarContainerView().tabItem { Label("Calendar", systemImage: "calendar.badge.clock") }
+            StatisticsView().tabItem { Label("Statistics", systemImage: "chart.bar") }
+            #endif
+        }
+    }
+}
+
+struct CalendarContainerView: View {
+    @State private var selectedView: CalendarViewType = .monthly
+    
+    enum CalendarViewType: String, CaseIterable {
+        case daily = "Daily", weekly = "Weekly", monthly = "Monthly", yearly = "Yearly"
+    }
+    
+    var body: some View {
+        NavigationStack {
+            VStack {
+                Picker("View", selection: $selectedView) {
+                    ForEach(CalendarViewType.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                }
+                .pickerStyle(.segmented)
+                .padding()
+                
+                switch selectedView {
+                case .daily: DailyView()
+                case .weekly: WeeklyView()
+                case .monthly: MonthlyView()
+                case .yearly: YearlyView()
+                }
+            }
+        }
+    }
+}
+#endif
