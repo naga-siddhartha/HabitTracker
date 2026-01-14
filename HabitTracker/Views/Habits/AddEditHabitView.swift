@@ -21,7 +21,6 @@ struct AddEditHabitView: View {
     @State private var frequency: HabitFrequency = .daily
     @State private var selectedDays: Set<Weekday> = []
     @State private var reminders: [Reminder] = []
-    @State private var isGeneratingIcon = false
     
     private var isEditing: Bool { habit != nil }
     
@@ -30,14 +29,6 @@ struct AddEditHabitView: View {
             Form {
                 Section("Basic Information") {
                     TextField("Habit Name", text: $name)
-                        .onChange(of: name) { _, newValue in
-                            guard !newValue.isEmpty, selectedIcon == nil || selectedIcon == "star.fill" else { return }
-                            Task {
-                                isGeneratingIcon = true
-                                selectedIcon = await IconGenerationService.shared.suggestIcon(for: newValue)
-                                isGeneratingIcon = false
-                            }
-                        }
                     TextField("Description (Optional)", text: $description, axis: .vertical)
                         .lineLimit(3...6)
                 }
@@ -95,9 +86,7 @@ struct AddEditHabitView: View {
                 }
             }
             .navigationTitle(isEditing ? "Edit Habit" : "New Habit")
-            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
-            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }

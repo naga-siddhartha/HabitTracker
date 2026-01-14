@@ -1,2 +1,0 @@
-# HabitTracker
-Habit Tracking App

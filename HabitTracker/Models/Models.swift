@@ -4,6 +4,7 @@ import SwiftUI
 
 @Model
 final class Habit {
+    
     @Attribute(.preserveValueOnDeletion)
     var id: UUID
     
@@ -114,6 +115,7 @@ final class Habit {
 
 @Model
 final class HabitEntry {
+    
     @Attribute(.preserveValueOnDeletion)
     var id: UUID
     
@@ -137,6 +139,7 @@ final class HabitEntry {
 
 @Model
 final class Streak {
+    
     @Attribute(.preserveValueOnDeletion)
     var id: UUID
     

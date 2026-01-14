@@ -5,8 +5,6 @@ import UniformTypeIdentifiers
 struct SettingsView: View {
     @Query private var habits: [Habit]
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
-    @AppStorage("defaultReminderHour") private var defaultReminderHour = 9
-    @AppStorage("defaultReminderMinute") private var defaultReminderMinute = 0
     @AppStorage("weekStartsOnMonday") private var weekStartsOnMonday = false
     
     @State private var showingExportSheet = false
@@ -20,80 +18,67 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section {
-                    HStack(spacing: 16) {
-                        Image(systemName: "icloud.fill")
-                            .font(.title)
-                            .foregroundStyle(.blue)
-                            .frame(width: 50, height: 50)
-                            .background(Color.blue.opacity(0.1))
-                            .clipShape(RoundedRectangle(cornerRadius: 10))
-                        
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("iCloud Sync")
-                                .font(.headline)
-                            Text("Data syncs automatically across all your devices signed into the same iCloud account")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
+                    SettingsRow(icon: "icloud.fill", iconColor: .blue, title: "iCloud Sync") {
+                        Image(systemName: "checkmark")
+                            .foregroundStyle(.green)
                     }
-                    .padding(.vertical, 8)
-                } header: {
-                    Text("Sync")
+                } footer: {
+                    Text("Data syncs automatically across your devices")
                 }
                 
                 Section {
-                    Toggle("Enable Reminders", isOn: $notificationsEnabled)
-                        .onChange(of: notificationsEnabled) { _, newValue in
-                            if newValue {
-                                NotificationService.shared.requestAuthorization()
-                            } else {
-                                NotificationService.shared.cancelAllNotifications()
+                    SettingsRow(icon: "bell.fill", iconColor: .red, title: "Notifications") {
+                        Toggle("", isOn: $notificationsEnabled)
+                            .labelsHidden()
+                            .onChange(of: notificationsEnabled) { _, newValue in
+                                if newValue {
+                                    NotificationService.shared.requestAuthorization()
+                                } else {
+                                    NotificationService.shared.cancelAllNotifications()
+                                }
                             }
+                    }
+                } footer: {
+                    Text("Each habit has its own reminder times")
+                }
+                
+                Section {
+                    SettingsRow(icon: "calendar", iconColor: .orange, title: "Week Starts Monday") {
+                        Toggle("", isOn: $weekStartsOnMonday)
+                            .labelsHidden()
+                    }
+                }
+                
+                Section("Data") {
+                    Button { showingExportSheet = true } label: {
+                        SettingsRow(icon: "square.and.arrow.up.fill", iconColor: .green, title: "Export Data") {
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.tertiary)
                         }
+                    }
+                    .buttonStyle(.plain)
                     
-                    if notificationsEnabled {
-                        HStack {
-                            Text("Default Time")
-                            Spacer()
-                            Text(String(format: "%d:%02d AM", defaultReminderHour > 12 ? defaultReminderHour - 12 : (defaultReminderHour == 0 ? 12 : defaultReminderHour), defaultReminderMinute))
-                                .foregroundStyle(.secondary)
+                    Button { showingResetAlert = true } label: {
+                        SettingsRow(icon: "trash.fill", iconColor: .red, title: "Reset All Data") {
+                            Image(systemName: "chevron.right")
+                                .font(.caption.weight(.semibold))
+                                .foregroundStyle(.tertiary)
                         }
-                        
-                        Stepper("Hour: \(defaultReminderHour)", value: $defaultReminderHour, in: 0...23)
-                        Stepper("Minute: \(defaultReminderMinute)", value: $defaultReminderMinute, in: 0...59, step: 5)
                     }
-                } header: {
-                    Text("Notifications")
+                    .buttonStyle(.plain)
                 }
                 
-                Section {
-                    Toggle("Week Starts on Monday", isOn: $weekStartsOnMonday)
-                } header: {
-                    Text("Calendar")
-                }
-                
-                Section {
-                    Button {
-                        showingExportSheet = true
-                    } label: {
-                        Label("Export Data", systemImage: "square.and.arrow.up")
+                Section("About") {
+                    SettingsRow(icon: "info.circle.fill", iconColor: .gray, title: "Version") {
+                        Text("1.0.0").foregroundStyle(.secondary)
                     }
-                    
-                    Button(role: .destructive) {
-                        showingResetAlert = true
-                    } label: {
-                        Label("Reset All Data", systemImage: "trash")
+                    SettingsRow(icon: "checkmark.circle.fill", iconColor: .blue, title: "Habits") {
+                        Text("\(habits.count)").foregroundStyle(.secondary)
                     }
-                } header: {
-                    Text("Data")
-                }
-                
-                Section {
-                    LabeledContent("Version", value: "1.0.0")
-                    LabeledContent("Habits", value: "\(habits.count)")
-                    LabeledContent("Total Entries", value: "\(habits.reduce(0) { $0 + $1.entries.count })")
-                } header: {
-                    Text("About")
+                    SettingsRow(icon: "chart.bar.fill", iconColor: .purple, title: "Total Entries") {
+                        Text("\(habits.reduce(0) { $0 + $1.entries.count })").foregroundStyle(.secondary)
+                    }
                 }
             }
             .navigationTitle("Settings")
@@ -118,32 +103,36 @@ struct SettingsView: View {
                 }
                 Button("Cancel", role: .cancel) {}
             }
-            .fileExporter(
-                isPresented: $showingJSONExport,
-                document: exportDocument,
-                contentType: .json,
-                defaultFilename: "HabitTracker-\(Date.now.formatted(date: .numeric, time: .omitted)).json"
-            ) { _ in }
-            .fileExporter(
-                isPresented: $showingCSVExport,
-                document: csvDocument,
-                contentType: .commaSeparatedText,
-                defaultFilename: "HabitTracker-\(Date.now.formatted(date: .numeric, time: .omitted)).csv"
-            ) { _ in }
+            .fileExporter(isPresented: $showingJSONExport, document: exportDocument, contentType: .json, defaultFilename: "HabitTracker-\(Date.now.formatted(date: .numeric, time: .omitted)).json") { _ in }
+            .fileExporter(isPresented: $showingCSVExport, document: csvDocument, contentType: .commaSeparatedText, defaultFilename: "HabitTracker-\(Date.now.formatted(date: .numeric, time: .omitted)).csv") { _ in }
             .alert("Reset All Data?", isPresented: $showingResetAlert) {
                 Button("Cancel", role: .cancel) {}
-                Button("Reset", role: .destructive) {
-                    resetAllData()
-                }
+                Button("Reset", role: .destructive) { habits.forEach { HabitStore.shared.deleteHabit($0) } }
             } message: {
                 Text("This will delete all habits and entries. This cannot be undone.")
             }
         }
     }
+}
+
+struct SettingsRow<Accessory: View>: View {
+    let icon: String
+    let iconColor: Color
+    let title: String
+    @ViewBuilder let accessory: () -> Accessory
     
-    private func resetAllData() {
-        for habit in habits {
-            HabitStore.shared.deleteHabit(habit)
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 28, height: 28)
+                .background(iconColor)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
+            
+            Text(title)
+            Spacer()
+            accessory()
         }
     }
 }

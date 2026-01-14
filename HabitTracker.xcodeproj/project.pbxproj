@@ -60,78 +60,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		E4AD54512F17234B0053BADC /* Exceptions for "HabitTracker" folder in "HabitTracker" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-				Widget/HabitTrackerWidget.swift,
-			);
-			target = E4AD542D2F1723490053BADC /* HabitTracker */;
-		};
-		E4AD54D92F1723750053BADC /* Exceptions for "HabitTracker" folder in "HabitTrackerTests" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Models/HabitTemplate.swift,
-				Models/Models.swift,
-				README.md,
-				Services/AppConfig.swift,
-				Services/ExportService.swift,
-				Services/HabitStore.swift,
-				Services/IconGenerationService.swift,
-				Services/NotificationService.swift,
-				Utilities/CrossPlatform.swift,
-				Utilities/DateExtensions.swift,
-				Views/Calendar/DailyView.swift,
-				Views/Calendar/MonthCalendarView.swift,
-				Views/Calendar/MonthlyView.swift,
-				Views/Calendar/WeeklyView.swift,
-				Views/Calendar/YearlyView.swift,
-				Views/Habits/AddEditHabitView.swift,
-				Views/Habits/HabitDetailView.swift,
-				Views/Habits/HabitListView.swift,
-				Views/Habits/HabitTemplatesView.swift,
-				Views/Settings/SettingsView.swift,
-				Views/Statistics/ContributionGraphView.swift,
-				Views/Statistics/StatisticsView.swift,
-				Views/Today/TodayView.swift,
-				Views/Watch/WatchViews.swift,
-				Widget/HabitIntents.swift,
-				Widget/HabitTrackerWidget.swift,
-			);
-			target = E4AD543E2F17234B0053BADC /* HabitTrackerTests */;
-		};
-		E4AD54DA2F1723750053BADC /* Exceptions for "HabitTracker" folder in "HabitTrackerUITests" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Models/HabitTemplate.swift,
-				Models/Models.swift,
-				README.md,
-				Services/AppConfig.swift,
-				Services/ExportService.swift,
-				Services/HabitStore.swift,
-				Services/IconGenerationService.swift,
-				Services/NotificationService.swift,
-				Utilities/CrossPlatform.swift,
-				Utilities/DateExtensions.swift,
-				Views/Calendar/DailyView.swift,
-				Views/Calendar/MonthCalendarView.swift,
-				Views/Calendar/MonthlyView.swift,
-				Views/Calendar/WeeklyView.swift,
-				Views/Calendar/YearlyView.swift,
-				Views/Habits/AddEditHabitView.swift,
-				Views/Habits/HabitDetailView.swift,
-				Views/Habits/HabitListView.swift,
-				Views/Habits/HabitTemplatesView.swift,
-				Views/Settings/SettingsView.swift,
-				Views/Statistics/ContributionGraphView.swift,
-				Views/Statistics/StatisticsView.swift,
-				Views/Today/TodayView.swift,
-				Views/Watch/WatchViews.swift,
-				Widget/HabitIntents.swift,
-				Widget/HabitTrackerWidget.swift,
-			);
-			target = E4AD54482F17234B0053BADC /* HabitTrackerUITests */;
-		};
 		E4AD55812F1725910053BADC /* Exceptions for "HabitTrackerWidgetExtension" folder in "HabitTrackerWidgetExtensionExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -139,15 +67,20 @@
 			);
 			target = E4AD556A2F1725900053BADC /* HabitTrackerWidgetExtensionExtension */;
 		};
+		E4AD55822F1725910053BADE /* Exceptions for "HabitTracker" folder in "HabitTracker" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = E4AD542D2F1723490053BADC /* HabitTracker */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		E4AD54302F1723490053BADC /* HabitTracker */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				E4AD54512F17234B0053BADC /* Exceptions for "HabitTracker" folder in "HabitTracker" target */,
-				E4AD54D92F1723750053BADC /* Exceptions for "HabitTracker" folder in "HabitTrackerTests" target */,
-				E4AD54DA2F1723750053BADC /* Exceptions for "HabitTracker" folder in "HabitTrackerUITests" target */,
+				E4AD55822F1725910053BADE /* Exceptions for "HabitTracker" folder in "HabitTracker" target */,
 			);
 			path = HabitTracker;
 			sourceTree = "<group>";

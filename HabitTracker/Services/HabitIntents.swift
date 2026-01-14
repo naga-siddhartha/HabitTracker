@@ -37,13 +37,13 @@ struct ToggleHabitIntent: AppIntent {
         
         if let entry = habit.entries.first(where: { $0.date == today }) {
             entry.isCompleted.toggle()
-            entry.updatedAt = .now
+            entry.updatedAt = Date.now
         } else {
             let entry = HabitEntry(date: today)
             habit.entries.append(entry)
         }
         
-        habit.updatedAt = .now
+        habit.updatedAt = Date.now
         try? context.save()
         
         WidgetCenter.shared.reloadAllTimelines()

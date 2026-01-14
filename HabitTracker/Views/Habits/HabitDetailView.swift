@@ -103,9 +103,7 @@ struct HabitDetailView: View {
             }
         }
         .navigationTitle(habit.name)
-        #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
-        #endif
         .toolbar {
             Button("Edit") { showingEditView = true }
         }

@@ -12,11 +12,12 @@ final class HabitStore {
     private init() {
         do {
             modelContainer = try AppConfig.createModelContainer()
-            modelContext = modelContainer.mainContext
-            modelContext.autosaveEnabled = true
         } catch {
-            fatalError("Failed to create ModelContainer: \(error)")
+            // Fallback to in-memory if persistent storage fails
+            modelContainer = try! ModelContainer(for: AppConfig.schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
         }
+        modelContext = modelContainer.mainContext
+        modelContext.autosaveEnabled = true
     }
     
     // MARK: - Habits
@@ -56,13 +57,13 @@ final class HabitStore {
             } else {
                 entry.isCompleted.toggle()
             }
-            entry.updatedAt = .now
+            entry.updatedAt = Date.now
         } else {
             let entry = HabitEntry(date: normalized)
             habit.entries.append(entry)
         }
         
-        habit.updatedAt = .now
+        habit.updatedAt = Date.now
         updateStreak(for: habit)
         save()
         reloadWidgets()
@@ -75,13 +76,13 @@ final class HabitStore {
             entry.isCompleted = false
             entry.isSkipped = true
             entry.skipReason = reason
-            entry.updatedAt = .now
+            entry.updatedAt = Date.now
         } else {
             let entry = HabitEntry(date: normalized, isCompleted: false, isSkipped: true, skipReason: reason)
             habit.entries.append(entry)
         }
         
-        habit.updatedAt = .now
+        habit.updatedAt = Date.now
         updateStreak(for: habit)
         save()
         reloadWidgets()
@@ -93,10 +94,10 @@ final class HabitStore {
         if let entry = habit.entry(for: normalized) {
             entry.isSkipped = false
             entry.skipReason = nil
-            entry.updatedAt = .now
+            entry.updatedAt = Date.now
         }
         
-        habit.updatedAt = .now
+        habit.updatedAt = Date.now
         updateStreak(for: habit)
         save()
         reloadWidgets()
@@ -175,7 +176,7 @@ final class HabitStore {
         habit.streak?.longestStreak = max(habit.streak?.longestStreak ?? 0, currentStreak)
         habit.streak?.lastCompletedDate = mostRecentCompleted.date
         habit.streak?.streakStartDate = streakStart
-        habit.streak?.updatedAt = .now
+        habit.streak?.updatedAt = Date.now
     }
     
     func updateAllStreaks() {

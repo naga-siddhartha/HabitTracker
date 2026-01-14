@@ -1,4 +1,16 @@
 import Foundation
+import SwiftUI
+
+// MARK: - Color Extensions
+
+extension Color {
+    static var systemBackground: Color { Color(uiColor: .systemBackground) }
+    static var systemGray6: Color { Color(uiColor: .systemGray6) }
+    static var systemGray5: Color { Color(uiColor: .systemGray5) }
+    static var systemGray4: Color { Color(uiColor: .systemGray4) }
+}
+
+// MARK: - Date Extensions
 
 extension Date {
     /// Returns the start of the day

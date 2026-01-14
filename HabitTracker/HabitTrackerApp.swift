@@ -5,6 +5,10 @@ import SwiftData
 struct HabitTrackerApp: App {
     let store = HabitStore.shared
     
+    init() {
+        store.updateAllStreaks()
+    }
+    
     var body: some Scene {
         WindowGroup {
             #if os(watchOS)
@@ -25,25 +29,33 @@ struct HabitTrackerApp: App {
 
 #if !os(watchOS)
 struct MainTabView: View {
+    @State private var selectedTab = 0
+    
     var body: some View {
-        TabView {
-            #if os(iOS)
+        TabView(selection: $selectedTab) {
             TodayView()
-                .tabItem { Label("Today", systemImage: "calendar") }
-            HabitListView()
-                .tabItem { Label("Habits", systemImage: "list.bullet") }
+                .tag(0)
+                .tabItem {
+                    Label("Today", systemImage: "circle.inset.filled")
+                }
+            
             CalendarContainerView()
-                .tabItem { Label("Calendar", systemImage: "calendar.badge.clock") }
+                .tag(1)
+                .tabItem {
+                    Label("Calendar", systemImage: "calendar")
+                }
+            
             StatisticsView()
-                .tabItem { Label("Statistics", systemImage: "chart.bar") }
+                .tag(2)
+                .tabItem {
+                    Label("Stats", systemImage: "chart.bar")
+                }
+            
             SettingsView()
-                .tabItem { Label("Settings", systemImage: "gear") }
-            #else
-            TodayView().tabItem { Label("Today", systemImage: "calendar") }
-            HabitListView().tabItem { Label("Habits", systemImage: "list.bullet") }
-            CalendarContainerView().tabItem { Label("Calendar", systemImage: "calendar.badge.clock") }
-            StatisticsView().tabItem { Label("Statistics", systemImage: "chart.bar") }
-            #endif
+                .tag(3)
+                .tabItem {
+                    Label("Settings", systemImage: "gearshape")
+                }
         }
     }
 }
@@ -57,7 +69,7 @@ struct CalendarContainerView: View {
     
     var body: some View {
         NavigationStack {
-            VStack {
+            VStack(spacing: 0) {
                 Picker("View", selection: $selectedView) {
                     ForEach(CalendarViewType.allCases, id: \.self) { Text($0.rawValue).tag($0) }
                 }
@@ -71,6 +83,8 @@ struct CalendarContainerView: View {
                 case .yearly: YearlyView()
                 }
             }
+            .navigationTitle("Calendar")
+            .navigationBarTitleDisplayMode(.inline)
         }
     }
 }

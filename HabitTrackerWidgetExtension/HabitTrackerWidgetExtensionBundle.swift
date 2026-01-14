@@ -1,10 +1,3 @@
-//
-//  HabitTrackerWidgetExtensionBundle.swift
-//  HabitTrackerWidgetExtension
-//
-//  Created by nagasid on 1/13/26.
-//
-
 import WidgetKit
 import SwiftUI
 

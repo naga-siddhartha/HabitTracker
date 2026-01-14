@@ -1,92 +1,76 @@
-//
-//  HabitTrackerWidgetExtension.swift
-//  HabitTrackerWidgetExtension
-//
-//  Created by nagasid on 1/13/26.
-//
-
 import WidgetKit
 import SwiftUI
 
-struct Provider: AppIntentTimelineProvider {
-    func placeholder(in context: Context) -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: ConfigurationAppIntent())
-    }
+// MARK: - Widget Entry
 
-    func snapshot(for configuration: ConfigurationAppIntent, in context: Context) async -> SimpleEntry {
-        SimpleEntry(date: Date(), configuration: configuration)
+struct WidgetEntry: TimelineEntry {
+    let date: Date
+    let completedCount: Int
+    let totalCount: Int
+}
+
+// MARK: - Timeline Provider
+
+struct HabitTimelineProvider: TimelineProvider {
+    func placeholder(in context: Context) -> WidgetEntry {
+        WidgetEntry(date: .now, completedCount: 2, totalCount: 5)
     }
     
-    func timeline(for configuration: ConfigurationAppIntent, in context: Context) async -> Timeline<SimpleEntry> {
-        var entries: [SimpleEntry] = []
-
-        // Generate a timeline consisting of five entries an hour apart, starting from the current date.
-        let currentDate = Date()
-        for hourOffset in 0 ..< 5 {
-            let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
-            let entry = SimpleEntry(date: entryDate, configuration: configuration)
-            entries.append(entry)
-        }
-
-        return Timeline(entries: entries, policy: .atEnd)
+    func getSnapshot(in context: Context, completion: @escaping (WidgetEntry) -> Void) {
+        completion(WidgetEntry(date: .now, completedCount: 2, totalCount: 5))
     }
-
-//    func relevances() async -> WidgetRelevances<ConfigurationAppIntent> {
-//        // Generate a list containing the contexts this widget is relevant in.
-//    }
+    
+    func getTimeline(in context: Context, completion: @escaping (Timeline<WidgetEntry>) -> Void) {
+        // Simple placeholder - actual data requires App Groups setup
+        let entry = WidgetEntry(date: .now, completedCount: 0, totalCount: 0)
+        let midnight = Calendar.current.startOfDay(for: .now).addingTimeInterval(86400)
+        let timeline = Timeline(entries: [entry], policy: .after(midnight))
+        completion(timeline)
+    }
 }
 
-struct SimpleEntry: TimelineEntry {
-    let date: Date
-    let configuration: ConfigurationAppIntent
-}
+// MARK: - Widget View
 
-struct HabitTrackerWidgetExtensionEntryView : View {
-    var entry: Provider.Entry
-    @Environment(\.levelOfDetail) var levelOfDetail: LevelOfDetail
-
+struct SmallWidgetView: View {
+    let entry: WidgetEntry
+    
+    private var progress: Double {
+        entry.totalCount > 0 ? Double(entry.completedCount) / Double(entry.totalCount) : 0
+    }
+    
     var body: some View {
-        switch levelOfDetail {
-        case .simplified:
-            VStack {
-                Text(entry.date, style: .time)
-
-                Text(entry.configuration.favoriteEmoji)
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(.green)
+                Text("Today")
+                    .font(.headline)
             }
-        default:
-            VStack {
-                Text("Time:")
-                Text(entry.date, style: .time)
-
-                Text("Favorite Emoji:")
-                Text(entry.configuration.favoriteEmoji)
-            }
+            Spacer()
+            Text("\(entry.completedCount)/\(entry.totalCount)")
+                .font(.system(size: 36, weight: .bold, design: .rounded))
+            ProgressView(value: progress)
+                .tint(.green)
+            Text("habits done")
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
+        .padding()
+        .containerBackground(.fill.tertiary, for: .widget)
     }
 }
+
+// MARK: - Widget
 
 struct HabitTrackerWidgetExtension: Widget {
-    let kind: String = "HabitTrackerWidgetExtension"
-
-    var body: some WidgetConfiguration {
-        AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
-            HabitTrackerWidgetExtensionEntryView(entry: entry)
-                .containerBackground(.white.gradient, for: .widget)
-        }
-        .supportedFamilies([.systemSmall])
-    }
-}
-
-extension ConfigurationAppIntent {
-    fileprivate static var smiley: ConfigurationAppIntent {
-        let intent = ConfigurationAppIntent()
-        intent.favoriteEmoji = "😀"
-        return intent
-    }
+    let kind = "HabitTrackerWidgetExtension"
     
-    fileprivate static var starEyes: ConfigurationAppIntent {
-        let intent = ConfigurationAppIntent()
-        intent.favoriteEmoji = "🤩"
-        return intent
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: HabitTimelineProvider()) { entry in
+            SmallWidgetView(entry: entry)
+        }
+        .configurationDisplayName("Habit Tracker")
+        .description("Track your daily habits.")
+        .supportedFamilies([.systemSmall])
     }
 }
