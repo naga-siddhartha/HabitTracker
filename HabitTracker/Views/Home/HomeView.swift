@@ -4,7 +4,6 @@ import SwiftData
 struct HomeView: View {
     @Query(sort: \Habit.createdAt, order: .reverse) private var allHabits: [Habit]
     @State private var showingAddHabit = false
-    @State private var showingTemplates = false
     @State private var selectedTab: HomeTab = .active
     @State private var editingHabit: Habit?
     
@@ -39,8 +38,9 @@ struct HomeView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.systemGray6)
             .inlineNavigationTitle()
+            .toolbar {
+            }
             .sheet(isPresented: $showingAddHabit) { AddEditHabitView() }
-            .sheet(isPresented: $showingTemplates) { HabitTemplatesView() }
             .sheet(item: $editingHabit) { AddEditHabitView(habit: $0) }
         }
     }
@@ -127,13 +127,12 @@ struct HomeView: View {
         Group {
             if habits.isEmpty {
                 EmptyState(
-                    icon: "square.grid.2x2",
+                    icon: "checkmark.circle",
                     iconColor: .purple,
                     title: "No habits yet",
-                    message: "Build lasting habits with templates",
-                    buttonTitle: "Browse Templates",
-                    buttonColor: .purple,
-                    buttonAction: { showingTemplates = true }
+                    message: "Start by creating your first habit",
+                    buttonTitle: "Add Habit",
+                    buttonAction: { showingAddHabit = true }
                 )
             } else {
                 LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {

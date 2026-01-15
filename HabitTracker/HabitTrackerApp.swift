@@ -31,6 +31,8 @@ struct HabitTrackerApp: App {
 struct MainTabView: View {
     @State private var selectedTab = 0
     @State private var isPresentingAddHabit = false
+    @State private var isFabOpen = false
+    @State private var isPresentingTemplates = false
     
     var body: some View {
         TabView(selection: $selectedTab) {
@@ -42,18 +44,54 @@ struct MainTabView: View {
                     Spacer()
                     HStack {
                         Spacer()
-                        Button {
-                            isPresentingAddHabit = true
-                        } label: {
-                            Image(systemName: "plus")
-                                .font(.system(size: 22, weight: .bold))
-                                .foregroundStyle(.white)
-                                .padding(20)
-                                .background(Circle().fill(Color.accentColor))
-                                .shadow(radius: 4)
+                        VStack(spacing: 12) {
+                            if isFabOpen {
+                                Button {
+                                    isPresentingTemplates = true
+                                    isFabOpen = false
+                                } label: {
+                                    HStack(spacing: 8) {
+                                        Text("Templates").font(.subheadline.weight(.semibold)).foregroundStyle(.white)
+                                        Image(systemName: "square.grid.2x2").font(.headline).foregroundStyle(.white)
+                                    }
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 12)
+                                    .background(RoundedRectangle(cornerRadius: 20).fill(Color.purple))
+                                    .shadow(radius: 3)
+                                }
+                                .transition(.move(edge: .trailing).combined(with: .opacity))
+                                .buttonStyle(.plain)
+
+                                Button {
+                                    isPresentingAddHabit = true
+                                    isFabOpen = false
+                                } label: {
+                                    HStack(spacing: 8) {
+                                        Text("New Habit").font(.subheadline.weight(.semibold)).foregroundStyle(.white)
+                                        Image(systemName: "plus").font(.headline).foregroundStyle(.white)
+                                    }
+                                    .padding(.horizontal, 14)
+                                    .padding(.vertical, 12)
+                                    .background(RoundedRectangle(cornerRadius: 20).fill(Color.accentColor))
+                                    .shadow(radius: 3)
+                                }
+                                .transition(.move(edge: .trailing).combined(with: .opacity))
+                                .buttonStyle(.plain)
+                            }
+
+                            Button {
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) { isFabOpen.toggle() }
+                            } label: {
+                                Image(systemName: isFabOpen ? "xmark" : "plus")
+                                    .font(.system(size: 22, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .padding(20)
+                                    .background(Circle().fill(Color.accentColor))
+                                    .shadow(radius: 4)
+                            }
+                            .accessibilityLabel(isFabOpen ? "Close actions" : "Add actions")
+                            .buttonStyle(.plain)
                         }
-                        .accessibilityLabel("Add Habit")
-                        .buttonStyle(.plain)
                         .padding(.trailing, 20)
                         .padding(.bottom, 24)
                     }
@@ -61,6 +99,9 @@ struct MainTabView: View {
             }
             .sheet(isPresented: $isPresentingAddHabit) {
                 AddEditHabitView()
+            }
+            .sheet(isPresented: $isPresentingTemplates) {
+                HabitTemplatesView()
             }
             .tag(0)
             .tabItem {
