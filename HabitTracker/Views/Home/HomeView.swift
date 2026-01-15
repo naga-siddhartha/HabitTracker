@@ -67,6 +67,7 @@ struct HomeView: View {
             ForEach(HomeTab.allCases, id: \.self) { Text($0.rawValue).tag($0) }
         }
         .pickerStyle(.segmented)
+        .controlSize(.large)
         .labelsHidden()
         .padding(.horizontal, config.horizontalPadding)
         .frame(maxWidth: config.contentMaxWidth)
@@ -101,10 +102,10 @@ struct HomeView: View {
     
     private var progressHeader: some View {
         HStack {
-            ProgressRing(progress: progress, count: completedCount, total: todayHabits.count, size: 44)
+            ProgressRing(progress: progress, count: completedCount, total: todayHabits.count, size: 60)
             VStack(alignment: .leading, spacing: 2) {
-                Text("\(completedCount)/\(todayHabits.count) completed").font(.subheadline.weight(.medium))
-                Text(motivationalMessage).font(.caption).foregroundStyle(.secondary)
+                Text("\(completedCount)/\(todayHabits.count) completed").font(.headline.weight(.semibold))
+                Text(motivationalMessage).font(.subheadline).foregroundStyle(.secondary)
             }
             Spacer()
         }
@@ -115,7 +116,7 @@ struct HomeView: View {
         ForEach(Array(todayHabits.enumerated()), id: \.element.id) { index, habit in
             ChecklistRow(habit: habit, date: today, onEdit: { editingHabit = habit }, onDelete: { deleteHabit(habit) })
             if index < todayHabits.count - 1 {
-                Divider().padding(.leading, 60)
+                Divider().padding(.leading, 96)
             }
         }
     }
@@ -213,14 +214,14 @@ struct ChecklistRow: View {
                 HabitStore.shared.toggleCompletion(for: habit, on: date)
             }
         } label: {
-            HStack(spacing: 14) {
+            HStack(spacing: 18) {
                 checkBox
                 habitIcon
                 habitInfo
                 Spacer()
             }
             .padding(.horizontal, 16)
-            .padding(.vertical, 12)
+            .padding(.vertical, 16)
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
@@ -236,10 +237,10 @@ struct ChecklistRow: View {
         ZStack {
             Circle()
                 .stroke(isCompleted ? habit.color.color : Color.systemGray4, lineWidth: 2)
-                .frame(width: 28, height: 28)
+                .frame(width: 34, height: 34)
             if isCompleted {
-                Circle().fill(habit.color.color).frame(width: 28, height: 28)
-                Image(systemName: "checkmark").font(.system(size: 14, weight: .bold)).foregroundStyle(.white)
+                Circle().fill(habit.color.color).frame(width: 34, height: 34)
+                Image(systemName: "checkmark").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
             }
         }
         .animation(.spring(duration: 0.25), value: isCompleted)
@@ -247,19 +248,19 @@ struct ChecklistRow: View {
     
     private var habitIcon: some View {
         Image(systemName: habit.iconName ?? "circle.fill")
-            .font(.system(size: 18))
+            .font(.system(size: 22))
             .foregroundStyle(habit.color.color)
-            .frame(width: 24)
+            .frame(width: 28)
     }
     
     private var habitInfo: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(habit.name)
-                .font(.system(size: 16, weight: .medium))
+                .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(isCompleted ? .secondary : .primary)
                 .strikethrough(isCompleted)
             if let streak = habit.streak, streak.currentStreak > 0 {
-                Text("\(streak.currentStreak) day streak").font(.caption).foregroundStyle(.orange)
+                Text("\(streak.currentStreak) day streak").font(.footnote).foregroundStyle(.orange)
             }
         }
     }
@@ -359,3 +360,4 @@ struct SkipSheet: View {
 #Preview {
     HomeView().modelContainer(for: Habit.self, inMemory: true)
 }
+

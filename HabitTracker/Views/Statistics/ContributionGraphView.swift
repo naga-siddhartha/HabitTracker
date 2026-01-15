@@ -35,7 +35,7 @@ struct ContributionGraphView: View {
             HStack(alignment: .top, spacing: cellSpacing) {
                 // Day labels
                 VStack(spacing: cellSpacing) {
-                    ForEach(["", "Mon", "", "Wed", "", "Fri", ""], id: \.self) { day in
+                    ForEach(Array(["", "Mon", "", "Wed", "", "Fri", ""].enumerated()), id: \.offset) { _, day in
                         Text(day)
                             .font(.caption2)
                             .foregroundStyle(.secondary)

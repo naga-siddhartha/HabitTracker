@@ -21,7 +21,7 @@ struct MonthCalendarView: View {
             .padding(.horizontal)
             
             LazyVGrid(columns: columns, spacing: 8) {
-                ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { day in
+                ForEach(Array(["S", "M", "T", "W", "T", "F", "S"].enumerated()), id: \.offset) { _, day in
                     Text(day).font(.caption).foregroundStyle(.secondary)
                 }
             }
@@ -117,3 +117,4 @@ struct DayCell: View {
     MonthCalendarView(habit: Habit(name: "Test"), selectedDate: .constant(.now))
         .modelContainer(for: Habit.self, inMemory: true)
 }
+

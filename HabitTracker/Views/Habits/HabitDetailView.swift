@@ -67,12 +67,14 @@ struct HabitDetailView: View {
             } label: {
                 HStack {
                     Image(systemName: completed ? "checkmark.circle.fill" : "circle")
-                        .font(.title2)
+                        .font(.title)
                         .contentTransition(.symbolEffect(.replace))
-                    Text(completed ? "Completed" : "Mark as Complete").font(.headline)
+                    Text(completed ? "Completed" : "Mark as Complete")
+                        .font(.title3.weight(.semibold))
                     Spacer()
                 }
                 .padding()
+                .frame(height: 56)
                 .background(completed ? habit.color.color.opacity(0.2) : Color.systemGray6)
                 .foregroundStyle(completed ? habit.color.color : .primary)
                 .clipShape(RoundedRectangle(cornerRadius: 12))

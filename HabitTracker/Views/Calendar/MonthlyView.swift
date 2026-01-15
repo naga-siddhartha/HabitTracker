@@ -21,7 +21,7 @@ struct MonthlyView: View {
             .padding()
             
             LazyVGrid(columns: columns, spacing: 4) {
-                ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { day in
+                ForEach(Array(["S", "M", "T", "W", "T", "F", "S"].enumerated()), id: \.offset) { _, day in
                     Text(day).font(.caption).foregroundStyle(.secondary)
                 }
             }
