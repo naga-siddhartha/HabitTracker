@@ -5,9 +5,7 @@ struct DailyView: View {
     @Query(filter: #Predicate<Habit> { !$0.isArchived }) private var habits: [Habit]
     @State private var selectedDate = Date.now
     
-    private var activeHabits: [Habit] {
-        habits.filter { $0.isActive(on: selectedDate) }
-    }
+    private var activeHabits: [Habit] { habits.filter { $0.isActive(on: selectedDate) } }
     
     var body: some View {
         VStack {
@@ -53,11 +51,10 @@ struct DailyHabitRow: View {
             .clipShape(RoundedRectangle(cornerRadius: 8))
         }
         .buttonStyle(.plain)
-        .sensoryFeedback(.success, trigger: isCompleted)
+        .hapticFeedback(.success, trigger: isCompleted)
     }
 }
 
 #Preview {
-    NavigationStack { DailyView() }
-        .modelContainer(for: Habit.self, inMemory: true)
+    NavigationStack { DailyView() }.modelContainer(for: Habit.self, inMemory: true)
 }

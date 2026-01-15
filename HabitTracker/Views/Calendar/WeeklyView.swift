@@ -6,14 +6,12 @@ struct WeeklyView: View {
     @State private var currentWeekStart = Date.now.startOfWeek ?? Date.now
     
     private let calendar = Calendar.current
-    
     private var weekDates: [Date] {
         (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: currentWeekStart) }
     }
     
     var body: some View {
         VStack {
-            // Week navigation
             HStack {
                 Button { changeWeek(by: -1) } label: { Image(systemName: "chevron.left") }
                 Spacer()
@@ -23,7 +21,6 @@ struct WeeklyView: View {
             }
             .padding()
             
-            // Week header
             HStack {
                 Text("Habit").frame(width: 100, alignment: .leading)
                 ForEach(weekDates, id: \.self) { date in
@@ -37,7 +34,6 @@ struct WeeklyView: View {
             }
             .padding(.horizontal)
             
-            // Habits grid
             ScrollView {
                 ForEach(habits) { habit in
                     WeeklyHabitRow(habit: habit, dates: weekDates)
@@ -76,32 +72,7 @@ struct WeeklyHabitRow: View {
             .frame(width: 100, alignment: .leading)
             
             ForEach(dates, id: \.self) { date in
-                Button {
-                    if habit.isActive(on: date) {
-                        withAnimation(.snappy(duration: 0.3)) {
-                            HabitStore.shared.toggleCompletion(for: habit, on: date)
-                        }
-                    }
-                } label: {
-                    let isCompleted = habit.isCompleted(on: date)
-                    let isSkipped = habit.isSkipped(on: date)
-                    Circle()
-                        .fill(isCompleted ? habit.color.color : (isSkipped ? .orange : Color.systemGray4))
-                        .frame(width: 24, height: 24)
-                        .opacity(habit.isActive(on: date) ? 1 : 0.3)
-                        .overlay {
-                            if isSkipped {
-                                Image(systemName: "forward.fill")
-                                    .font(.system(size: 8))
-                                    .foregroundStyle(.white)
-                            }
-                        }
-                        .scaleEffect(isCompleted ? 1.15 : 1.0)
-                        .animation(.spring(duration: 0.2), value: isCompleted)
-                }
-                .buttonStyle(.plain)
-                .sensoryFeedback(.success, trigger: habit.isCompleted(on: date))
-                .frame(maxWidth: .infinity)
+                DayDot(habit: habit, date: date)
             }
         }
         .padding(.horizontal)
@@ -112,7 +83,39 @@ struct WeeklyHabitRow: View {
     }
 }
 
+private struct DayDot: View {
+    @Bindable var habit: Habit
+    let date: Date
+    
+    private var isCompleted: Bool { habit.isCompleted(on: date) }
+    private var isSkipped: Bool { habit.isSkipped(on: date) }
+    
+    var body: some View {
+        Button {
+            if habit.isActive(on: date) {
+                withAnimation(.snappy(duration: 0.3)) {
+                    HabitStore.shared.toggleCompletion(for: habit, on: date)
+                }
+            }
+        } label: {
+            Circle()
+                .fill(isCompleted ? habit.color.color : (isSkipped ? .orange : Color.systemGray4))
+                .frame(width: 24, height: 24)
+                .opacity(habit.isActive(on: date) ? 1 : 0.3)
+                .overlay {
+                    if isSkipped {
+                        Image(systemName: "forward.fill").font(.system(size: 8)).foregroundStyle(.white)
+                    }
+                }
+                .scaleEffect(isCompleted ? 1.15 : 1.0)
+                .animation(.spring(duration: 0.2), value: isCompleted)
+        }
+        .buttonStyle(.plain)
+        .hapticFeedback(.success, trigger: isCompleted)
+        .frame(maxWidth: .infinity)
+    }
+}
+
 #Preview {
-    NavigationStack { WeeklyView() }
-        .modelContainer(for: Habit.self, inMemory: true)
+    NavigationStack { WeeklyView() }.modelContainer(for: Habit.self, inMemory: true)
 }

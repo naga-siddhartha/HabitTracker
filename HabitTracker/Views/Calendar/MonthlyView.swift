@@ -11,7 +11,6 @@ struct MonthlyView: View {
     
     var body: some View {
         VStack {
-            // Month navigation
             HStack {
                 Button { changeMonth(by: -1) } label: { Image(systemName: "chevron.left") }
                 Spacer()
@@ -21,7 +20,6 @@ struct MonthlyView: View {
             }
             .padding()
             
-            // Weekday headers
             LazyVGrid(columns: columns, spacing: 4) {
                 ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { day in
                     Text(day).font(.caption).foregroundStyle(.secondary)
@@ -29,7 +27,6 @@ struct MonthlyView: View {
             }
             .padding(.horizontal)
             
-            // Days grid
             LazyVGrid(columns: columns, spacing: 4) {
                 ForEach(daysInMonth, id: \.self) { date in
                     MonthDayCell(date: date, habits: habits, currentMonth: currentMonth, isSelected: calendar.isDate(date, inSameDayAs: selectedDate))
@@ -40,7 +37,6 @@ struct MonthlyView: View {
             
             Divider().padding()
             
-            // Selected day habits
             VStack(alignment: .leading) {
                 Text(selectedDate, format: .dateTime.weekday(.wide).month().day())
                     .font(.headline)
@@ -55,7 +51,6 @@ struct MonthlyView: View {
                     }
                 }
             }
-            
             Spacer()
         }
         .navigationTitle("Monthly")
@@ -93,24 +88,17 @@ struct MonthDayCell: View {
     let isSelected: Bool
     
     private let calendar = Calendar.current
-    
-    private var isCurrentMonth: Bool {
-        calendar.isDate(date, equalTo: currentMonth, toGranularity: .month)
-    }
+    private var isCurrentMonth: Bool { calendar.isDate(date, equalTo: currentMonth, toGranularity: .month) }
     
     private var completionRatio: Double {
         let active = habits.filter { $0.isActive(on: date) }
         guard !active.isEmpty else { return 0 }
-        let completed = active.filter { $0.isCompleted(on: date) }.count
-        return Double(completed) / Double(active.count)
+        return Double(active.filter { $0.isCompleted(on: date) }.count) / Double(active.count)
     }
     
     var body: some View {
         ZStack {
-            Circle()
-                .fill(Color.green.opacity(completionRatio * 0.8))
-                .opacity(isCurrentMonth ? 1 : 0.3)
-            
+            Circle().fill(Color.green.opacity(completionRatio * 0.8)).opacity(isCurrentMonth ? 1 : 0.3)
             Text("\(calendar.component(.day, from: date))")
                 .font(.caption)
                 .foregroundStyle(isCurrentMonth ? .primary : .secondary)
@@ -145,11 +133,10 @@ struct MonthlyHabitRow: View {
             .padding(.vertical, 8)
         }
         .buttonStyle(.plain)
-        .sensoryFeedback(.success, trigger: isCompleted)
+        .hapticFeedback(.success, trigger: isCompleted)
     }
 }
 
 #Preview {
-    NavigationStack { MonthlyView() }
-        .modelContainer(for: Habit.self, inMemory: true)
+    NavigationStack { MonthlyView() }.modelContainer(for: Habit.self, inMemory: true)
 }

@@ -23,39 +23,30 @@ struct HabitTemplatesView: View {
                                 }
                             }
                         }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 8)
                     }
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
                 }
                 
-                ForEach(filteredTemplates) { template in
-                    Button { addHabit(from: template) } label: {
-                        HStack(spacing: 12) {
-                            Image(systemName: template.iconName)
-                                .font(.title3)
-                                .foregroundStyle(template.color.color)
-                                .frame(width: 32)
-                            VStack(alignment: .leading) {
-                                Text(template.name).font(.headline)
-                                if let desc = template.description {
-                                    Text(desc).font(.caption).foregroundStyle(.secondary)
-                                }
-                            }
-                            Spacer()
-                            Image(systemName: "plus.circle.fill").foregroundStyle(.secondary)
+                Section {
+                    ForEach(filteredTemplates) { template in
+                        TemplateRow(template: template) {
+                            addHabit(from: template)
                         }
                     }
-                    .buttonStyle(.plain)
                 }
             }
             .navigationTitle("Templates")
-            .navigationBarTitleDisplayMode(.inline)
+            .inlineNavigationTitle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
                 }
             }
         }
+        .frame(minWidth: 400, minHeight: 500)
     }
     
     private func addHabit(from template: HabitTemplate) {
@@ -69,6 +60,35 @@ struct HabitTemplatesView: View {
     }
 }
 
+struct TemplateRow: View {
+    let template: HabitTemplate
+    let onAdd: () -> Void
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            Image(systemName: template.iconName)
+                .font(.title3)
+                .foregroundStyle(template.color.color)
+                .frame(width: 32)
+            VStack(alignment: .leading) {
+                Text(template.name).font(.headline)
+                if let desc = template.description {
+                    Text(desc).font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            Spacer()
+            Button(action: onAdd) {
+                Image(systemName: "plus.circle.fill")
+                    .font(.title2)
+                    .foregroundStyle(Color.accentColor)
+            }
+            .buttonStyle(.plain)
+        }
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onAdd)
+    }
+}
+
 struct CategoryPill: View {
     let title: String
     var icon: String?
@@ -79,13 +99,9 @@ struct CategoryPill: View {
         Button(action: action) {
             HStack(spacing: 4) {
                 if let icon { Image(systemName: icon).font(.caption) }
-                Text(title).font(.subheadline)
+                Text(title)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(isSelected ? Color.accentColor : Color(.systemGray5))
-            .foregroundStyle(isSelected ? .white : .primary)
-            .clipShape(Capsule())
+            .pillStyle(isSelected: isSelected)
         }
         .buttonStyle(.plain)
     }

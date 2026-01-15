@@ -1,128 +1,47 @@
 import Foundation
 import SwiftUI
 
-// MARK: - Color Extensions
+// MARK: - Cross-Platform Colors
 
 extension Color {
+    #if os(iOS) || os(visionOS)
     static var systemBackground: Color { Color(uiColor: .systemBackground) }
     static var systemGray6: Color { Color(uiColor: .systemGray6) }
     static var systemGray5: Color { Color(uiColor: .systemGray5) }
     static var systemGray4: Color { Color(uiColor: .systemGray4) }
+    #elseif os(macOS)
+    static var systemBackground: Color { Color(nsColor: .windowBackgroundColor) }
+    static var systemGray6: Color { Color(nsColor: .controlBackgroundColor) }
+    static var systemGray5: Color { Color(nsColor: .separatorColor) }
+    static var systemGray4: Color { Color(nsColor: .tertiaryLabelColor) }
+    #endif
 }
 
 // MARK: - Date Extensions
 
 extension Date {
-    /// Returns the start of the day
-    var startOfDay: Date {
-        return Calendar.current.startOfDay(for: self)
-    }
+    var startOfDay: Date { Calendar.current.startOfDay(for: self) }
     
-    /// Returns the end of the day
-    var endOfDay: Date {
-        var components = DateComponents()
-        components.day = 1
-        components.second = -1
-        return Calendar.current.date(byAdding: components, to: startOfDay) ?? self
-    }
+    var startOfWeek: Date? { Calendar.current.dateInterval(of: .weekOfYear, for: self)?.start }
     
-    /// Returns the start of the week
-    var startOfWeek: Date? {
-        let calendar = Calendar.current
-        return calendar.dateInterval(of: .weekOfYear, for: self)?.start
-    }
-    
-    /// Returns the end of the week
     var endOfWeek: Date? {
-        guard let startOfWeek = startOfWeek else { return nil }
-        var components = DateComponents()
-        components.day = 7
-        components.second = -1
-        return Calendar.current.date(byAdding: components, to: startOfWeek)
+        guard let start = startOfWeek else { return nil }
+        return Calendar.current.date(byAdding: .day, value: 6, to: start)
     }
     
-    /// Returns the start of the month
-    var startOfMonth: Date? {
-        let calendar = Calendar.current
-        return calendar.dateInterval(of: .month, for: self)?.start
-    }
+    var startOfMonth: Date? { Calendar.current.dateInterval(of: .month, for: self)?.start }
     
-    /// Returns the end of the month
-    var endOfMonth: Date? {
-        guard let startOfMonth = startOfMonth else { return nil }
-        var components = DateComponents()
-        components.month = 1
-        components.second = -1
-        return Calendar.current.date(byAdding: components, to: startOfMonth)
-    }
+    var endOfMonth: Date? { Calendar.current.dateInterval(of: .month, for: self)?.end }
     
-    /// Returns the start of the year
-    var startOfYear: Date? {
-        let calendar = Calendar.current
-        return calendar.dateInterval(of: .year, for: self)?.start
-    }
+    var startOfYear: Date? { Calendar.current.dateInterval(of: .year, for: self)?.start }
     
-    /// Returns the end of the year
-    var endOfYear: Date? {
-        guard let startOfYear = startOfYear else { return nil }
-        var components = DateComponents()
-        components.year = 1
-        components.second = -1
-        return Calendar.current.date(byAdding: components, to: startOfYear)
-    }
+    var endOfYear: Date? { Calendar.current.dateInterval(of: .year, for: self)?.end }
     
-    /// Returns the weekday
-    var weekday: Weekday? {
-        let calendar = Calendar.current
-        let day = calendar.component(.weekday, from: self)
-        return Weekday(rawValue: day)
-    }
+    var weekday: Weekday? { Weekday(rawValue: Calendar.current.component(.weekday, from: self)) }
     
-    /// Returns true if the date is today
-    var isToday: Bool {
-        return Calendar.current.isDateInToday(self)
-    }
+    var isToday: Bool { Calendar.current.isDateInToday(self) }
     
-    /// Returns true if the date is in the current week
-    var isInCurrentWeek: Bool {
-        return Calendar.current.isDate(self, equalTo: Date(), toGranularity: .weekOfYear)
-    }
-    
-    /// Returns true if the date is in the current month
-    var isInCurrentMonth: Bool {
-        return Calendar.current.isDate(self, equalTo: Date(), toGranularity: .month)
-    }
-    
-    /// Returns true if the date is in the current year
-    var isInCurrentYear: Bool {
-        return Calendar.current.isDate(self, equalTo: Date(), toGranularity: .year)
-    }
-    
-    /// Returns a date with only the time components (hour, minute, second)
-    var timeOnly: Date {
-        let calendar = Calendar.current
-        let components = calendar.dateComponents([.hour, .minute, .second], from: self)
-        return calendar.date(from: components) ?? self
-    }
-    
-    /// Returns a date string in short format
-    var shortDateString: String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .short
-        return formatter.string(from: self)
-    }
-    
-    /// Returns a date string in medium format
     var mediumDateString: String {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        return formatter.string(from: self)
-    }
-    
-    /// Returns a time string
-    var timeString: String {
-        let formatter = DateFormatter()
-        formatter.timeStyle = .short
-        return formatter.string(from: self)
+        formatted(date: .abbreviated, time: .omitted)
     }
 }

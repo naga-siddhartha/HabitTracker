@@ -9,10 +9,8 @@ struct SettingsView: View {
     
     @State private var showingExportSheet = false
     @State private var showingResetAlert = false
-    @State private var exportDocument: JSONDocument?
-    @State private var csvDocument: CSVDocument?
-    @State private var showingJSONExport = false
-    @State private var showingCSVExport = false
+    @State private var showingShareSheet = false
+    @State private var exportURL: URL?
     
     var body: some View {
         NavigationStack {
@@ -83,28 +81,16 @@ struct SettingsView: View {
             }
             .navigationTitle("Settings")
             .confirmationDialog("Export Format", isPresented: $showingExportSheet) {
-                Button("JSON (Full Backup)") {
-                    if let data = ExportService.exportToJSON(habits: habits) {
-                        exportDocument = JSONDocument(data: data)
-                        showingJSONExport = true
-                    }
-                }
-                Button("CSV (Entries)") {
-                    if let data = ExportService.exportToCSV(habits: habits) {
-                        csvDocument = CSVDocument(data: data)
-                        showingCSVExport = true
-                    }
-                }
-                Button("CSV (Summary)") {
-                    if let data = ExportService.exportSummaryCSV(habits: habits) {
-                        csvDocument = CSVDocument(data: data)
-                        showingCSVExport = true
-                    }
-                }
+                Button("JSON (Full Backup)") { exportData(format: .json) }
+                Button("CSV (Entries)") { exportData(format: .csvEntries) }
+                Button("CSV (Summary)") { exportData(format: .csvSummary) }
                 Button("Cancel", role: .cancel) {}
             }
-            .fileExporter(isPresented: $showingJSONExport, document: exportDocument, contentType: .json, defaultFilename: "HabitTracker-\(Date.now.formatted(date: .numeric, time: .omitted)).json") { _ in }
-            .fileExporter(isPresented: $showingCSVExport, document: csvDocument, contentType: .commaSeparatedText, defaultFilename: "HabitTracker-\(Date.now.formatted(date: .numeric, time: .omitted)).csv") { _ in }
+            .sheet(isPresented: $showingShareSheet) {
+                if let url = exportURL {
+                    ShareSheet(url: url)
+                }
+            }
             .alert("Reset All Data?", isPresented: $showingResetAlert) {
                 Button("Cancel", role: .cancel) {}
                 Button("Reset", role: .destructive) { habits.forEach { HabitStore.shared.deleteHabit($0) } }
@@ -113,7 +99,79 @@ struct SettingsView: View {
             }
         }
     }
+    
+    private enum ExportFormat {
+        case json, csvEntries, csvSummary
+    }
+    
+    private func exportData(format: ExportFormat) {
+        let fileManager = FileManager.default
+        let tempDir = fileManager.temporaryDirectory
+        let dateStr = Date.now.formatted(date: .numeric, time: .omitted).replacingOccurrences(of: "/", with: "-")
+        
+        let data: Data?
+        let filename: String
+        
+        switch format {
+        case .json:
+            data = ExportService.exportToJSON(habits: habits)
+            filename = "HabitTracker-\(dateStr).json"
+        case .csvEntries:
+            data = ExportService.exportToCSV(habits: habits)
+            filename = "HabitTracker-Entries-\(dateStr).csv"
+        case .csvSummary:
+            data = ExportService.exportSummaryCSV(habits: habits)
+            filename = "HabitTracker-Summary-\(dateStr).csv"
+        }
+        
+        guard let data else { return }
+        
+        let fileURL = tempDir.appendingPathComponent(filename)
+        
+        do {
+            try data.write(to: fileURL)
+            exportURL = fileURL
+            showingShareSheet = true
+        } catch {
+            print("Export failed: \(error)")
+        }
+    }
 }
+
+// MARK: - Share Sheet
+
+#if os(iOS)
+struct ShareSheet: UIViewControllerRepresentable {
+    let url: URL
+    
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: [url], applicationActivities: nil)
+    }
+    
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+#elseif os(macOS)
+struct ShareSheet: View {
+    let url: URL
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        VStack(spacing: 20) {
+            Text("Export Complete").font(.headline)
+            Text(url.lastPathComponent).foregroundStyle(.secondary)
+            
+            HStack {
+                Button("Show in Finder") {
+                    NSWorkspace.shared.activateFileViewerSelecting([url])
+                    dismiss()
+                }
+                Button("Done") { dismiss() }
+            }
+        }
+        .padding(40)
+    }
+}
+#endif
 
 struct SettingsRow<Accessory: View>: View {
     let icon: String

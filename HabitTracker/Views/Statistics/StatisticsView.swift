@@ -31,15 +31,13 @@ struct StatisticsView: View {
             ScrollView {
                 VStack(spacing: 24) {
                     // Contribution Graph
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .center, spacing: 8) {
                         Text("Activity")
                             .font(.headline)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .padding(.horizontal)
                         
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            ContributionGraphView(weeks: 26)
-                                .padding(.horizontal)
-                        }
+                        ContributionGraphView(weeks: 26)
                     }
                     
                     Picker("Timeframe", selection: $selectedTimeframe) {
@@ -131,7 +129,7 @@ struct CompletionsDetailView: View {
                 }
             }
             .navigationTitle("Completions")
-            .navigationBarTitleDisplayMode(.inline)
+            .inlineNavigationTitle()
             .toolbar { Button("Done") { dismiss() } }
         }
     }
@@ -157,7 +155,7 @@ struct StreaksDetailView: View {
                 }
             }
             .navigationTitle("Streaks")
-            .navigationBarTitleDisplayMode(.inline)
+            .inlineNavigationTitle()
             .toolbar { Button("Done") { dismiss() } }
         }
     }
@@ -182,7 +180,7 @@ struct HabitsDetailView: View {
                 }
             }
             .navigationTitle("Habits")
-            .navigationBarTitleDisplayMode(.inline)
+            .inlineNavigationTitle()
             .toolbar { Button("Done") { dismiss() } }
         }
     }

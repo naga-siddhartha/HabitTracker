@@ -18,7 +18,7 @@ final class NotificationService {
     static let shared = NotificationService()
     
     private init() {
-        #if canImport(UserNotifications) && !os(macOS)
+        #if canImport(UserNotifications)
         requestAuthorization()
         #endif
     }

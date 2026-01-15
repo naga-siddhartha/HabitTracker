@@ -33,10 +33,10 @@ struct MainTabView: View {
     
     var body: some View {
         TabView(selection: $selectedTab) {
-            TodayView()
+            HomeView()
                 .tag(0)
                 .tabItem {
-                    Label("Today", systemImage: "circle.inset.filled")
+                    Label("Home", systemImage: "house.fill")
                 }
             
             CalendarContainerView()
@@ -48,13 +48,13 @@ struct MainTabView: View {
             StatisticsView()
                 .tag(2)
                 .tabItem {
-                    Label("Stats", systemImage: "chart.bar")
+                    Label("Stats", systemImage: "chart.bar.fill")
                 }
             
             SettingsView()
                 .tag(3)
                 .tabItem {
-                    Label("Settings", systemImage: "gearshape")
+                    Label("Settings", systemImage: "gearshape.fill")
                 }
         }
     }
@@ -84,7 +84,9 @@ struct CalendarContainerView: View {
                 }
             }
             .navigationTitle("Calendar")
-            .navigationBarTitleDisplayMode(.inline)
+            #if os(iOS)
+            .inlineNavigationTitle()
+            #endif
         }
     }
 }

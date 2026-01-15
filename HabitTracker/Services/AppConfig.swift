@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 
+@available(iOS 17.0, macOS 14.0, *)
 enum AppConfig {
     static var schema: Schema {
         Schema([Habit.self, HabitEntry.self, Streak.self])

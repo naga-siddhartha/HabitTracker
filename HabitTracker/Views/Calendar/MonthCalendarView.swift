@@ -11,48 +11,35 @@ struct MonthCalendarView: View {
     
     var body: some View {
         VStack(spacing: 16) {
-            // Month navigation
             HStack {
-                Button { changeMonth(by: -1) } label: {
-                    Image(systemName: "chevron.left")
-                }
+                Button { changeMonth(by: -1) } label: { Image(systemName: "chevron.left") }
                 Spacer()
-                Text(currentMonth, format: .dateTime.month(.wide).year())
-                    .font(.headline)
+                Text(currentMonth, format: .dateTime.month(.wide).year()).font(.headline)
                 Spacer()
-                Button { changeMonth(by: 1) } label: {
-                    Image(systemName: "chevron.right")
-                }
+                Button { changeMonth(by: 1) } label: { Image(systemName: "chevron.right") }
             }
             .padding(.horizontal)
             
-            // Weekday headers
             LazyVGrid(columns: columns, spacing: 8) {
                 ForEach(["S", "M", "T", "W", "T", "F", "S"], id: \.self) { day in
-                    Text(day)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Text(day).font(.caption).foregroundStyle(.secondary)
                 }
             }
             
-            // Days grid
             LazyVGrid(columns: columns, spacing: 8) {
                 ForEach(daysInMonth, id: \.self) { date in
-                    DayCell(
-                        date: date,
-                        habit: habit,
-                        isCurrentMonth: calendar.isDate(date, equalTo: currentMonth, toGranularity: .month),
-                        isSelected: calendar.isDate(date, inSameDayAs: selectedDate)
-                    )
-                    .onTapGesture {
-                        selectedDate = date
-                        if habit.isActive(on: date) {
-                            withAnimation(.snappy(duration: 0.3)) {
-                                HabitStore.shared.toggleCompletion(for: habit, on: date)
+                    DayCell(date: date, habit: habit,
+                            isCurrentMonth: calendar.isDate(date, equalTo: currentMonth, toGranularity: .month),
+                            isSelected: calendar.isDate(date, inSameDayAs: selectedDate))
+                        .onTapGesture {
+                            selectedDate = date
+                            if habit.isActive(on: date) {
+                                withAnimation(.snappy(duration: 0.3)) {
+                                    HabitStore.shared.toggleCompletion(for: habit, on: date)
+                                }
                             }
                         }
-                    }
-                    .sensoryFeedback(.selection, trigger: selectedDate)
+                        .hapticFeedback(.selection, trigger: selectedDate)
                 }
             }
         }
@@ -66,22 +53,16 @@ struct MonthCalendarView: View {
         guard let monthStart = currentMonth.startOfMonth,
               let daysInMonth = calendar.range(of: .day, in: .month, for: currentMonth)?.count else { return [] }
         
-        let firstWeekday = calendar.component(.weekday, from: monthStart)
-        let startOffset = firstWeekday - 1
-        
+        let startOffset = calendar.component(.weekday, from: monthStart) - 1
         var dates: [Date] = (0..<startOffset).compactMap {
             calendar.date(byAdding: .day, value: -($0 + 1), to: monthStart)
         }.reversed()
         
-        dates += (0..<daysInMonth).compactMap {
-            calendar.date(byAdding: .day, value: $0, to: monthStart)
-        }
+        dates += (0..<daysInMonth).compactMap { calendar.date(byAdding: .day, value: $0, to: monthStart) }
         
         let remaining = 42 - dates.count
         if let last = dates.last {
-            dates += (1...remaining).compactMap {
-                calendar.date(byAdding: .day, value: $0, to: last)
-            }
+            dates += (1...remaining).compactMap { calendar.date(byAdding: .day, value: $0, to: last) }
         }
         return dates
     }
@@ -110,9 +91,7 @@ struct DayCell: View {
                 .opacity(isCurrentMonth ? 1 : 0.3)
             
             if isSkipped {
-                Image(systemName: "forward.fill")
-                    .font(.caption2)
-                    .foregroundStyle(.white)
+                Image(systemName: "forward.fill").font(.caption2).foregroundStyle(.white)
             } else {
                 Text("\(Calendar.current.component(.day, from: date))")
                     .font(.caption)
@@ -120,11 +99,7 @@ struct DayCell: View {
             }
         }
         .frame(width: 32, height: 32)
-        .overlay {
-            if isToday {
-                Circle().stroke(habit.color.color, lineWidth: 2)
-            }
-        }
+        .overlay { if isToday { Circle().stroke(habit.color.color, lineWidth: 2) } }
         .background(isSelected ? habit.color.color.opacity(0.2) : .clear)
         .clipShape(Circle())
         .scaleEffect(isCompleted ? 1.1 : 1.0)
