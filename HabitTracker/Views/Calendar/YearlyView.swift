@@ -13,9 +13,12 @@ struct YearlyView: View {
         return (0..<12).compactMap { calendar.date(byAdding: .month, value: $0, to: yearStart) }
     }
     
+    private var isCurrentYear: Bool {
+        calendar.isDate(currentYear, equalTo: Date.now, toGranularity: .year)
+    }
+    
     var body: some View {
         VStack {
-            // Year navigation
             HStack {
                 Button { changeYear(by: -1) } label: { Image(systemName: "chevron.left") }
                 Spacer()
@@ -24,6 +27,14 @@ struct YearlyView: View {
                 Button { changeYear(by: 1) } label: { Image(systemName: "chevron.right") }
             }
             .padding()
+            
+            if !isCurrentYear {
+                Button("This year") {
+                    currentYear = Date.now
+                }
+                .font(.subheadline.weight(.medium))
+                .padding(.bottom, 4)
+            }
             
             // Habit picker
             if !habits.isEmpty {

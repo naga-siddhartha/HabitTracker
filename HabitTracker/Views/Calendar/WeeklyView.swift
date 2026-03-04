@@ -10,6 +10,11 @@ struct WeeklyView: View {
         (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: currentWeekStart) }
     }
     
+    private var isCurrentWeek: Bool {
+        guard let thisWeekStart = Date.now.startOfWeek else { return false }
+        return calendar.isDate(currentWeekStart, inSameDayAs: thisWeekStart)
+    }
+    
     var body: some View {
         VStack {
             HStack {
@@ -20,6 +25,14 @@ struct WeeklyView: View {
                 Button { changeWeek(by: 1) } label: { Image(systemName: "chevron.right") }
             }
             .padding()
+            
+            if !isCurrentWeek, let thisWeekStart = Date.now.startOfWeek {
+                Button("This week") {
+                    currentWeekStart = thisWeekStart
+                }
+                .font(.subheadline.weight(.medium))
+                .padding(.bottom, 4)
+            }
             
             HStack {
                 Text("Habit").frame(width: 100, alignment: .leading)

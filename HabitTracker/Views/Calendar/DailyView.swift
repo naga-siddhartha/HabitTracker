@@ -7,11 +7,21 @@ struct DailyView: View {
     
     private var activeHabits: [Habit] { habits.filter { $0.isActive(on: selectedDate) } }
     
+    private var isSelectedToday: Bool { selectedDate.isToday }
+    
     var body: some View {
         VStack {
-            DatePicker("Date", selection: $selectedDate, displayedComponents: .date)
-                .datePickerStyle(.compact)
-                .padding()
+            HStack {
+                DatePicker("Date", selection: $selectedDate, displayedComponents: .date)
+                    .datePickerStyle(.compact)
+                if !isSelectedToday {
+                    Button("Today") {
+                        selectedDate = Date.now
+                    }
+                    .font(.subheadline.weight(.medium))
+                }
+            }
+            .padding()
             
             List(activeHabits) { habit in
                 DailyHabitRow(habit: habit, date: selectedDate)

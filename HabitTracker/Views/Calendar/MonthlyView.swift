@@ -9,8 +9,10 @@ struct MonthlyView: View {
     private let calendar = Calendar.current
     private let columns = Array(repeating: GridItem(.flexible()), count: 7)
     
+    private var isSelectedToday: Bool { selectedDate.isToday }
+    
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
             HStack {
                 Button { changeMonth(by: -1) } label: { Image(systemName: "chevron.left") }
                 Spacer()
@@ -35,22 +37,46 @@ struct MonthlyView: View {
             }
             .padding(.horizontal)
             
-            Divider().padding()
+            if !isSelectedToday {
+                Button {
+                    selectedDate = Date.now
+                    if let start = currentMonth.startOfMonth, let todayStart = Date.now.startOfMonth,
+                       !calendar.isDate(start, equalTo: todayStart, toGranularity: .month) {
+                        currentMonth = Date.now
+                    }
+                } label: {
+                    Text("Today").font(.subheadline.weight(.medium))
+                }
+                .padding(.top, 8)
+            }
             
-            VStack(alignment: .leading) {
-                Text(selectedDate, format: .dateTime.weekday(.wide).month().day())
-                    .font(.headline)
-                    .padding(.horizontal)
+            Divider().padding(.vertical, 12)
+            
+            VStack(alignment: .leading, spacing: 0) {
+                Text("Habits for this day")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 16)
+                    .padding(.top, 12)
+                    .padding(.bottom, 8)
                 
                 let activeHabits = habits.filter { $0.isActive(on: selectedDate) }
                 if activeHabits.isEmpty {
-                    Text("No habits scheduled").foregroundStyle(.secondary).padding()
+                    Text("No habits scheduled")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(16)
                 } else {
                     ForEach(activeHabits) { habit in
                         MonthlyHabitRow(habit: habit, date: selectedDate)
                     }
                 }
             }
+            .background(Color.systemGray6)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .padding(.horizontal)
+            
             Spacer()
         }
         .navigationTitle("Monthly")
