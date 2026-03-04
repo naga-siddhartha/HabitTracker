@@ -328,49 +328,6 @@ struct HabitGridCard: View {
     }
 }
 
-// MARK: - Skip Sheet
-
-struct SkipSheet: View {
-    let habit: Habit
-    let date: Date
-    @Environment(\.dismiss) private var dismiss
-    @State private var reason = ""
-    private let reasons = ["Vacation", "Sick", "Rest day", "Busy", "Travel"]
-    
-    var body: some View {
-        VStack(spacing: 20) {
-            Text("Skip \(habit.name)?").font(.headline)
-            Text("Your streak won't be affected").font(.subheadline).foregroundStyle(.secondary)
-            
-            HStack(spacing: 8) {
-                ForEach(reasons, id: \.self) { r in
-                    Button { reason = r } label: {
-                        Text(r)
-                            .font(.subheadline)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(reason == r ? Color.orange : Color.systemGray6)
-                            .foregroundStyle(reason == r ? .white : .primary)
-                            .clipShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
-            
-            HStack {
-                AdaptiveSecondaryButton("Cancel") { dismiss() }
-                AdaptiveButton("Skip Today") {
-                    HabitStore.shared.skipDay(for: habit, on: date, reason: reason.isEmpty ? nil : reason)
-                    dismiss()
-                }
-                .tint(.orange)
-            }
-        }
-        .padding(24)
-        .frame(minWidth: LayoutConfig.current.sheetWidth ?? 300)
-    }
-}
-
 #Preview {
     HomeView().modelContainer(for: Habit.self, inMemory: true)
 }

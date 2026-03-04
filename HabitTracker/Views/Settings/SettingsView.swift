@@ -103,13 +103,15 @@ struct SettingsView: View {
     }
     
     private func exportData(format: ExportFormat) {
+        isExporting = true
+
         let fileManager = FileManager.default
         let tempDir = fileManager.temporaryDirectory
         let dateStr = Date.now.formatted(date: .numeric, time: .omitted).replacingOccurrences(of: "/", with: "-")
-        
+
         let data: Data?
         let filename: String
-        
+
         switch format {
         case .json:
             data = ExportService.exportToJSON(habits: habits)
@@ -121,17 +123,26 @@ struct SettingsView: View {
             data = ExportService.exportSummaryCSV(habits: habits)
             filename = "HabitTracker-Summary-\(dateStr).csv"
         }
-        
-        guard let data else { return }
-        
+
+        guard let data else {
+            isExporting = false
+            return
+        }
+
         let fileURL = tempDir.appendingPathComponent(filename)
-        
-        do {
-            try data.write(to: fileURL)
-            exportURL = fileURL
-            showingShareSheet = true
-        } catch {
-            print("Export failed: \(error)")
+
+        Task.detached(priority: .userInitiated) {
+            do {
+                try data.write(to: fileURL)
+                await MainActor.run {
+                    exportURL = fileURL
+                    isExporting = false
+                    showingShareSheet = true
+                }
+            } catch {
+                await MainActor.run { isExporting = false }
+                print("Export failed: \(error)")
+            }
         }
     }
 }

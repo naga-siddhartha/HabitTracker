@@ -19,27 +19,6 @@ extension View {
 
 enum HapticStyle { case light, success, selection }
 
-// MARK: - Card Style
-
-struct CardModifier: ViewModifier {
-    var padding: CGFloat = 14
-    var cornerRadius: CGFloat = 16
-    
-    func body(content: Content) -> some View {
-        content
-            .padding(padding)
-            .background(Color.systemBackground)
-            .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
-            .shadow(color: .black.opacity(0.04), radius: 8, y: 2)
-    }
-}
-
-extension View {
-    func cardStyle(padding: CGFloat = 14, cornerRadius: CGFloat = 16) -> some View {
-        modifier(CardModifier(padding: padding, cornerRadius: cornerRadius))
-    }
-}
-
 // MARK: - Pill Style
 
 struct PillModifier: ViewModifier {
@@ -60,16 +39,6 @@ struct PillModifier: ViewModifier {
 extension View {
     func pillStyle(isSelected: Bool, selectedColor: Color = .accentColor) -> some View {
         modifier(PillModifier(isSelected: isSelected, selectedColor: selectedColor))
-    }
-}
-
-// MARK: - Scale Button Style
-
-struct ScaleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.97 : 1)
-            .animation(.easeOut(duration: 0.15), value: configuration.isPressed)
     }
 }
 

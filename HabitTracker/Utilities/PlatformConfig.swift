@@ -131,49 +131,6 @@ struct AdaptiveSecondaryButton: View {
     }
 }
 
-// MARK: - Adaptive Sheet
-
-struct AdaptiveSheetModifier<SheetContent: View>: ViewModifier {
-    @Binding var isPresented: Bool
-    let sheetContent: () -> SheetContent
-    
-    func body(content: Content) -> some View {
-        let config = LayoutConfig.current
-        
-        content.sheet(isPresented: $isPresented) {
-            if let width = config.sheetWidth, let height = config.sheetHeight {
-                sheetContent().frame(width: width, height: height)
-            } else {
-                sheetContent()
-            }
-        }
-    }
-}
-
-extension View {
-    func adaptiveSheet<SheetContent: View>(isPresented: Binding<Bool>, @ViewBuilder content: @escaping () -> SheetContent) -> some View {
-        modifier(AdaptiveSheetModifier(isPresented: isPresented, sheetContent: content))
-    }
-}
-
-// MARK: - Adaptive Card
-
-struct AdaptiveCard<Content: View>: View {
-    let content: Content
-    
-    init(@ViewBuilder content: () -> Content) {
-        self.content = content()
-    }
-    
-    var body: some View {
-        let config = LayoutConfig.current
-        content
-            .padding(config.cardPadding)
-            .background(Color.systemBackground)
-            .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
-    }
-}
-
 // MARK: - Adaptive Form
 
 struct AdaptiveForm<Content: View>: View {

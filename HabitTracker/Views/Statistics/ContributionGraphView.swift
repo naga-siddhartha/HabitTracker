@@ -150,24 +150,6 @@ struct ContributionGraphView: View {
         return calendar.date(byAdding: .day, value: day, to: startOfWeek) ?? today
     }
     
-    private func completionLevel(for date: Date) -> Int {
-        guard date <= Date.now else { return -1 } // Future dates
-        
-        let targetHabits = habit.map { [$0] } ?? habits
-        let activeHabits = targetHabits.filter { $0.isActive(on: date) }
-        
-        guard !activeHabits.isEmpty else { return 0 }
-        
-        let completed = activeHabits.filter { $0.isCompleted(on: date) }.count
-        let ratio = Double(completed) / Double(activeHabits.count)
-        
-        if ratio == 0 { return 0 }
-        if ratio < 0.25 { return 1 }
-        if ratio < 0.5 { return 2 }
-        if ratio < 0.75 { return 3 }
-        return 4
-    }
-    
     private func colorForLevel(_ level: Int) -> Color {
         switch level {
         case -1: return .clear
@@ -229,27 +211,6 @@ struct ContributionCell: View {
         case 4: return "75-100% completed"
         default: return ""
         }
-    }
-}
-
-// MARK: - Habit Detail Integration
-
-struct HabitContributionView: View {
-    let habit: Habit
-    
-    var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Activity")
-                .font(.headline)
-            
-            ScrollView(.horizontal, showsIndicators: false) {
-                ContributionGraphView(habit: habit, weeks: 26)
-                    .padding(.vertical, 8)
-            }
-        }
-        .padding()
-        .background(Color.systemGray6)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
 
