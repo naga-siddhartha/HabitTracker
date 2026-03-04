@@ -9,8 +9,6 @@ struct MonthlyView: View {
     private let calendar = Calendar.current
     private let columns = Array(repeating: GridItem(.flexible()), count: 7)
     
-    private var isSelectedToday: Bool { selectedDate.isToday }
-    
     var body: some View {
         VStack(spacing: 0) {
             HStack {
@@ -37,45 +35,45 @@ struct MonthlyView: View {
             }
             .padding(.horizontal)
             
-            if !isSelectedToday {
-                Button {
-                    selectedDate = Date.now
-                    if let start = currentMonth.startOfMonth, let todayStart = Date.now.startOfMonth,
-                       !calendar.isDate(start, equalTo: todayStart, toGranularity: .month) {
-                        currentMonth = Date.now
-                    }
-                } label: {
-                    Text("Today").font(.subheadline.weight(.medium))
-                }
-                .padding(.top, 8)
-            }
+            let activeHabits = habits.filter { $0.isActive(on: selectedDate) }
             
-            Divider().padding(.vertical, 12)
+            Divider().padding(.vertical, 16)
             
-            VStack(alignment: .leading, spacing: 0) {
-                Text("Habits for this day")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 16)
-                    .padding(.top, 12)
-                    .padding(.bottom, 8)
-                
-                let activeHabits = habits.filter { $0.isActive(on: selectedDate) }
-                if activeHabits.isEmpty {
+            if activeHabits.isEmpty {
+                VStack(spacing: 12) {
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.system(size: 44))
+                        .foregroundStyle(.secondary.opacity(0.7))
                     Text("No habits scheduled")
-                        .font(.subheadline)
+                        .font(.title3.weight(.medium))
                         .foregroundStyle(.secondary)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(16)
-                } else {
-                    ForEach(activeHabits) { habit in
-                        MonthlyHabitRow(habit: habit, date: selectedDate)
+                    Text("Tap a day above to see habits for that date.")
+                        .font(.subheadline)
+                        .foregroundStyle(.tertiary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 32)
+                .padding(.horizontal, 24)
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Habits for this day")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 16)
+                        .padding(.bottom, 12)
+                    
+                    VStack(spacing: 0) {
+                        ForEach(activeHabits) { habit in
+                            MonthlyHabitRow(habit: habit, date: selectedDate)
+                        }
                     }
+                    .background(Color.systemBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.horizontal, 16)
                 }
             }
-            .background(Color.systemGray6)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .padding(.horizontal)
             
             Spacer()
         }

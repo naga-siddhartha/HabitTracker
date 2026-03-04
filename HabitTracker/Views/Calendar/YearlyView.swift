@@ -13,12 +13,8 @@ struct YearlyView: View {
         return (0..<12).compactMap { calendar.date(byAdding: .month, value: $0, to: yearStart) }
     }
     
-    private var isCurrentYear: Bool {
-        calendar.isDate(currentYear, equalTo: Date.now, toGranularity: .year)
-    }
-    
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
             HStack {
                 Button { changeYear(by: -1) } label: { Image(systemName: "chevron.left") }
                 Spacer()
@@ -28,16 +24,23 @@ struct YearlyView: View {
             }
             .padding()
             
-            if !isCurrentYear {
-                Button("This year") {
-                    currentYear = Date.now
+            if habits.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "calendar")
+                        .font(.system(size: 36))
+                        .foregroundStyle(.secondary.opacity(0.7))
+                    Text("No habits to show")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                    Text("Add habits to see your year at a glance.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary.opacity(0.8))
+                        .multilineTextAlignment(.center)
                 }
-                .font(.subheadline.weight(.medium))
-                .padding(.bottom, 4)
-            }
-            
-            // Habit picker
-            if !habits.isEmpty {
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 28)
+                .padding(.horizontal, 20)
+            } else {
                 Picker("Habit", selection: $selectedHabit) {
                     Text("All Habits").tag(nil as Habit?)
                     ForEach(habits) { habit in
@@ -46,16 +49,24 @@ struct YearlyView: View {
                 }
                 .pickerStyle(.menu)
                 .padding(.horizontal)
-            }
-            
-            // Year grid
-            ScrollView {
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 80))], spacing: 16) {
-                    ForEach(months, id: \.self) { month in
-                        YearMonthCell(month: month, habits: selectedHabit.map { [$0] } ?? habits)
+                .padding(.bottom, 4)
+                
+                Text("Completion by month")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 8)
+                
+                ScrollView {
+                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 80))], spacing: 16) {
+                        ForEach(months, id: \.self) { month in
+                            YearMonthCell(month: month, habits: selectedHabit.map { [$0] } ?? habits)
+                        }
                     }
+                    .padding()
                 }
-                .padding()
             }
         }
         .navigationTitle("Yearly")

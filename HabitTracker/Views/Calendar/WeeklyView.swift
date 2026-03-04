@@ -10,13 +10,8 @@ struct WeeklyView: View {
         (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: currentWeekStart) }
     }
     
-    private var isCurrentWeek: Bool {
-        guard let thisWeekStart = Date.now.startOfWeek else { return false }
-        return calendar.isDate(currentWeekStart, inSameDayAs: thisWeekStart)
-    }
-    
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
             HStack {
                 Button { changeWeek(by: -1) } label: { Image(systemName: "chevron.left") }
                 Spacer()
@@ -26,30 +21,47 @@ struct WeeklyView: View {
             }
             .padding()
             
-            if !isCurrentWeek, let thisWeekStart = Date.now.startOfWeek {
-                Button("This week") {
-                    currentWeekStart = thisWeekStart
+            if habits.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "square.grid.2x2")
+                        .font(.system(size: 36))
+                        .foregroundStyle(.secondary.opacity(0.7))
+                    Text("No habits yet")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                    Text("Add habits to see your week at a glance.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary.opacity(0.8))
+                        .multilineTextAlignment(.center)
                 }
-                .font(.subheadline.weight(.medium))
-                .padding(.bottom, 4)
-            }
-            
-            HStack {
-                Text("Habit").frame(width: 100, alignment: .leading)
-                ForEach(weekDates, id: \.self) { date in
-                    VStack {
-                        Text(date, format: .dateTime.weekday(.narrow))
-                        Text(date, format: .dateTime.day())
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 28)
+                .padding(.horizontal, 20)
+            } else {
+                Text("Habits this week")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 8)
+                
+                HStack {
+                    Text("Habit").frame(width: 100, alignment: .leading)
+                    ForEach(weekDates, id: \.self) { date in
+                        VStack {
+                            Text(date, format: .dateTime.weekday(.narrow))
+                            Text(date, format: .dateTime.day())
+                        }
+                        .font(.caption)
+                        .frame(maxWidth: .infinity)
                     }
-                    .font(.caption)
-                    .frame(maxWidth: .infinity)
                 }
-            }
-            .padding(.horizontal)
-            
-            ScrollView {
-                ForEach(habits) { habit in
-                    WeeklyHabitRow(habit: habit, dates: weekDates)
+                .padding(.horizontal)
+                
+                ScrollView {
+                    ForEach(habits) { habit in
+                        WeeklyHabitRow(habit: habit, dates: weekDates)
+                    }
                 }
             }
         }

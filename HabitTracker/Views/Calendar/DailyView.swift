@@ -7,24 +7,41 @@ struct DailyView: View {
     
     private var activeHabits: [Habit] { habits.filter { $0.isActive(on: selectedDate) } }
     
-    private var isSelectedToday: Bool { selectedDate.isToday }
-    
     var body: some View {
-        VStack {
-            HStack {
-                DatePicker("Date", selection: $selectedDate, displayedComponents: .date)
-                    .datePickerStyle(.compact)
-                if !isSelectedToday {
-                    Button("Today") {
-                        selectedDate = Date.now
-                    }
-                    .font(.subheadline.weight(.medium))
-                }
-            }
-            .padding()
+        VStack(spacing: 0) {
+            DatePicker("Date", selection: $selectedDate, displayedComponents: .date)
+                .datePickerStyle(.compact)
+                .padding()
             
-            List(activeHabits) { habit in
-                DailyHabitRow(habit: habit, date: selectedDate)
+            if activeHabits.isEmpty {
+                VStack(spacing: 10) {
+                    Image(systemName: "calendar.badge.clock")
+                        .font(.system(size: 36))
+                        .foregroundStyle(.secondary.opacity(0.7))
+                    Text("No habits scheduled")
+                        .font(.headline)
+                        .foregroundStyle(.secondary)
+                    Text("Pick another date or add habits that are active on this day.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 28)
+                .padding(.horizontal, 20)
+            } else {
+                VStack(alignment: .leading, spacing: 0) {
+                    Text("Habits for this day")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 20)
+                        .padding(.top, 12)
+                        .padding(.bottom, 8)
+                    List(activeHabits) { habit in
+                        DailyHabitRow(habit: habit, date: selectedDate)
+                    }
+                    .listStyle(.plain)
+                }
             }
         }
         .navigationTitle("Daily")

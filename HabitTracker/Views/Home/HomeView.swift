@@ -23,7 +23,7 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 20) {
+                VStack(spacing: 28) {
                     headerSection
                     segmentedPicker
                     
@@ -33,13 +33,12 @@ struct HomeView: View {
                         allHabitsSection
                     }
                 }
-                .padding(.bottom, 20)
+                .padding(.bottom, 32)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.systemGray6)
+            .background(Color.systemGroupedBackground)
             .inlineNavigationTitle()
-            .toolbar {
-            }
+            .toolbar { }
             .sheet(isPresented: $showingAddHabit) { AddEditHabitView() }
             .sheet(item: $editingHabit) { AddEditHabitView(habit: $0) }
         }
@@ -48,16 +47,19 @@ struct HomeView: View {
     // MARK: - Header
     
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(today.formatted(.dateTime.weekday(.wide)))
-                .font(.title3)
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Today")
+                .font(.subheadline.weight(.medium))
                 .foregroundStyle(.secondary)
+            Text(today.formatted(.dateTime.weekday(.wide)))
+                .font(.system(size: 28, weight: .bold, design: .rounded))
             Text(today.formatted(.dateTime.month(.wide).day()))
-                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(.secondary)
         }
         .frame(maxWidth: config.contentMaxWidth, alignment: .leading)
         .padding(.horizontal, config.horizontalPadding)
-        .padding(.top, 12)
+        .padding(.top, 20)
     }
     
     // MARK: - Segmented Picker
@@ -78,11 +80,11 @@ struct HomeView: View {
     private var activeSection: some View {
         Group {
             if todayHabits.isEmpty {
-                EmptyState(
+                HomeEmptyState(
                     icon: "checkmark.circle",
                     iconColor: .green,
-                    title: "All caught up!",
-                    message: "No habits scheduled for today.",
+                    title: habits.isEmpty ? "No habits yet" : "All caught up",
+                    message: habits.isEmpty ? "Create your first habit to start tracking." : "No habits scheduled for today.",
                     buttonTitle: "Add Habit",
                     buttonAction: { showingAddHabit = true }
                 )
@@ -90,9 +92,10 @@ struct HomeView: View {
                 VStack(spacing: 0) {
                     progressHeader
                     Divider()
+                        .padding(.leading, 96)
                     checklistItems
                 }
-                .background(Color.systemBackground)
+                .background(Color.secondarySystemGroupedBackground)
                 .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
                 .frame(maxWidth: config.contentMaxWidth)
                 .padding(.horizontal, config.horizontalPadding)
@@ -101,15 +104,18 @@ struct HomeView: View {
     }
     
     private var progressHeader: some View {
-        HStack {
-            ProgressRing(progress: progress, count: completedCount, total: todayHabits.count, size: 60)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("\(completedCount)/\(todayHabits.count) completed").font(.headline.weight(.semibold))
-                Text(motivationalMessage).font(.subheadline).foregroundStyle(.secondary)
+        HStack(spacing: 20) {
+            ProgressRing(progress: progress, count: completedCount, total: todayHabits.count, size: 64)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("\(completedCount) of \(todayHabits.count) done")
+                    .font(.headline.weight(.semibold))
+                Text(motivationalMessage)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
             Spacer()
         }
-        .padding(16)
+        .padding(20)
     }
     
     private var checklistItems: some View {
@@ -126,16 +132,16 @@ struct HomeView: View {
     private var allHabitsSection: some View {
         Group {
             if habits.isEmpty {
-                EmptyState(
-                    icon: "checkmark.circle",
+                HomeEmptyState(
+                    icon: "square.grid.2x2",
                     iconColor: .purple,
                     title: "No habits yet",
-                    message: "Start by creating your first habit",
+                    message: "Create your first habit to see it here.",
                     buttonTitle: "Add Habit",
                     buttonAction: { showingAddHabit = true }
                 )
             } else {
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 12) {
+                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
                     ForEach(habits) { habit in
                         HabitGridCard(habit: habit, onEdit: { editingHabit = habit }, onDelete: { deleteHabit(habit) })
                     }
@@ -159,41 +165,50 @@ struct HomeView: View {
     }
 }
 
-// MARK: - Empty State
+// MARK: - Home empty state (compact, modern)
 
-struct EmptyState: View {
+private struct HomeEmptyState: View {
     let icon: String
     let iconColor: Color
     let title: String
     let message: String
     let buttonTitle: String
-    var buttonColor: Color = .accentColor
     let buttonAction: () -> Void
     
     var body: some View {
-        VStack(spacing: 24) {
-            Spacer().frame(height: 60)
-            
+        VStack(spacing: 20) {
             ZStack {
-                Circle()
-                    .fill(iconColor.opacity(0.1))
-                    .frame(width: 120, height: 120)
+                RoundedRectangle(cornerRadius: 24)
+                    .fill(iconColor.opacity(0.08))
+                    .frame(width: 80, height: 80)
                 Image(systemName: icon)
-                    .font(.system(size: 50))
+                    .font(.system(size: 32, weight: .medium))
                     .foregroundStyle(iconColor)
             }
             
-            VStack(spacing: 8) {
-                Text(title).font(.title2.bold())
-                Text(message).font(.subheadline).foregroundStyle(.secondary).multilineTextAlignment(.center)
+            VStack(spacing: 6) {
+                Text(title)
+                    .font(.title3.weight(.semibold))
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
             }
             
-            AdaptiveButton(buttonTitle, icon: nil, action: buttonAction)
-                .tint(buttonColor)
-            
-            Spacer()
+            Button(action: buttonAction) {
+                Label(buttonTitle, systemImage: "plus.circle.fill")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(Capsule().fill(Color.accentColor))
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 4)
         }
         .frame(maxWidth: .infinity)
+        .padding(.vertical, 40)
+        .padding(.horizontal, 32)
     }
 }
 
@@ -300,7 +315,7 @@ struct HabitGridCard: View {
             }
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
-            .background(Color.systemBackground)
+            .background(Color.secondarySystemGroupedBackground)
             .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
         }
         .buttonStyle(.plain)

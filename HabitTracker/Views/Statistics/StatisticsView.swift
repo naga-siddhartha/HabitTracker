@@ -59,22 +59,40 @@ struct StatisticsView: View {
                     .padding(.horizontal)
                     
                     // Top habits
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Top Performing Habits").font(.headline).padding(.horizontal)
-                        ForEach(topHabits.prefix(5)) { habit in
+                    StatsSectionCard(
+                        title: "Top Performing Habits",
+                        icon: "chart.bar.fill",
+                        iconColor: .green,
+                        isEmpty: topHabitsWithCompletions.isEmpty
+                    ) {
+                        ForEach(topHabitsWithCompletions.prefix(5)) { habit in
                             HabitStatRow(habit: habit, dateRange: dateRange)
                         }
+                    } emptyContent: {
+                        StatsEmptyState(
+                            icon: "chart.bar",
+                            title: "No completions yet",
+                            message: "Complete habits in your chosen timeframe to see them here."
+                        )
                     }
-                    .padding(.vertical)
                     
                     // Streaks
-                    VStack(alignment: .leading, spacing: 12) {
-                        Text("Longest Streaks").font(.headline).padding(.horizontal)
-                        ForEach(streakLeaderboard.prefix(5)) { habit in
+                    StatsSectionCard(
+                        title: "Longest Streaks",
+                        icon: "flame.fill",
+                        iconColor: .orange,
+                        isEmpty: habitsWithStreaks.isEmpty
+                    ) {
+                        ForEach(habitsWithStreaks.prefix(5)) { habit in
                             StreakRow(habit: habit)
                         }
+                    } emptyContent: {
+                        StatsEmptyState(
+                            icon: "flame",
+                            title: "No streaks yet",
+                            message: "Keep completing habits on consecutive days to build streaks."
+                        )
                     }
-                    .padding(.vertical)
                 }
             }
             .navigationTitle("Statistics")
@@ -100,16 +118,21 @@ struct StatisticsView: View {
         cachedActiveStreaks = streaks
     }
     
-    private var topHabits: [Habit] {
+    private var topHabitsWithCompletions: [Habit] {
         let range = dateRange
-        return Array(habits.sorted {
-            $0.entries.lazy.filter { $0.isCompleted && $0.date >= range.start && $0.date <= range.end }.count >
-            $1.entries.lazy.filter { $0.isCompleted && $0.date >= range.start && $0.date <= range.end }.count
-        }.prefix(5))
+        return habits
+            .filter { habit in
+                habit.entries.contains { $0.isCompleted && $0.date >= range.start && $0.date <= range.end }
+            }
+            .sorted { a, b in
+                a.entries.lazy.filter { $0.isCompleted && $0.date >= range.start && $0.date <= range.end }.count >
+                b.entries.lazy.filter { $0.isCompleted && $0.date >= range.start && $0.date <= range.end }.count
+            }
     }
     
-    private var streakLeaderboard: [Habit] {
-        Array(habits.sorted { ($0.streak?.longestStreak ?? 0) > ($1.streak?.longestStreak ?? 0) }.prefix(5))
+    private var habitsWithStreaks: [Habit] {
+        habits.filter { ($0.streak?.longestStreak ?? 0) > 0 }
+            .sorted { ($0.streak?.longestStreak ?? 0) > ($1.streak?.longestStreak ?? 0) }
     }
 }
 
@@ -236,6 +259,70 @@ struct StreakRow: View {
                 .font(.caption).foregroundStyle(.orange)
         }
         .padding(.horizontal)
+    }
+}
+
+// MARK: - Stats section card (modular, sleek empty/content)
+
+struct StatsSectionCard<Content: View, EmptyContent: View>: View {
+    let title: String
+    let icon: String
+    let iconColor: Color
+    let isEmpty: Bool
+    @ViewBuilder let content: () -> Content
+    @ViewBuilder let emptyContent: () -> EmptyContent
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                Image(systemName: icon)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(iconColor)
+                Text(title)
+                    .font(.headline)
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 12)
+            
+            if isEmpty {
+                emptyContent()
+            } else {
+                VStack(spacing: 0) {
+                    content()
+                }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 16)
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.systemGray6)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal)
+    }
+}
+
+struct StatsEmptyState: View {
+    let icon: String
+    let title: String
+    let message: String
+    
+    var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 28))
+                .foregroundStyle(.secondary.opacity(0.8))
+            Text(title)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+            Text(message)
+                .font(.caption)
+                .foregroundStyle(.secondary.opacity(0.8))
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 24)
+        .padding(.horizontal, 20)
     }
 }
 

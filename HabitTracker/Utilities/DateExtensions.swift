@@ -9,11 +9,15 @@ extension Color {
     static var systemGray6: Color { Color(uiColor: .systemGray6) }
     static var systemGray5: Color { Color(uiColor: .systemGray5) }
     static var systemGray4: Color { Color(uiColor: .systemGray4) }
+    static var systemGroupedBackground: Color { Color(uiColor: .systemGroupedBackground) }
+    static var secondarySystemGroupedBackground: Color { Color(uiColor: .secondarySystemGroupedBackground) }
     #elseif os(macOS)
     static var systemBackground: Color { Color(nsColor: .windowBackgroundColor) }
     static var systemGray6: Color { Color(nsColor: .controlBackgroundColor) }
     static var systemGray5: Color { Color(nsColor: .separatorColor) }
     static var systemGray4: Color { Color(nsColor: .tertiaryLabelColor) }
+    static var systemGroupedBackground: Color { Color(nsColor: .windowBackgroundColor) }
+    static var secondarySystemGroupedBackground: Color { Color(nsColor: .controlBackgroundColor) }
     #endif
 }
 

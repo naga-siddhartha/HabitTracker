@@ -7,10 +7,10 @@ struct SettingsView: View {
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("weekStartsOnMonday") private var weekStartsOnMonday = false
     
-    @State private var showingExportSheet = false
     @State private var showingResetAlert = false
     @State private var showingShareSheet = false
     @State private var exportURL: URL?
+    @State private var isExporting = false
     
     var body: some View {
         NavigationStack {
@@ -39,7 +39,11 @@ struct SettingsView: View {
                 }
                 
                 Section("Data") {
-                    Button { showingExportSheet = true } label: {
+                    Menu {
+                        Button("JSON (Full Backup)") { exportData(format: .json) }
+                        Button("CSV (Entries)") { exportData(format: .csvEntries) }
+                        Button("CSV (Summary)") { exportData(format: .csvSummary) }
+                    } label: {
                         SettingsRow(icon: "square.and.arrow.up.fill", iconColor: .green, title: "Export Data") {
                             Image(systemName: "chevron.right")
                                 .font(.caption.weight(.semibold))
@@ -71,11 +75,14 @@ struct SettingsView: View {
                 }
             }
             .navigationTitle("Settings")
-            .confirmationDialog("Export Format", isPresented: $showingExportSheet) {
-                Button("JSON (Full Backup)") { exportData(format: .json) }
-                Button("CSV (Entries)") { exportData(format: .csvEntries) }
-                Button("CSV (Summary)") { exportData(format: .csvSummary) }
-                Button("Cancel", role: .cancel) {}
+            .overlay {
+                if isExporting {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                    ProgressView("Preparing export…")
+                        .padding(20)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                }
             }
             .sheet(isPresented: $showingShareSheet) {
                 if let url = exportURL {
