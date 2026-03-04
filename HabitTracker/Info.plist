@@ -4,10 +4,6 @@
 <dict>
 	<key>CFBundleDisplayName</key>
 	<string>Habits</string>
-	<key>UIAppFonts</key>
-	<array>
-		<string>DancingScript-Regular.ttf</string>
-	</array>
 	<key>PrivacyPolicyURL</key>
 	<string>https://example.com/privacy</string>
 	<key>SupportURL</key>

@@ -1,9 +1,4 @@
 import SwiftUI
-#if os(iOS)
-import UIKit
-#elseif os(macOS)
-import AppKit
-#endif
 
 // MARK: - Appearance (light / dark / system)
 
@@ -34,31 +29,13 @@ enum AppearanceMode: String, CaseIterable {
 
 enum AppTheme {
 
-    // MARK: - Headings (cursive, character)
+    // MARK: - Headings (system font, modern)
 
-    /// Custom cursive font "Dancing Script" for page titles. Add DancingScript-Regular.ttf to the project (see Fonts/README.md).
-    private static let cursiveFontName = "Dancing Script"
-    private static let pageTitleSize: CGFloat = 48
-
-    private static var isCursiveFontAvailable: Bool {
-        #if os(iOS)
-        return UIFont(name: cursiveFontName, size: pageTitleSize) != nil
-        #elseif os(macOS)
-        return NSFont(name: cursiveFontName, size: pageTitleSize) != nil
-        #else
-        return false
-        #endif
-    }
-
-    /// Main page heading: Dancing Script cursive at 48pt. Falls back to system if font not loaded.
-    static var pageTitleFont: Font {
-        isCursiveFontAvailable
-            ? Font.custom(cursiveFontName, size: pageTitleSize)
-            : Font.system(size: pageTitleSize, weight: .medium)
-    }
+    /// Page title: SF Pro, large and sleek.
+    static let pageTitleFont = Font.system(size: 38, weight: .semibold)
 
     /// Subtitle or date line under the page title (e.g. "March 3" on Home).
-    static let pageSubtitleFont = Font.system(size: 17, weight: .medium)
+    static let pageSubtitleFont = Font.system(size: 19, weight: .medium)
 
     // MARK: - Heading layout (reused everywhere)
 

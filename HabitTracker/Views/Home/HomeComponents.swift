@@ -32,17 +32,17 @@ struct HomeEmptyState: View {
     var body: some View {
         VStack(spacing: 0) {
             // Message block: icon + copy grouped together
-            VStack(alignment: .center, spacing: 16) {
+            VStack(alignment: .center, spacing: 18) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 24)
+                    RoundedRectangle(cornerRadius: 28)
                         .fill(iconColor.opacity(0.12))
-                        .frame(width: 88, height: 88)
+                        .frame(width: 96, height: 96)
                     Image(systemName: icon)
-                        .font(.system(size: 36, weight: .medium))
+                        .font(.system(size: 40, weight: .medium))
                         .foregroundStyle(iconColor)
                 }
 
-                VStack(alignment: .center, spacing: 6) {
+                VStack(alignment: .center, spacing: 8) {
                     Text(title)
                         .font(.title2.weight(.bold))
                         .multilineTextAlignment(.center)
@@ -62,23 +62,23 @@ struct HomeEmptyState: View {
                 .padding(.horizontal, 24)
 
             if let secondButtonTitle, let secondButtonAction {
-                HStack(spacing: 12) {
+                VStack(spacing: 12) {
                     Button(action: secondButtonAction) {
                         Label(secondButtonTitle, systemImage: "square.grid.2x2")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(.primary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
-                            .background(emptyStateButtonBackground, in: RoundedRectangle(cornerRadius: 12))
+                            .background(emptyStateButtonBackground, in: RoundedRectangle(cornerRadius: 14))
                     }
                     .buttonStyle(.plain)
                     Button(action: buttonAction) {
                         Label(buttonTitle, systemImage: "plus.circle")
-                            .font(.system(size: 16, weight: .semibold))
+                            .font(.system(size: 17, weight: .semibold))
                             .foregroundStyle(.primary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 16)
-                            .background(emptyStateButtonBackground, in: RoundedRectangle(cornerRadius: 12))
+                            .background(emptyStateButtonBackground, in: RoundedRectangle(cornerRadius: 14))
                     }
                     .buttonStyle(.plain)
                 }
@@ -90,14 +90,14 @@ struct HomeEmptyState: View {
                         .foregroundStyle(.primary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
-                        .background(emptyStateButtonBackground, in: RoundedRectangle(cornerRadius: 12))
+                        .background(emptyStateButtonBackground, in: RoundedRectangle(cornerRadius: 14))
                 }
                 .buttonStyle(.plain)
                 .padding(20)
             }
         }
         .background(Color.secondarySystemGroupedBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 18))
         .padding(.horizontal, 20)
     }
 }

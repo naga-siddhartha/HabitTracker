@@ -65,13 +65,9 @@ struct HomeView: View {
                     VStack(spacing: 0) {
                         headerSection
                         Spacer(minLength: 0)
-                        emptyStateTopFiller
-                        Spacer(minLength: 0)
                         homeContent
                             .frame(maxWidth: config.contentMaxWidth)
                             .padding(.horizontal, config.horizontalPadding)
-                        Spacer(minLength: 0)
-                        emptyStateBottomFiller
                         Spacer(minLength: 0)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -119,23 +115,6 @@ struct HomeView: View {
         }
     }
     
-    // MARK: - Empty state filler (fills gap above/below centered card)
-
-    private var emptyStateTopFiller: some View {
-        Text(habits.isEmpty ? "Start small. Stay consistent." : "Nothing due right now.")
-            .font(.subheadline)
-            .foregroundStyle(.tertiary)
-            .multilineTextAlignment(.center)
-            .padding(.horizontal, 24)
-    }
-
-    private var emptyStateBottomFiller: some View {
-        Text("Tap + to add a habit")
-            .font(.footnote)
-            .foregroundStyle(.tertiary)
-            .padding(.horizontal, 24)
-    }
-
     // MARK: - Header
 
     private var headerSection: some View {
