@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct MonthlyView: View {
-    @Query(filter: #Predicate<Habit> { !$0.isArchived }) private var habits: [Habit]
+    @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
     @State private var currentMonth = Date.now
     @State private var selectedDate = Date.now
     

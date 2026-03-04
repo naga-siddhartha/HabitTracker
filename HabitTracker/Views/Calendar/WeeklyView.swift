@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct WeeklyView: View {
-    @Query(filter: #Predicate<Habit> { !$0.isArchived }) private var habits: [Habit]
+    @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
     @State private var currentWeekStart = Date.now.startOfWeek ?? Date.now
     
     private let calendar = Calendar.current

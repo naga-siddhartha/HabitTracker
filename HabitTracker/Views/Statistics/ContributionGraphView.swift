@@ -5,7 +5,7 @@ struct ContributionGraphView: View {
     let habit: Habit?
     let weeks: Int
     
-    @Query(filter: #Predicate<Habit> { !$0.isArchived }) private var habits: [Habit]
+    @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
     
     private let calendar = Calendar.current
     private let cellSize: CGFloat = 12

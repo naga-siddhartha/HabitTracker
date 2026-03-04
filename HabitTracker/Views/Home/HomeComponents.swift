@@ -16,6 +16,8 @@ struct HomeEmptyState: View {
     let message: String
     let buttonTitle: String
     let buttonAction: () -> Void
+    var secondButtonTitle: String? = nil
+    var secondButtonAction: (() -> Void)? = nil
 
     private var emptyStateButtonBackground: Color {
         #if os(iOS)
@@ -59,16 +61,40 @@ struct HomeEmptyState: View {
             Divider()
                 .padding(.horizontal, 24)
 
-            Button(action: buttonAction) {
-                Text(buttonTitle)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.primary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 16)
-                    .background(emptyStateButtonBackground, in: RoundedRectangle(cornerRadius: 12))
+            if let secondButtonTitle, let secondButtonAction {
+                HStack(spacing: 12) {
+                    Button(action: secondButtonAction) {
+                        Label(secondButtonTitle, systemImage: "square.grid.2x2")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.primary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(emptyStateButtonBackground, in: RoundedRectangle(cornerRadius: 12))
+                    }
+                    .buttonStyle(.plain)
+                    Button(action: buttonAction) {
+                        Label(buttonTitle, systemImage: "plus.circle")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(.primary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 16)
+                            .background(emptyStateButtonBackground, in: RoundedRectangle(cornerRadius: 12))
+                    }
+                    .buttonStyle(.plain)
+                }
+                .padding(20)
+            } else {
+                Button(action: buttonAction) {
+                    Text(buttonTitle)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(emptyStateButtonBackground, in: RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+                .padding(20)
             }
-            .buttonStyle(.plain)
-            .padding(20)
         }
         .background(Color.secondarySystemGroupedBackground)
         .clipShape(RoundedRectangle(cornerRadius: 16))
@@ -85,6 +111,10 @@ struct ChecklistRow: View {
     var onDelete: () -> Void
 
     private var isCompleted: Bool { habit.isCompleted(on: date) }
+
+    private var timeLabel: String {
+        habit.reminderTimes.isEmpty ? "All day" : habit.reminderTimes.first!.formatted(date: .omitted, time: .shortened)
+    }
 
     var body: some View {
         Button {
@@ -137,58 +167,51 @@ struct ChecklistRow: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(isCompleted ? .secondary : .primary)
                 .strikethrough(isCompleted)
-            if let streak = habit.streak, streak.currentStreak > 0 {
-                Text("\(streak.currentStreak) day streak").font(.footnote).foregroundStyle(.orange)
+            Text(timeLabel)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            if isCompleted, let streak = habit.streak, streak.currentStreak > 0 {
+                HStack(spacing: 4) {
+                    Image(systemName: "flame.fill").font(.system(size: 10))
+                    Text("\(streak.currentStreak) day streak").font(.footnote).foregroundStyle(.orange)
+                }
             }
         }
     }
 }
 
-// MARK: - Habit Grid Card
+// MARK: - Scheduled Row (habit + time, for Scheduled card)
 
-struct HabitGridCard: View {
+struct ScheduledRow: View {
     let habit: Habit
     var onEdit: () -> Void
     var onDelete: () -> Void
 
-    private let config = LayoutConfig.current
+    private var timeLabel: String {
+        habit.reminderTimes.isEmpty ? "—" : habit.reminderTimes.first!.formatted(date: .omitted, time: .shortened)
+    }
 
     var body: some View {
-        NavigationLink(destination: HabitDetailView(habit: habit)) {
-            VStack(spacing: 12) {
-                ZStack {
-                    Circle().fill(habit.color.color.opacity(0.15)).frame(width: 56, height: 56)
-                    Image(systemName: habit.iconName ?? "circle.fill").font(.system(size: 24)).foregroundStyle(habit.color.color)
-                }
-
+        HStack(spacing: 18) {
+            Image(systemName: habit.iconName ?? "circle.fill")
+                .font(.system(size: 22))
+                .foregroundStyle(habit.color.color)
+                .frame(width: 28)
+            VStack(alignment: .leading, spacing: 2) {
                 Text(habit.name)
-                    .font(.system(size: 14, weight: .semibold))
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(.primary)
-
-                if let streak = habit.streak, streak.currentStreak > 0 {
-                    HStack(spacing: 2) {
-                        Image(systemName: "flame.fill").font(.system(size: 10))
-                        Text("\(streak.currentStreak)").font(.system(size: 12, weight: .medium))
-                    }
-                    .foregroundStyle(.orange)
-                } else {
-                    Text(habit.frequency.rawValue.capitalized).font(.caption).foregroundStyle(.secondary)
-                }
+                    .font(.system(size: 18, weight: .semibold))
+                Text(timeLabel)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
-            .background(Color.secondarySystemGroupedBackground)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
+            Spacer()
         }
-        .buttonStyle(.plain)
+        .contentShape(Rectangle())
         .contextMenu {
             Button(action: onEdit) { Label("Edit", systemImage: "pencil") }
-            Button { habit.isArchived.toggle(); HabitStore.shared.save() } label: { Label("Archive", systemImage: "archivebox") }
             Divider()
             Button(role: .destructive, action: onDelete) { Label("Delete", systemImage: "trash") }
         }
     }
 }
+

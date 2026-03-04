@@ -92,12 +92,3 @@ struct PageHeading: View {
         .padding(.bottom, AppTheme.headingBottomPadding)
     }
 }
-
-// MARK: - View extension (apply theme in one call)
-
-extension View {
-    /// Applies the app’s standard page title: Dancing Script cursive (or system fallback).
-    func pageTitleStyle() -> some View {
-        font(AppTheme.pageTitleFont)
-    }
-}

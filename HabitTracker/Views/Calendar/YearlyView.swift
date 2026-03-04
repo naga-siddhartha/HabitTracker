@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct YearlyView: View {
-    @Query(filter: #Predicate<Habit> { !$0.isArchived }) private var habits: [Habit]
+    @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
     @State private var currentYear = Date.now
     @State private var selectedHabit: Habit?
     

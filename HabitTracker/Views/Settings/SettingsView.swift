@@ -11,6 +11,7 @@ struct SettingsView: View {
     @State private var showingShareSheet = false
     @State private var exportURL: URL?
     @State private var isExporting = false
+    @State private var isResetting = false
     
     var body: some View {
         NavigationStack {
@@ -123,15 +124,39 @@ struct SettingsView: View {
             }
             .alert("Reset All Data?", isPresented: $showingResetAlert) {
                 Button("Cancel", role: .cancel) {}
-                Button("Reset", role: .destructive) { habits.forEach { HabitStore.shared.deleteHabit($0) } }
+                Button("Reset", role: .destructive) {
+                    // Defer so the alert dismisses first; avoids crash when @Query updates after delete.
+                    DispatchQueue.main.async {
+                        performReset()
+                    }
+                }
             } message: {
                 Text("This will delete all habits and entries. This cannot be undone.")
+            }
+            .overlay {
+                if isResetting {
+                    Color.black.opacity(0.3)
+                        .ignoresSafeArea()
+                    ProgressView("Resetting…")
+                        .padding(20)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                }
             }
         }
     }
     
     private enum ExportFormat {
         case json, csvEntries, csvSummary
+    }
+
+    private func performReset() {
+        isResetting = true
+        NotificationService.shared.cancelAllNotifications()
+        HabitStore.shared.deleteAllHabits()
+        // Let the next run loop complete so SwiftData/@Query can update before we hide the overlay.
+        DispatchQueue.main.async {
+            isResetting = false
+        }
     }
     
     private func exportData(format: ExportFormat) {

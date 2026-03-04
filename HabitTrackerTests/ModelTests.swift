@@ -42,11 +42,6 @@ final class HabitModelTests: XCTestCase {
         XCTAssertFalse(habit.isActive(on: tuesday))
     }
     
-    func testArchivedHabitNotActive() {
-        let habit = Habit(name: "Archived")
-        habit.isArchived = true
-        XCTAssertFalse(habit.isActive(on: .now))
-    }
 }
 
 final class HabitEntryModelTests: XCTestCase {

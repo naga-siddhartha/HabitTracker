@@ -83,7 +83,6 @@ extension Habit {
 @available(iOS 17.0, macOS 14.0, *)
 extension Habit {
     func isActive(on date: Date) -> Bool {
-        guard !isArchived else { return false }
         if frequency == .weekly && !activeDays.isEmpty {
             guard let weekday = date.weekday else { return false }
             return activeDays.contains(weekday)
@@ -92,15 +91,18 @@ extension Habit {
     }
     
     func isCompleted(on date: Date) -> Bool {
-        entries.contains { $0.date == date.startOfDay && $0.isCompleted }
+        let cal = Calendar.current
+        return entries.contains { cal.isDate($0.date, inSameDayAs: date) && $0.isCompleted }
     }
-    
+
     func isSkipped(on date: Date) -> Bool {
-        entries.contains { $0.date == date.startOfDay && $0.isSkipped }
+        let cal = Calendar.current
+        return entries.contains { cal.isDate($0.date, inSameDayAs: date) && $0.isSkipped }
     }
-    
+
     func entry(for date: Date) -> HabitEntry? {
-        entries.first { $0.date == date.startOfDay }
+        let cal = Calendar.current
+        return entries.first { cal.isDate($0.date, inSameDayAs: date) }
     }
 }
 

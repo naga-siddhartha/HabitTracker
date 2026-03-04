@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct DailyView: View {
-    @Query(filter: #Predicate<Habit> { !$0.isArchived }) private var habits: [Habit]
+    @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
     @State private var selectedDate = Date.now
     
     private var activeHabits: [Habit] { habits.filter { $0.isActive(on: selectedDate) } }

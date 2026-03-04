@@ -4,49 +4,138 @@ import SwiftData
 struct HomeView: View {
     var onPresentTemplates: (() -> Void)?
 
+    @Environment(\.colorScheme) private var colorScheme
     @Query(sort: \Habit.createdAt, order: .reverse) private var allHabits: [Habit]
     @State private var showingAddHabit = false
-    @State private var selectedTab: HomeTab = .active
     @State private var editingHabit: Habit?
 
     private let config = LayoutConfig.current
-    
-    enum HomeTab: String, CaseIterable {
-        case active = "Active"
-        case all = "All Habits"
-    }
-    
-    private let today = Date.now
-    private var habits: [Habit] { allHabits.filter { !$0.isArchived } }
+    private let calendar = Calendar.current
+
+    private var cardShadowColor: Color { colorScheme == .dark ? .white.opacity(0.04) : .black.opacity(0.05) }
+    private var cardShadowRadius: CGFloat { 8 }
+    private var cardCornerRadius: CGFloat { 16 }
+    private var sectionHeaderPadding: (top: CGFloat, bottom: CGFloat) { (16, 12) }
+
+    /// Current date/time so Home always reflects "today" when the view is evaluated.
+    private var today: Date { Date.now }
+    private var habits: [Habit] { allHabits }
     private var todayHabits: [Habit] { habits.filter { $0.isActive(on: today) } }
-    private var completedCount: Int { todayHabits.filter { $0.isCompleted(on: today) }.count }
+    private var todayIncomplete: [Habit] { todayHabits.filter { !$0.isCompleted(on: today) } }
+    /// Habits due today that are done (for progress ring).
+    private var todayCompleted: [Habit] { todayHabits.filter { $0.isCompleted(on: today) } }
+    /// All habits completed today (any habit you checked off today), so Completed card is never empty when you’ve done something.
+    private var habitsCompletedToday: [Habit] { habits.filter { $0.isCompleted(on: today) } }
+    private var completedCount: Int { todayCompleted.count }
     private var progress: Double { todayHabits.isEmpty ? 0 : Double(completedCount) / Double(todayHabits.count) }
-    
+
+    /// Due today, not completed, doable now: no reminder time (all day / on command) or scheduled time has arrived.
+    private var activeHabits: [Habit] {
+        let startOfToday = calendar.startOfDay(for: today)
+        return todayIncomplete.filter { habit in
+            if habit.reminderTimes.isEmpty { return true }
+            guard let first = habit.reminderTimes.first else { return true }
+            let scheduledToday = calendar.date(bySettingHour: calendar.component(.hour, from: first), minute: calendar.component(.minute, from: first), second: 0, of: startOfToday)
+            guard let scheduled = scheduledToday else { return true }
+            return today >= scheduled
+        }
+    }
+    /// Due today, not completed, scheduled for a later time.
+    private var scheduledHabits: [Habit] {
+        let startOfToday = calendar.startOfDay(for: today)
+        return todayIncomplete.filter { habit in
+            guard let first = habit.reminderTimes.first else { return false }
+            let scheduledToday = calendar.date(bySettingHour: calendar.component(.hour, from: first), minute: calendar.component(.minute, from: first), second: 0, of: startOfToday)
+            guard let scheduled = scheduledToday else { return false }
+            return today < scheduled
+        }
+    }
+
+    /// Show floating + only when the user has habits; when empty, the card provides Add habit / From template.
+    private var showFloatingAddButton: Bool { !habits.isEmpty }
+
+    private var isEmptyState: Bool {
+        todayHabits.isEmpty && habitsCompletedToday.isEmpty
+    }
+
     var body: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    headerSection
-                    segmentedPicker
-                    templatesLink
-
-                    if selectedTab == .active {
-                        activeSection
-                    } else {
-                        allHabitsSection
+            Group {
+                if isEmptyState {
+                    VStack(spacing: 0) {
+                        headerSection
+                        Spacer(minLength: 0)
+                        emptyStateTopFiller
+                        Spacer(minLength: 0)
+                        homeContent
+                            .frame(maxWidth: config.contentMaxWidth)
+                            .padding(.horizontal, config.horizontalPadding)
+                        Spacer(minLength: 0)
+                        emptyStateBottomFiller
+                        Spacer(minLength: 0)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                } else {
+                    ScrollView {
+                        VStack(spacing: 24) {
+                            headerSection
+                            homeContent
+                        }
+                        .padding(.bottom, 32)
                     }
                 }
-                .padding(.bottom, 32)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.appGroupedBackground)
             .navigationTitle("")
             .inlineNavigationTitle()
+            .overlay(alignment: .bottomTrailing) {
+                if showFloatingAddButton {
+                    Menu {
+                        Button {
+                            onPresentTemplates?()
+                        } label: {
+                            Label("From template", systemImage: "square.grid.2x2")
+                        }
+                        Button {
+                            showingAddHabit = true
+                        } label: {
+                            Label("Add habit", systemImage: "plus.circle")
+                        }
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 28))
+                            .foregroundStyle(.white)
+                            .frame(width: 56, height: 56)
+                            .background(Color(red: 0.22, green: 0.45, blue: 0.88), in: Circle())
+                            .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+                    }
+                    .padding(config.horizontalPadding + 16)
+                    .padding(.bottom, 32)
+                }
+            }
             .sheet(isPresented: $showingAddHabit) { AddEditHabitView() }
             .sheet(item: $editingHabit) { AddEditHabitView(habit: $0) }
         }
     }
     
+    // MARK: - Empty state filler (fills gap above/below centered card)
+
+    private var emptyStateTopFiller: some View {
+        Text(habits.isEmpty ? "Start small. Stay consistent." : "Nothing due right now.")
+            .font(.subheadline)
+            .foregroundStyle(.tertiary)
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 24)
+    }
+
+    private var emptyStateBottomFiller: some View {
+        Text("Tap + to add a habit")
+            .font(.footnote)
+            .foregroundStyle(.tertiary)
+            .padding(.horizontal, 24)
+    }
+
     // MARK: - Header
 
     private var headerSection: some View {
@@ -56,85 +145,165 @@ struct HomeView: View {
         )
     }
 
-    // MARK: - Templates
+    // MARK: - Home Content (Active, Scheduled, Completed cards)
 
-    private var templatesLink: some View {
+    private var homeContent: some View {
         Group {
-            if let onPresentTemplates {
-                Button(action: onPresentTemplates) {
-                    HStack(spacing: 10) {
-                        Image(systemName: "square.grid.2x2")
-                            .font(.system(size: 15))
-                            .foregroundStyle(.purple)
-                        Text("Start from a template")
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundStyle(.primary)
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.system(size: 13, weight: .semibold))
-                            .foregroundStyle(.tertiary)
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 12)
-                    .background(Color.secondarySystemGroupedBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-                .buttonStyle(.plain)
-                .frame(maxWidth: config.contentMaxWidth)
-                .padding(.horizontal, config.horizontalPadding)
-            }
-        }
-    }
-
-    // MARK: - Segmented Picker (readable, card-style)
-
-    private var segmentedPicker: some View {
-        Picker("", selection: $selectedTab) {
-            ForEach(HomeTab.allCases, id: \.self) { tab in
-                Text(tab.rawValue)
-                    .font(.system(size: 16, weight: .semibold))
-                    .tag(tab)
-            }
-        }
-        .pickerStyle(.segmented)
-        .labelsHidden()
-        .padding(.horizontal, config.horizontalPadding)
-        .frame(maxWidth: config.contentMaxWidth)
-        .padding(.vertical, 6)
-    }
-    
-    // MARK: - Active Section
-    
-    private var activeSection: some View {
-        Group {
-            if todayHabits.isEmpty {
+            if todayHabits.isEmpty && habitsCompletedToday.isEmpty {
                 HomeEmptyState(
                     icon: "checkmark.circle",
                     iconColor: .green,
                     title: habits.isEmpty ? "No habits yet" : "All caught up",
-                    message: habits.isEmpty ? "Create your first habit to start tracking." : "No habits scheduled for today.",
-                    buttonTitle: "Add Habit",
-                    buttonAction: { showingAddHabit = true }
+                    message: habits.isEmpty ? "Create your first habit or start from a template." : "No habits due today. Tap + to add one.",
+                    buttonTitle: "Add habit",
+                    buttonAction: { showingAddHabit = true },
+                    secondButtonTitle: habits.isEmpty ? "From template" : nil,
+                    secondButtonAction: habits.isEmpty ? { onPresentTemplates?() } : nil
                 )
             } else {
-                VStack(spacing: 0) {
-                    progressHeader
-                    Divider()
-                        .padding(.leading, 96)
-                    checklistItems
+                VStack(spacing: 16) {
+                    if !todayHabits.isEmpty {
+                        activeCard
+                    } else if !habitsCompletedToday.isEmpty {
+                        Text("No habits due today")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                    }
+                    if !scheduledHabits.isEmpty {
+                        scheduledCard
+                    }
+                    if !habitsCompletedToday.isEmpty {
+                        completedCard
+                    }
                 }
-                .background(Color.secondarySystemGroupedBackground)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
-                .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 2)
-                .frame(maxWidth: config.contentMaxWidth)
-                .padding(.horizontal, config.horizontalPadding)
             }
         }
     }
 
+    private var activeCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            progressHeader
+                .padding(.horizontal, 20)
+                .padding(.top, 22)
+                .padding(.bottom, 16)
+            Divider()
+                .padding(.leading, 112)
+                .padding(.horizontal, 20)
+            if activeHabits.isEmpty {
+                Text("All done!")
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 18)
+            } else {
+                VStack(spacing: 0) {
+                    ForEach(Array(activeHabits.enumerated()), id: \.element.id) { index, habit in
+                        ChecklistRow(habit: habit, date: today, onEdit: { editingHabit = habit }, onDelete: { deleteHabit(habit) })
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 10)
+                            .contentShape(Rectangle())
+                            .contextMenu {
+                                Button { editingHabit = habit } label: { Label("Edit", systemImage: "pencil") }
+                                Button(role: .destructive, action: { deleteHabit(habit) }) { Label("Delete", systemImage: "trash") }
+                            }
+                        if index < activeHabits.count - 1 {
+                            Divider()
+                                .padding(.leading, 96)
+                        }
+                    }
+                }
+            }
+        }
+        .background(Color.secondarySystemGroupedBackground)
+        .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
+        .overlay(
+            RoundedRectangle(cornerRadius: cardCornerRadius)
+                .stroke(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.05), lineWidth: 1)
+        )
+        .shadow(color: cardShadowColor, radius: cardShadowRadius, x: 0, y: 3)
+        .frame(maxWidth: config.contentMaxWidth)
+        .padding(.horizontal, config.horizontalPadding)
+    }
+
+    private var scheduledCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                Image(systemName: "clock.fill")
+                    .font(.system(size: 16))
+                    .foregroundStyle(.orange)
+                Text("Scheduled")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, sectionHeaderPadding.top)
+            .padding(.bottom, sectionHeaderPadding.bottom)
+            VStack(spacing: 0) {
+                ForEach(Array(scheduledHabits.enumerated()), id: \.element.id) { index, habit in
+                    ScheduledRow(habit: habit, onEdit: { editingHabit = habit }, onDelete: { deleteHabit(habit) })
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                    if index < scheduledHabits.count - 1 {
+                        Divider()
+                            .padding(.leading, 96)
+                    }
+                }
+            }
+        }
+        .background(Color.secondarySystemGroupedBackground)
+        .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
+        .overlay(
+            RoundedRectangle(cornerRadius: cardCornerRadius)
+                .stroke(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.05), lineWidth: 1)
+        )
+        .shadow(color: cardShadowColor, radius: cardShadowRadius, x: 0, y: 3)
+        .frame(maxWidth: config.contentMaxWidth)
+        .padding(.horizontal, config.horizontalPadding)
+    }
+
+    private var completedCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: 8) {
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 16))
+                    .foregroundStyle(.green)
+                Text("Completed")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, sectionHeaderPadding.top)
+            .padding(.bottom, sectionHeaderPadding.bottom)
+            VStack(spacing: 0) {
+                ForEach(Array(habitsCompletedToday.enumerated()), id: \.element.id) { index, habit in
+                    ChecklistRow(habit: habit, date: today, onEdit: { editingHabit = habit }, onDelete: { deleteHabit(habit) })
+                        .padding(.horizontal, 20)
+                        .padding(.vertical, 10)
+                    if index < habitsCompletedToday.count - 1 {
+                        Divider()
+                            .padding(.leading, 96)
+                    }
+                }
+            }
+        }
+        .background(Color.secondarySystemGroupedBackground)
+        .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
+        .overlay(
+            RoundedRectangle(cornerRadius: cardCornerRadius)
+                .stroke(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.05), lineWidth: 1)
+        )
+        .shadow(color: cardShadowColor, radius: cardShadowRadius, x: 0, y: 3)
+        .frame(maxWidth: config.contentMaxWidth)
+        .padding(.horizontal, config.horizontalPadding)
+    }
+
     private var progressHeader: some View {
         HStack(spacing: 20) {
-            ProgressRing(progress: progress, count: completedCount, total: todayHabits.count, size: 64)
+            ProgressRing(progress: progress, count: completedCount, total: todayHabits.count, size: 72)
             VStack(alignment: .leading, spacing: 4) {
                 Text("\(completedCount) of \(todayHabits.count) done")
                     .font(.headline.weight(.semibold))
@@ -144,43 +313,8 @@ struct HomeView: View {
             }
             Spacer()
         }
-        .padding(20)
     }
-    
-    private var checklistItems: some View {
-        ForEach(Array(todayHabits.enumerated()), id: \.element.id) { index, habit in
-            ChecklistRow(habit: habit, date: today, onEdit: { editingHabit = habit }, onDelete: { deleteHabit(habit) })
-            if index < todayHabits.count - 1 {
-                Divider().padding(.leading, 96)
-            }
-        }
-    }
-    
-    // MARK: - All Habits Section
-    
-    private var allHabitsSection: some View {
-        Group {
-            if habits.isEmpty {
-                HomeEmptyState(
-                    icon: "square.grid.2x2",
-                    iconColor: .purple,
-                    title: "No habits yet",
-                    message: "Create your first habit to see it here.",
-                    buttonTitle: "Add Habit",
-                    buttonAction: { showingAddHabit = true }
-                )
-            } else {
-                LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 14) {
-                    ForEach(habits) { habit in
-                        HabitGridCard(habit: habit, onEdit: { editingHabit = habit }, onDelete: { deleteHabit(habit) })
-                    }
-                }
-                .frame(maxWidth: config.contentMaxWidth)
-                .padding(.horizontal, config.horizontalPadding)
-            }
-        }
-    }
-    
+
     private var motivationalMessage: String {
         if completedCount == todayHabits.count && completedCount > 0 { return "All done! 🎉" }
         if progress >= 0.5 { return "Keep going! 💪" }

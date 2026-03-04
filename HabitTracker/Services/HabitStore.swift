@@ -27,8 +27,8 @@ final class HabitStore {
     
     // MARK: - Habits
     
-    func fetchHabits(includeArchived: Bool = false) -> [Habit] {
-        repository.fetchAll(includeArchived: includeArchived)
+    func fetchHabits() -> [Habit] {
+        repository.fetchAll()
     }
     
     func addHabit(_ habit: Habit) {
@@ -39,6 +39,14 @@ final class HabitStore {
     func deleteHabit(_ habit: Habit) {
         repository.delete(habit)
         reloadWidgets()
+    }
+
+    func deleteAllHabits() {
+        repository.deleteAll()
+        // Reload widgets after a short delay so the context and UI have settled.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            self?.reloadWidgets()
+        }
     }
     
     // MARK: - Entries

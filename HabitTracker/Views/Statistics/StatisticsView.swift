@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct StatisticsView: View {
-    @Query(filter: #Predicate<Habit> { !$0.isArchived }) private var habits: [Habit]
+    @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
     @State private var selectedTimeframe: Timeframe = .allTime
     @State private var showingCompletionsDetail = false
     @State private var showingStreaksDetail = false

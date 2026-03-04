@@ -6,9 +6,10 @@ import WidgetKit
 
 @available(iOS 17.0, macOS 14.0, *)
 protocol HabitRepositoryProtocol {
-    func fetchAll(includeArchived: Bool) -> [Habit]
+    func fetchAll() -> [Habit]
     func add(_ habit: Habit)
     func delete(_ habit: Habit)
+    func deleteAll()
     func save()
 }
 
@@ -23,11 +24,8 @@ final class HabitRepository: HabitRepositoryProtocol {
         self.modelContext = modelContext
     }
     
-    func fetchAll(includeArchived: Bool = false) -> [Habit] {
-        var descriptor = FetchDescriptor<Habit>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
-        if !includeArchived {
-            descriptor.predicate = #Predicate { !$0.isArchived }
-        }
+    func fetchAll() -> [Habit] {
+        let descriptor = FetchDescriptor<Habit>(sortBy: [SortDescriptor(\.createdAt, order: .reverse)])
         return (try? modelContext.fetch(descriptor)) ?? []
     }
     
@@ -41,7 +39,16 @@ final class HabitRepository: HabitRepositoryProtocol {
         modelContext.delete(habit)
         save()
     }
-    
+
+    func deleteAll() {
+        let descriptor = FetchDescriptor<Habit>()
+        guard let all = try? modelContext.fetch(descriptor) else { return }
+        for habit in all {
+            modelContext.delete(habit)
+        }
+        save()
+    }
+
     func save() {
         guard modelContext.hasChanges else { return }
         try? modelContext.save()
