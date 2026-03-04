@@ -1,8 +1,7 @@
 import Foundation
+// If another HabitIcons exists in the project, we avoid redefining it by renaming this implementation.
 
-// MARK: - Habit Icons
-
-enum HabitIcons {
+enum HabitIconCatalog {
     static let keywords: [String: String] = [
         "run": "figure.run", "walk": "figure.walk", "exercise": "dumbbell.fill", "gym": "dumbbell.fill",
         "water": "drop.fill", "drink": "cup.and.saucer.fill", "sleep": "moon.fill", "wake": "sun.max.fill",
@@ -34,3 +33,4 @@ enum HabitIcons {
         return defaults[abs(name.hashValue) % defaults.count]
     }
 }
+
