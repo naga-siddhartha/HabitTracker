@@ -4,9 +4,9 @@
 <dict>
 	<key>CFBundleDisplayName</key>
 	<string>Habits</string>
-	<key>UIBackgroundModes</key>
-	<array>
-		<string>remote-notification</string>
-	</array>
+	<key>PrivacyPolicyURL</key>
+	<string>https://example.com/privacy</string>
+	<key>SupportURL</key>
+	<string>https://example.com/support</string>
 </dict>
 </plist>

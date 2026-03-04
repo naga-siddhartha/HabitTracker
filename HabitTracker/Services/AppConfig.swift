@@ -18,3 +18,20 @@ enum AppConfig {
         return try ModelContainer(for: schema, configurations: config)
     }
 }
+
+// MARK: - App Store / Support URLs (Info.plist: PrivacyPolicyURL, SupportURL)
+
+enum AppLinks {
+    /// Read from Info.plist keys PrivacyPolicyURL and SupportURL. Replace placeholder values with your real URLs before App Store submission.
+    static var privacyPolicyURL: URL? {
+        guard let string = Bundle.main.object(forInfoDictionaryKey: "PrivacyPolicyURL") as? String,
+              !string.isEmpty else { return nil }
+        return URL(string: string)
+    }
+    
+    static var supportURL: URL? {
+        guard let string = Bundle.main.object(forInfoDictionaryKey: "SupportURL") as? String,
+              !string.isEmpty else { return nil }
+        return URL(string: string)
+    }
+}

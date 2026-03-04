@@ -62,6 +62,29 @@ struct SettingsView: View {
                     .buttonStyle(.plain)
                 }
                 
+                Section("Support") {
+                    if let privacyURL = AppLinks.privacyPolicyURL {
+                        Link(destination: privacyURL) {
+                            SettingsRow(icon: "hand.raised.fill", iconColor: .indigo, title: "Privacy Policy") {
+                                Image(systemName: "arrow.up.right")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    if let supportURL = AppLinks.supportURL {
+                        Link(destination: supportURL) {
+                            SettingsRow(icon: "envelope.fill", iconColor: .blue, title: "Contact & Support") {
+                                Image(systemName: "arrow.up.right")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                
                 Section("About") {
                     SettingsRow(icon: "info.circle.fill", iconColor: .gray, title: "Version") {
                         Text("1.0.0").foregroundStyle(.secondary)
