@@ -16,15 +16,6 @@ struct SettingsView: View {
         NavigationStack {
             List {
                 Section {
-                    SettingsRow(icon: "icloud.fill", iconColor: .blue, title: "iCloud Sync") {
-                        Image(systemName: "checkmark")
-                            .foregroundStyle(.green)
-                    }
-                } footer: {
-                    Text("Data syncs automatically across your devices")
-                }
-                
-                Section {
                     SettingsRow(icon: "bell.fill", iconColor: .red, title: "Notifications") {
                         Toggle("", isOn: $notificationsEnabled)
                             .labelsHidden()

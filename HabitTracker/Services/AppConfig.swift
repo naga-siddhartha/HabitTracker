@@ -8,6 +8,8 @@ enum AppConfig {
     }
     
     static func createModelContainer() throws -> ModelContainer {
+        // Use .none for local-only storage. For iCloud sync: add iCloud + CloudKit capability
+        // in Xcode, then use cloudKitDatabase: .automatic (and remove isStoredInMemoryOnly or keep false).
         let config = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: false,
