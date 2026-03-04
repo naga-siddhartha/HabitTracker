@@ -196,9 +196,15 @@ struct HabitsDetailView: View {
         NavigationStack {
             List(habits) { habit in
                 VStack(alignment: .leading, spacing: 8) {
-                    Label(habit.name, systemImage: habit.iconName ?? "circle.fill")
-                        .foregroundStyle(habit.color.color)
-                        .font(.headline)
+                    HStack(spacing: 8) {
+                        if let emoji = habit.emoji, !emoji.isEmpty {
+                            Text(emoji).font(.headline)
+                        } else {
+                            Image(systemName: habit.iconName ?? "circle.fill")
+                                .foregroundStyle(habit.color.color)
+                        }
+                        Text(habit.name).font(.headline).foregroundStyle(habit.color.color)
+                    }
                     Text("Frequency: \(habit.frequency.rawValue.capitalized)").font(.caption).foregroundStyle(.secondary)
                     if let streak = habit.streak {
                         Text("Current streak: \(streak.currentStreak) days").font(.caption).foregroundStyle(.orange)
@@ -242,7 +248,11 @@ struct HabitStatRow: View {
     
     var body: some View {
         HStack {
-            Circle().fill(habit.color.color).frame(width: 12, height: 12)
+            if let emoji = habit.emoji, !emoji.isEmpty {
+                Text(emoji).font(.subheadline)
+            } else {
+                Circle().fill(habit.color.color).frame(width: 12, height: 12)
+            }
             Text(habit.name).font(.subheadline)
             Spacer()
             Text("\(count) completions").font(.caption).foregroundStyle(.secondary)
@@ -256,7 +266,11 @@ struct StreakRow: View {
     
     var body: some View {
         HStack {
-            Circle().fill(habit.color.color).frame(width: 12, height: 12)
+            if let emoji = habit.emoji, !emoji.isEmpty {
+                Text(emoji).font(.subheadline)
+            } else {
+                Circle().fill(habit.color.color).frame(width: 12, height: 12)
+            }
             Text(habit.name).font(.subheadline)
             Spacer()
             Label("\(habit.streak?.longestStreak ?? 0) days", systemImage: "flame.fill")

@@ -37,7 +37,7 @@ struct YearlyView: View {
                         .foregroundStyle(.secondary.opacity(0.8))
                         .multilineTextAlignment(.center)
                 }
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .padding(.vertical, 28)
                 .padding(.horizontal, 20)
             } else {

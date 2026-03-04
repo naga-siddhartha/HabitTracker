@@ -24,7 +24,7 @@ struct HabitDetailView: View {
     
     private var headerSection: some View {
         HStack {
-            IconCircle(iconName: habit.iconName, color: habit.color.color, size: 60)
+            IconCircle(iconName: habit.iconName, emoji: habit.emoji, color: habit.color.color, size: 60)
             VStack(alignment: .leading) {
                 Text(habit.name).font(.largeTitle).bold()
                 if let desc = habit.habitDescription {

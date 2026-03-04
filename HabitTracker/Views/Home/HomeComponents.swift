@@ -117,22 +117,33 @@ struct ChecklistRow: View {
     }
 
     var body: some View {
-        Button {
-            withAnimation(.spring(duration: 0.25)) {
-                HabitStore.shared.toggleCompletion(for: habit, on: date)
+        HStack(spacing: 18) {
+            Button {
+                withAnimation(.spring(duration: 0.25)) {
+                    HabitStore.shared.toggleCompletion(for: habit, on: date)
+                }
+            } label: {
+                HStack(spacing: 18) {
+                    checkBox
+                    habitIcon
+                    habitInfo
+                    Spacer(minLength: 0)
+                }
+                .contentShape(Rectangle())
             }
-        } label: {
-            HStack(spacing: 18) {
-                checkBox
-                habitIcon
-                habitInfo
-                Spacer()
+            .buttonStyle(.plain)
+            Menu {
+                Button(action: onEdit) { Label("Edit", systemImage: "pencil") }
+                Button(role: .destructive, action: onDelete) { Label("Delete", systemImage: "trash") }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .font(.system(size: 22))
+                    .foregroundStyle(.secondary)
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 16)
-            .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+        .contentShape(Rectangle())
         .contextMenu {
             Button(action: onEdit) { Label("Edit", systemImage: "pencil") }
             Divider()
@@ -155,10 +166,16 @@ struct ChecklistRow: View {
     }
 
     private var habitIcon: some View {
-        Image(systemName: habit.iconName ?? "circle.fill")
-            .font(.system(size: 22))
-            .foregroundStyle(habit.color.color)
-            .frame(width: 28)
+        Group {
+            if let emoji = habit.emoji, !emoji.isEmpty {
+                Text(emoji).font(.system(size: 22))
+            } else {
+                Image(systemName: habit.iconName ?? "circle.fill")
+                    .font(.system(size: 22))
+                    .foregroundStyle(habit.color.color)
+            }
+        }
+        .frame(width: 28)
     }
 
     private var habitInfo: some View {
@@ -167,6 +184,12 @@ struct ChecklistRow: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(isCompleted ? .secondary : .primary)
                 .strikethrough(isCompleted)
+            if let desc = habit.habitDescription, !desc.isEmpty {
+                Text(desc)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
             Text(timeLabel)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -177,6 +200,35 @@ struct ChecklistRow: View {
                 }
             }
         }
+    }
+}
+
+// MARK: - Ad Card (sleek slot for home page ads)
+
+struct AdCardView: View {
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("Advertisement")
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(.tertiary)
+            AdBannerContentView(jws: AdService.currentImpressionJWS)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.secondarySystemGroupedBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.05), lineWidth: 1)
+        )
+        .shadow(
+            color: colorScheme == .dark ? .white.opacity(0.04) : .black.opacity(0.05),
+            radius: 8,
+            x: 0,
+            y: 3
+        )
     }
 }
 
@@ -193,18 +245,38 @@ struct ScheduledRow: View {
 
     var body: some View {
         HStack(spacing: 18) {
-            Image(systemName: habit.iconName ?? "circle.fill")
-                .font(.system(size: 22))
-                .foregroundStyle(habit.color.color)
-                .frame(width: 28)
+            Group {
+                if let emoji = habit.emoji, !emoji.isEmpty {
+                    Text(emoji).font(.system(size: 22))
+                } else {
+                    Image(systemName: habit.iconName ?? "circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundStyle(habit.color.color)
+                }
+            }
+            .frame(width: 28)
             VStack(alignment: .leading, spacing: 2) {
                 Text(habit.name)
                     .font(.system(size: 18, weight: .semibold))
+                if let desc = habit.habitDescription, !desc.isEmpty {
+                    Text(desc)
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
                 Text(timeLabel)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
             Spacer()
+            Menu {
+                Button(action: onEdit) { Label("Edit", systemImage: "pencil") }
+                Button(role: .destructive, action: onDelete) { Label("Delete", systemImage: "trash") }
+            } label: {
+                Image(systemName: "ellipsis.circle")
+                    .font(.system(size: 22))
+                    .foregroundStyle(.secondary)
+            }
         }
         .contentShape(Rectangle())
         .contextMenu {

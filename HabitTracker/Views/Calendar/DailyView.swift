@@ -26,7 +26,7 @@ struct DailyView: View {
                         .foregroundStyle(.secondary.opacity(0.8))
                         .multilineTextAlignment(.center)
                 }
-                .frame(maxWidth: .infinity)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 .padding(.vertical, 28)
                 .padding(.horizontal, 20)
             } else {
@@ -59,14 +59,24 @@ struct DailyHabitRow: View {
                 HabitStore.shared.toggleCompletion(for: habit, on: date)
             }
         } label: {
-            HStack {
-                if let iconName = habit.iconName {
+            HStack(alignment: .top) {
+                if let emoji = habit.emoji, !emoji.isEmpty {
+                    Text(emoji).font(.title2)
+                } else if let iconName = habit.iconName {
                     Image(systemName: iconName).foregroundStyle(habit.color.color).font(.title2)
                 } else {
                     Circle().fill(habit.color.color).frame(width: 30, height: 30)
                 }
                 
-                Text(habit.name).strikethrough(isCompleted)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(habit.name).strikethrough(isCompleted)
+                    if let desc = habit.habitDescription, !desc.isEmpty {
+                        Text(desc)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                }
                 Spacer()
                 Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
                     .foregroundStyle(isCompleted ? habit.color.color : .secondary)

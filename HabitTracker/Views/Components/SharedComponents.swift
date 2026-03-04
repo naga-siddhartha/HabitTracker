@@ -4,6 +4,7 @@ import SwiftUI
 
 struct IconCircle: View {
     let iconName: String?
+    var emoji: String? = nil
     let color: Color
     var size: CGFloat = 48
     var isCompleted: Bool = false
@@ -17,6 +18,8 @@ struct IconCircle: View {
                 Image(systemName: "checkmark")
                     .font(.system(size: size * 0.375, weight: .bold))
                     .foregroundStyle(.white)
+            } else if let emoji, !emoji.isEmpty {
+                Text(emoji).font(.system(size: size * 0.5))
             } else if let iconName {
                 Image(systemName: iconName)
                     .font(.system(size: size * 0.42))

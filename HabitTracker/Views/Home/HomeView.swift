@@ -64,10 +64,14 @@ struct HomeView: View {
                 if isEmptyState {
                     VStack(spacing: 0) {
                         headerSection
-                        Spacer(minLength: 0)
+                        Spacer(minLength: 0).frame(maxHeight: 48)
                         homeContent
                             .frame(maxWidth: config.contentMaxWidth)
                             .padding(.horizontal, config.horizontalPadding)
+                        AdCardView()
+                            .frame(maxWidth: config.contentMaxWidth)
+                            .padding(.horizontal, config.horizontalPadding)
+                            .padding(.top, 24)
                         Spacer(minLength: 0)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -76,6 +80,9 @@ struct HomeView: View {
                         VStack(spacing: 24) {
                             headerSection
                             homeContent
+                            AdCardView()
+                                .frame(maxWidth: config.contentMaxWidth)
+                                .padding(.horizontal, config.horizontalPadding)
                         }
                         .padding(.bottom, 32)
                     }
@@ -118,10 +125,31 @@ struct HomeView: View {
     // MARK: - Header
 
     private var headerSection: some View {
-        PageHeading(
-            title: today.formatted(.dateTime.weekday(.wide)),
-            subtitle: today.formatted(.dateTime.month(.wide).day())
-        )
+        VStack(alignment: .leading, spacing: 0) {
+            PageHeading(
+                title: today.formatted(.dateTime.weekday(.wide)),
+                subtitle: today.formatted(.dateTime.month(.wide).day())
+            )
+            Text(headerTagline)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal, config.horizontalPadding)
+                .padding(.top, -4)
+                .padding(.bottom, 6)
+        }
+    }
+
+    private var headerTagline: String {
+        if todayHabits.isEmpty && habitsCompletedToday.isEmpty {
+            return habits.isEmpty ? "Your day at a glance" : "All set for today"
+        }
+        if todayHabits.isEmpty {
+            return "\(habitsCompletedToday.count) completed today"
+        }
+        if completedCount == todayHabits.count {
+            return "All \(todayHabits.count) done — great job!"
+        }
+        return "\(completedCount) of \(todayHabits.count) done"
     }
 
     // MARK: - Home Content (Active, Scheduled, Completed cards)
@@ -182,11 +210,6 @@ struct HomeView: View {
                         ChecklistRow(habit: habit, date: today, onEdit: { editingHabit = habit }, onDelete: { deleteHabit(habit) })
                             .padding(.horizontal, 20)
                             .padding(.vertical, 10)
-                            .contentShape(Rectangle())
-                            .contextMenu {
-                                Button { editingHabit = habit } label: { Label("Edit", systemImage: "pencil") }
-                                Button(role: .destructive, action: { deleteHabit(habit) }) { Label("Delete", systemImage: "trash") }
-                            }
                         if index < activeHabits.count - 1 {
                             Divider()
                                 .padding(.leading, 96)

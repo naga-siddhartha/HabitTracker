@@ -1,41 +1,6 @@
 import SwiftUI
 import SwiftData
 
-// MARK: - Icon Data
-
-enum HabitIcons {
-    static let keywords: [String: String] = [
-        "run": "figure.run", "walk": "figure.walk", "exercise": "dumbbell.fill", "gym": "dumbbell.fill",
-        "water": "drop.fill", "drink": "cup.and.saucer.fill", "sleep": "moon.fill", "wake": "sun.max.fill",
-        "meditat": "brain.head.profile", "vitamin": "pills.fill", "health": "heart.fill",
-        "read": "book.fill", "study": "book.fill", "write": "pencil", "journal": "pencil",
-        "work": "briefcase.fill", "code": "chevron.left.forwardslash.chevron.right", "learn": "graduationcap.fill",
-        "clean": "sparkles", "cook": "fork.knife", "eat": "fork.knife", "budget": "creditcard.fill",
-        "call": "phone.fill", "email": "envelope.fill", "home": "house.fill",
-        "gratitude": "heart.fill", "breath": "wind", "yoga": "figure.yoga", "relax": "leaf.fill"
-    ]
-    
-    static let defaults = ["star.fill", "heart.fill", "leaf.fill", "flame.fill", "bolt.fill",
-        "sparkles", "moon.fill", "sun.max.fill", "drop.fill", "figure.run"]
-    
-    static let all = [
-        "figure.run", "figure.walk", "dumbbell.fill", "heart.fill", "book.fill",
-        "pencil", "drop.fill", "moon.fill", "sun.max.fill", "leaf.fill",
-        "brain.head.profile", "cup.and.saucer.fill", "fork.knife", "pills.fill",
-        "creditcard.fill", "phone.fill", "envelope.fill", "house.fill",
-        "star.fill", "flame.fill", "bolt.fill", "sparkles", "graduationcap.fill",
-        "briefcase.fill", "music.note", "gamecontroller.fill", "paintbrush.fill", "camera.fill"
-    ]
-    
-    static func suggest(for name: String) -> String {
-        let lowercased = name.lowercased()
-        for (keyword, icon) in keywords {
-            if lowercased.contains(keyword) { return icon }
-        }
-        return defaults[abs(name.hashValue) % defaults.count]
-    }
-}
-
 // MARK: - Reminder Model
 
 struct Reminder: Identifiable {
@@ -54,8 +19,6 @@ struct AddEditHabitView: View {
     @State private var name = ""
     @State private var description = ""
     @State private var selectedColor: HabitColor = .blue
-    @State private var selectedIcon: String = "star.fill"
-    @State private var showIconPicker = false
     @State private var frequency: HabitFrequency = .daily
     @State private var selectedDays: Set<Weekday> = []
     @State private var reminders: [Reminder] = []
@@ -72,11 +35,6 @@ struct AddEditHabitView: View {
             formContent
         }
         .onAppear { loadHabit() }
-        .onChange(of: name) { _, newName in
-            if !isEditing && !showIconPicker {
-                selectedIcon = HabitIcons.suggest(for: newName)
-            }
-        }
     }
     
     // MARK: - Form Content
@@ -100,30 +58,6 @@ struct AddEditHabitView: View {
                     }.tag(color)
                 }
             }
-            
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Icon")
-                    Spacer()
-                    Button {
-                        withAnimation { showIconPicker.toggle() }
-                    } label: {
-                        HStack(spacing: 6) {
-                            Image(systemName: selectedIcon)
-                                .foregroundStyle(selectedColor.color)
-                            Image(systemName: showIconPicker ? "chevron.up" : "chevron.down")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                }
-                
-                if showIconPicker {
-                    IconGrid(icons: HabitIcons.all, selected: $selectedIcon, accentColor: selectedColor.color)
-                        .padding(.top, 4)
-                }
-            }
         }
         
         // Frequency
@@ -143,7 +77,7 @@ struct AddEditHabitView: View {
             }
         }
         
-        // Reminders (iOS only for now)
+        // Reminders (iOS only for now; one reminder per habit)
         #if os(iOS)
         Section("Reminders") {
             ForEach($reminders) { $reminder in
@@ -157,8 +91,10 @@ struct AddEditHabitView: View {
             }
             .onDelete { reminders.remove(atOffsets: $0) }
             
-            Button("Add Reminder") {
-                reminders.append(Reminder(name: "Reminder", time: .now, sound: .default))
+            if reminders.isEmpty {
+                Button("Add Reminder") {
+                    reminders.append(Reminder(name: "Reminder", time: .now, sound: .default))
+                }
             }
         }
         #endif
@@ -171,7 +107,6 @@ struct AddEditHabitView: View {
         name = habit.name
         description = habit.habitDescription ?? ""
         selectedColor = habit.color
-        selectedIcon = habit.iconName ?? "star.fill"
         frequency = habit.frequency
         selectedDays = habit.activeDays
         reminders = zip(habit.reminderTimes, zip(habit.reminderNames, habit.sounds)).map {
@@ -183,7 +118,7 @@ struct AddEditHabitView: View {
         if let habit {
             habit.name = name
             habit.habitDescription = description.isEmpty ? nil : description
-            habit.iconName = selectedIcon
+            habit.emoji = HabitEmoji.suggest(for: name, description: description.isEmpty ? nil : description)
             habit.color = selectedColor
             habit.frequency = frequency
             habit.activeDays = frequency == .weekly ? selectedDays : []
@@ -197,7 +132,8 @@ struct AddEditHabitView: View {
             let newHabit = Habit(
                 name: name,
                 description: description.isEmpty ? nil : description,
-                iconName: selectedIcon,
+                iconName: nil,
+                emoji: HabitEmoji.suggest(for: name, description: description.isEmpty ? nil : description),
                 color: selectedColor,
                 frequency: frequency,
                 reminderTimes: reminders.map(\.time),

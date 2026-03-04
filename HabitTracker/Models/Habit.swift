@@ -10,6 +10,7 @@ final class Habit {
     var name: String
     var habitDescription: String?
     var iconName: String?
+    var emoji: String?
     var colorName: String
     var frequencyRaw: String
     var reminderTimes: [Date]
@@ -30,6 +31,7 @@ final class Habit {
         name: String,
         description: String? = nil,
         iconName: String? = nil,
+        emoji: String? = nil,
         color: HabitColor = .blue,
         frequency: HabitFrequency = .daily,
         reminderTimes: [Date] = [],
@@ -41,6 +43,7 @@ final class Habit {
         self.name = name
         self.habitDescription = description
         self.iconName = iconName
+        self.emoji = emoji
         self.colorName = color.rawValue
         self.frequencyRaw = frequency.rawValue
         self.reminderTimes = reminderTimes

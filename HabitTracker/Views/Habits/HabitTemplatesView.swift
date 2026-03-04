@@ -54,6 +54,7 @@ struct HabitTemplatesView: View {
             name: template.name,
             description: template.description,
             iconName: template.iconName,
+            emoji: HabitEmoji.suggest(for: template.name, description: template.description),
             color: template.color
         ))
         dismiss()
