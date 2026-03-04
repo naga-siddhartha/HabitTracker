@@ -100,6 +100,7 @@ struct ChecklistRow: View {
     let date: Date
     var onEdit: () -> Void
     var onDelete: () -> Void
+    var onViewDescription: (() -> Void)? = nil
 
     private var isCompleted: Bool { habit.isCompleted(on: date) }
 
@@ -136,6 +137,10 @@ struct ChecklistRow: View {
         .padding(.vertical, 16)
         .contentShape(Rectangle())
         .contextMenu {
+            if let desc = habit.habitDescription, !desc.isEmpty {
+                Button(action: { onViewDescription?() }) { Label("View description", systemImage: "text.alignleft") }
+                Divider()
+            }
             Button(action: onEdit) { Label("Edit", systemImage: "pencil") }
             Divider()
             Button(role: .destructive, action: onDelete) { Label("Delete", systemImage: "trash") }
@@ -175,12 +180,6 @@ struct ChecklistRow: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(isCompleted ? .secondary : .primary)
                 .strikethrough(isCompleted)
-            if let desc = habit.habitDescription, !desc.isEmpty {
-                Text(desc)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-            }
             Text(timeLabel)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
@@ -229,6 +228,7 @@ struct ScheduledRow: View {
     let habit: Habit
     var onEdit: () -> Void
     var onDelete: () -> Void
+    var onViewDescription: (() -> Void)? = nil
 
     private var timeLabel: String {
         habit.reminderTimes.isEmpty ? "—" : habit.reminderTimes.first!.formatted(date: .omitted, time: .shortened)
@@ -249,12 +249,6 @@ struct ScheduledRow: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(habit.name)
                     .font(.system(size: 18, weight: .semibold))
-                if let desc = habit.habitDescription, !desc.isEmpty {
-                    Text(desc)
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                }
                 Text(timeLabel)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
@@ -271,6 +265,10 @@ struct ScheduledRow: View {
         }
         .contentShape(Rectangle())
         .contextMenu {
+            if let desc = habit.habitDescription, !desc.isEmpty {
+                Button(action: { onViewDescription?() }) { Label("View description", systemImage: "text.alignleft") }
+                Divider()
+            }
             Button(action: onEdit) { Label("Edit", systemImage: "pencil") }
             Divider()
             Button(role: .destructive, action: onDelete) { Label("Delete", systemImage: "trash") }

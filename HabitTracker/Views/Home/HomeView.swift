@@ -8,6 +8,9 @@ struct HomeView: View {
     @Query(sort: \Habit.createdAt, order: .reverse) private var allHabits: [Habit]
     @State private var showingAddHabit = false
     @State private var editingHabit: Habit?
+    @State private var showingDescriptionSheet = false
+    @State private var descriptionSheetTitle = ""
+    @State private var descriptionSheetText = ""
 
     private let config = LayoutConfig.current
     private let calendar = Calendar.current
@@ -119,6 +122,11 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showingAddHabit) { AddEditHabitView() }
             .sheet(item: $editingHabit) { AddEditHabitView(habit: $0) }
+            .sheet(isPresented: $showingDescriptionSheet) {
+                HabitDescriptionSheetView(title: descriptionSheetTitle, text: descriptionSheetText) {
+                    showingDescriptionSheet = false
+                }
+            }
         }
     }
     
@@ -207,7 +215,13 @@ struct HomeView: View {
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(activeHabits.enumerated()), id: \.element.id) { index, habit in
-                        ChecklistRow(habit: habit, date: today, onEdit: { editingHabit = habit }, onDelete: { deleteHabit(habit) })
+                        ChecklistRow(
+                            habit: habit,
+                            date: today,
+                            onEdit: { editingHabit = habit },
+                            onDelete: { deleteHabit(habit) },
+                            onViewDescription: habit.habitDescription.flatMap { d in d.isEmpty ? nil : { descriptionSheetTitle = habit.name; descriptionSheetText = d; showingDescriptionSheet = true } }
+                        )
                             .padding(.horizontal, 20)
                             .padding(.vertical, 10)
                         if index < activeHabits.count - 1 {
@@ -245,7 +259,12 @@ struct HomeView: View {
             .padding(.bottom, sectionHeaderPadding.bottom)
             VStack(spacing: 0) {
                 ForEach(Array(scheduledHabits.enumerated()), id: \.element.id) { index, habit in
-                    ScheduledRow(habit: habit, onEdit: { editingHabit = habit }, onDelete: { deleteHabit(habit) })
+                    ScheduledRow(
+                        habit: habit,
+                        onEdit: { editingHabit = habit },
+                        onDelete: { deleteHabit(habit) },
+                        onViewDescription: habit.habitDescription.flatMap { d in d.isEmpty ? nil : { descriptionSheetTitle = habit.name; descriptionSheetText = d; showingDescriptionSheet = true } }
+                    )
                         .padding(.horizontal, 20)
                         .padding(.vertical, 10)
                     if index < scheduledHabits.count - 1 {
@@ -282,7 +301,13 @@ struct HomeView: View {
             .padding(.bottom, sectionHeaderPadding.bottom)
             VStack(spacing: 0) {
                 ForEach(Array(habitsCompletedToday.enumerated()), id: \.element.id) { index, habit in
-                    ChecklistRow(habit: habit, date: today, onEdit: { editingHabit = habit }, onDelete: { deleteHabit(habit) })
+                    ChecklistRow(
+                        habit: habit,
+                        date: today,
+                        onEdit: { editingHabit = habit },
+                        onDelete: { deleteHabit(habit) },
+                        onViewDescription: habit.habitDescription.flatMap { d in d.isEmpty ? nil : { descriptionSheetTitle = habit.name; descriptionSheetText = d; showingDescriptionSheet = true } }
+                    )
                         .padding(.horizontal, 20)
                         .padding(.vertical, 10)
                     if index < habitsCompletedToday.count - 1 {

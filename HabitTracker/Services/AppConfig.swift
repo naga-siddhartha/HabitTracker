@@ -7,9 +7,11 @@ enum AppConfig {
         Schema([Habit.self, HabitEntry.self, Streak.self])
     }
     
-    static func createModelContainer() throws -> ModelContainer {
+    /// Call from a background context when possible to avoid main-thread I/O. Safe to call from any isolation context (Swift 6).
+    nonisolated static func createModelContainer() throws -> ModelContainer {
         // Use .none for local-only storage. For iCloud sync: add iCloud + CloudKit capability
         // in Xcode, then use cloudKitDatabase: .automatic (and remove isStoredInMemoryOnly or keep false).
+        let schema = Schema([Habit.self, HabitEntry.self, Streak.self])
         let config = ModelConfiguration(
             schema: schema,
             isStoredInMemoryOnly: false,

@@ -16,11 +16,16 @@ final class HabitStore {
     private let streakCalculator = StreakCalculator()
     
     private init() {
-        do {
-            modelContainer = try AppConfig.createModelContainer()
-        } catch {
-            modelContainer = try! ModelContainer(for: AppConfig.schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+        var container: ModelContainer?
+        let queue = DispatchQueue.global(qos: .userInitiated)
+        queue.sync {
+            do {
+                container = try AppConfig.createModelContainer()
+            } catch {
+                container = try? ModelContainer(for: AppConfig.schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
+            }
         }
+        modelContainer = container ?? (try! ModelContainer(for: AppConfig.schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true)))
         modelContext = modelContainer.mainContext
         modelContext.autosaveEnabled = true
     }

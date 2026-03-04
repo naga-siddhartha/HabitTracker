@@ -5,6 +5,10 @@ struct YearlyView: View {
     @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
     @State private var currentYear = Date.now
     @State private var selectedHabit: Habit?
+    @State private var showingDescriptionSheet = false
+    @State private var descriptionSheetTitle = ""
+    @State private var descriptionSheetText = ""
+    @State private var editingHabit: Habit?
     
     private let calendar = Calendar.current
     
@@ -51,6 +55,29 @@ struct YearlyView: View {
                 .padding(.horizontal)
                 .padding(.bottom, 4)
                 
+                if let habit = selectedHabit {
+                    HStack(spacing: 12) {
+                        if let desc = habit.habitDescription, !desc.isEmpty {
+                            Button {
+                                descriptionSheetTitle = habit.name
+                                descriptionSheetText = desc
+                                showingDescriptionSheet = true
+                            } label: {
+                                Label("View description", systemImage: "text.alignleft")
+                                    .font(.subheadline)
+                            }
+                        }
+                        Button {
+                            editingHabit = habit
+                        } label: {
+                            Label("Edit", systemImage: "pencil")
+                                .font(.subheadline)
+                        }
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 8)
+                }
+                
                 Text("Completion by month")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
@@ -68,6 +95,14 @@ struct YearlyView: View {
                     .padding()
                 }
             }
+        }
+        .sheet(isPresented: $showingDescriptionSheet) {
+            HabitDescriptionSheetView(title: descriptionSheetTitle, text: descriptionSheetText) {
+                showingDescriptionSheet = false
+            }
+        }
+        .sheet(item: $editingHabit) { habit in
+            AddEditHabitView(habit: habit)
         }
     }
     

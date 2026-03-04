@@ -59,3 +59,48 @@ struct ProgressRing: View {
     }
 }
 
+// MARK: - Habit Description Sheet
+
+struct HabitDescriptionSheetView: View {
+    let title: String
+    let text: String
+    var onDismiss: () -> Void = {}
+
+    var body: some View {
+        NavigationStack {
+            ScrollView {
+                VStack(alignment: .leading, spacing: 16) {
+                    HStack(spacing: 10) {
+                        Image(systemName: "text.alignleft")
+                            .font(.title2)
+                            .foregroundStyle(.secondary)
+                        Text("Description")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.top, 4)
+
+                    Text(text)
+                        .font(.body)
+                        .lineSpacing(6)
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(16)
+                        .background(Color.secondarySystemGroupedBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 16)
+            }
+            .background(Color.appGroupedBackground)
+            .navigationTitle(title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Done", action: onDismiss)
+                }
+            }
+        }
+    }
+}
+

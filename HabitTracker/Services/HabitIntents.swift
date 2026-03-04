@@ -23,7 +23,9 @@ struct ToggleHabitIntent: AppIntent {
             return .result()
         }
         
-        let container = try AppConfig.createModelContainer()
+        let container = try await Task.detached(priority: .userInitiated) {
+            try AppConfig.createModelContainer()
+        }.value
         let context = container.mainContext
         
         var descriptor = FetchDescriptor<Habit>()

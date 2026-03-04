@@ -1,8 +1,11 @@
 import SwiftUI
+import SwiftData
 
 struct HabitTemplatesView: View {
     @Environment(\.dismiss) private var dismiss
+    @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
     @State private var selectedCategory: HabitTemplate.Category?
+    @State private var editingHabit: Habit?
     
     private var filteredTemplates: [HabitTemplate] {
         selectedCategory.map { HabitTemplate.byCategory[$0] ?? [] } ?? HabitTemplate.all
@@ -11,6 +14,21 @@ struct HabitTemplatesView: View {
     var body: some View {
         NavigationStack {
             List {
+                Section("Your habits") {
+                    if habits.isEmpty {
+                        Text("No habits yet. Add one from a template below.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                            .listRowBackground(Color.clear)
+                    } else {
+                        ForEach(habits) { habit in
+                            HabitEditRow(habit: habit) {
+                                editingHabit = habit
+                            }
+                        }
+                    }
+                }
+                
                 Section {
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 12) {
@@ -28,6 +46,8 @@ struct HabitTemplatesView: View {
                     }
                     .listRowInsets(EdgeInsets())
                     .listRowBackground(Color.clear)
+                } header: {
+                    Text("Templates")
                 }
                 
                 Section {
@@ -45,6 +65,9 @@ struct HabitTemplatesView: View {
                     Button("Cancel") { dismiss() }
                 }
             }
+            .sheet(item: $editingHabit) { habit in
+                AddEditHabitView(habit: habit)
+            }
         }
         .frame(minWidth: 400, minHeight: 500)
     }
@@ -61,32 +84,55 @@ struct HabitTemplatesView: View {
     }
 }
 
+struct HabitEditRow: View {
+    let habit: Habit
+    let onEdit: () -> Void
+    
+    var body: some View {
+        Button(action: onEdit) {
+            HStack(spacing: 12) {
+                if let emoji = habit.emoji, !emoji.isEmpty {
+                    Text(emoji).font(.body)
+                } else {
+                    Image(systemName: habit.iconName ?? "circle.fill")
+                        .font(.body)
+                        .foregroundStyle(habit.color.color)
+                        .frame(width: 28)
+                }
+                Text(habit.name).foregroundStyle(.primary)
+                Spacer()
+                Image(systemName: "pencil")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+}
+
 struct TemplateRow: View {
     let template: HabitTemplate
     let onAdd: () -> Void
     
     var body: some View {
-        HStack(spacing: 12) {
-            Image(systemName: template.iconName)
-                .font(.title3)
-                .foregroundStyle(template.color.color)
-                .frame(width: 32)
-            VStack(alignment: .leading) {
-                Text(template.name).font(.headline)
-                if let desc = template.description {
-                    Text(desc).font(.caption).foregroundStyle(.secondary)
+        Button(action: onAdd) {
+            HStack(spacing: 12) {
+                Image(systemName: template.iconName)
+                    .font(.title3)
+                    .foregroundStyle(template.color.color)
+                    .frame(width: 32)
+                VStack(alignment: .leading) {
+                    Text(template.name).font(.headline)
+                    if let desc = template.description {
+                        Text(desc).font(.caption).foregroundStyle(.secondary)
+                    }
                 }
-            }
-            Spacer()
-            Button(action: onAdd) {
+                Spacer()
                 Image(systemName: "plus.circle.fill")
                     .font(.title2)
                     .foregroundStyle(Color.accentColor)
             }
-            .buttonStyle(.plain)
         }
-        .contentShape(Rectangle())
-        .onTapGesture(perform: onAdd)
+        .buttonStyle(.plain)
     }
 }
 

@@ -4,6 +4,10 @@ import SwiftData
 struct WeeklyView: View {
     @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
     @State private var currentWeekStart = Date.now.startOfWeek ?? Date.now
+    @State private var showingDescriptionSheet = false
+    @State private var descriptionSheetTitle = ""
+    @State private var descriptionSheetText = ""
+    @State private var editingHabit: Habit?
     
     private let calendar = Calendar.current
     private var weekDates: [Date] {
@@ -40,44 +44,56 @@ struct WeeklyView: View {
             } else {
                 GeometryReader { geo in
                     let horizontalPadding: CGFloat = 16
-                    let habitColumnWidth: CGFloat = 100
-                    let habitColumnLeadingPadding: CGFloat = 12
                     let contentWidth = geo.size.width - (2 * horizontalPadding)
-                    let dayColumnWidth = (contentWidth - habitColumnWidth) / 7
+                    let dayColumnWidth = contentWidth / 7
                     
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 8) {
                         Text("Habits this week")
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(.secondary)
                             .padding(.leading, horizontalPadding)
                         
-                        HStack(spacing: 0) {
-                            Text("Habit")
-                                .padding(.leading, habitColumnLeadingPadding)
-                                .frame(width: habitColumnWidth, alignment: .leading)
-                            ForEach(weekDates, id: \.self) { date in
-                                Text(date, format: .dateTime.weekday(.narrow))
-                                    .font(.caption.weight(.medium))
-                                    .foregroundStyle(.secondary)
-                                    .frame(width: dayColumnWidth, alignment: .center)
+                        VStack(spacing: 12) {
+                            HStack(spacing: 0) {
+                                ForEach(weekDates, id: \.self) { date in
+                                    Text(date, format: .dateTime.weekday(.narrow))
+                                        .font(.caption.weight(.medium))
+                                        .foregroundStyle(.secondary)
+                                        .frame(width: dayColumnWidth, alignment: .center)
+                                }
+                            }
+                            .padding(.vertical, 12)
+                            .frame(width: contentWidth)
+                            .background(Color.systemGray6)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            
+                            ScrollView {
+                                ForEach(habits) { habit in
+                                    WeeklyHabitRow(
+                                        habit: habit,
+                                        dates: weekDates,
+                                        dayColumnWidth: dayColumnWidth,
+                                        onViewDescription: habit.habitDescription.flatMap { d in d.isEmpty ? nil : { descriptionSheetTitle = habit.name; descriptionSheetText = d; showingDescriptionSheet = true } },
+                                        onEdit: { editingHabit = habit },
+                                        onDelete: { HabitStore.shared.deleteHabit(habit) }
+                                    )
+                                    .frame(width: contentWidth)
+                                }
                             }
                         }
+                        .frame(maxWidth: .infinity)
                         .padding(.horizontal, horizontalPadding)
-                        
-                        ScrollView {
-                            ForEach(habits) { habit in
-                                WeeklyHabitRow(
-                                    habit: habit,
-                                    dates: weekDates,
-                                    dayColumnWidth: dayColumnWidth,
-                                    habitColumnLeadingPadding: habitColumnLeadingPadding
-                                )
-                            }
-                            .padding(.horizontal, horizontalPadding)
-                        }
                     }
                 }
                 .frame(maxHeight: .infinity)
+                .sheet(isPresented: $showingDescriptionSheet) {
+                    HabitDescriptionSheetView(title: descriptionSheetTitle, text: descriptionSheetText) {
+                        showingDescriptionSheet = false
+                    }
+                }
+                .sheet(item: $editingHabit) { habit in
+                    AddEditHabitView(habit: habit)
+                }
             }
         }
     }
@@ -98,37 +114,57 @@ struct WeeklyHabitRow: View {
     @Bindable var habit: Habit
     let dates: [Date]
     var dayColumnWidth: CGFloat = 0
-    var habitColumnLeadingPadding: CGFloat = 12
+    var onViewDescription: (() -> Void)? = nil
+    var onEdit: (() -> Void)? = nil
+    var onDelete: (() -> Void)? = nil
     
     var body: some View {
-        HStack(alignment: .top, spacing: 0) {
-            HStack(alignment: .top, spacing: 6) {
-                if let emoji = habit.emoji, !emoji.isEmpty {
-                    Text(emoji).font(.caption)
-                } else if let iconName = habit.iconName {
-                    Image(systemName: iconName).foregroundStyle(habit.color.color)
-                } else {
-                    Circle().fill(habit.color.color).frame(width: 20, height: 20)
-                }
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(habit.name).font(.caption).lineLimit(1)
-                    if let desc = habit.habitDescription, !desc.isEmpty {
-                        Text(desc).font(.caption2).foregroundStyle(.secondary).lineLimit(1)
-                    }
+        VStack(spacing: 0) {
+            HStack(spacing: 0) {
+                ForEach(dates, id: \.self) { date in
+                    DayDot(habit: habit, date: date)
+                        .frame(width: dayColumnWidth)
                 }
             }
-            .padding(.leading, habitColumnLeadingPadding)
-            .frame(width: 100, alignment: .leading)
+            .padding(.top, 12)
+            .padding(.bottom, 10)
             
-            ForEach(dates, id: \.self) { date in
-                DayDot(habit: habit, date: date)
-                    .frame(width: dayColumnWidth)
+            HStack(alignment: .center, spacing: 6) {
+                if let emoji = habit.emoji, !emoji.isEmpty {
+                    Text(emoji).font(.subheadline)
+                } else if let iconName = habit.iconName {
+                    Image(systemName: iconName)
+                        .font(.subheadline)
+                        .foregroundStyle(habit.color.color)
+                } else {
+                    Circle().fill(habit.color.color).frame(width: 18, height: 18)
+                }
+                Text(habit.name)
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
             }
+            .frame(maxWidth: .infinity)
+            .padding(.bottom, 12)
         }
-        .padding(.vertical, 8)
         .background(Color.systemGray6)
         .clipShape(RoundedRectangle(cornerRadius: 8))
-        .padding(.horizontal, 16)
+        .contentShape(Rectangle())
+        .contextMenu {
+            if habit.habitDescription.flatMap({ !$0.isEmpty }) == true {
+                Button(action: { onViewDescription?() }) {
+                    Label("View description", systemImage: "text.alignleft")
+                }
+                Divider()
+            }
+            Button(action: { onEdit?() }) {
+                Label("Edit", systemImage: "pencil")
+            }
+            Divider()
+            Button(role: .destructive, action: { onDelete?() }) {
+                Label("Delete", systemImage: "trash")
+            }
+        }
     }
 }
 

@@ -5,6 +5,10 @@ struct MonthlyView: View {
     @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
     @State private var currentMonth = Date.now
     @State private var selectedDate = Date.now
+    @State private var showingDescriptionSheet = false
+    @State private var descriptionSheetTitle = ""
+    @State private var descriptionSheetText = ""
+    @State private var editingHabit: Habit?
     
     private let calendar = Calendar.current
     private let columns = Array(repeating: GridItem(.flexible()), count: 7)
@@ -66,7 +70,13 @@ struct MonthlyView: View {
                     
                     VStack(spacing: 0) {
                         ForEach(activeHabits) { habit in
-                            MonthlyHabitRow(habit: habit, date: selectedDate)
+                            MonthlyHabitRow(
+                                habit: habit,
+                                date: selectedDate,
+                                onViewDescription: habit.habitDescription.flatMap { d in d.isEmpty ? nil : { descriptionSheetTitle = habit.name; descriptionSheetText = d; showingDescriptionSheet = true } },
+                                onEdit: { editingHabit = habit },
+                                onDelete: { HabitStore.shared.deleteHabit(habit) }
+                            )
                         }
                     }
                     .background(Color.systemBackground)
@@ -76,6 +86,14 @@ struct MonthlyView: View {
             }
             
             Spacer()
+        }
+        .sheet(isPresented: $showingDescriptionSheet) {
+            HabitDescriptionSheetView(title: descriptionSheetTitle, text: descriptionSheetText) {
+                showingDescriptionSheet = false
+            }
+        }
+        .sheet(item: $editingHabit) { habit in
+            AddEditHabitView(habit: habit)
         }
     }
     
@@ -135,6 +153,9 @@ struct MonthDayCell: View {
 struct MonthlyHabitRow: View {
     @Bindable var habit: Habit
     let date: Date
+    var onViewDescription: (() -> Void)? = nil
+    var onEdit: (() -> Void)? = nil
+    var onDelete: (() -> Void)? = nil
     
     private var isCompleted: Bool { habit.isCompleted(on: date) }
     
@@ -150,15 +171,7 @@ struct MonthlyHabitRow: View {
                 } else {
                     Circle().fill(habit.color.color).frame(width: 12, height: 12)
                 }
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(habit.name)
-                    if let desc = habit.habitDescription, !desc.isEmpty {
-                        Text(desc)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(2)
-                    }
-                }
+                Text(habit.name)
                 Spacer()
                 Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
                     .foregroundStyle(isCompleted ? habit.color.color : .secondary)
@@ -169,6 +182,22 @@ struct MonthlyHabitRow: View {
         }
         .buttonStyle(.plain)
         .hapticFeedback(.success, trigger: isCompleted)
+        .contentShape(Rectangle())
+        .contextMenu {
+            if let desc = habit.habitDescription, !desc.isEmpty {
+                Button(action: { onViewDescription?() }) {
+                    Label("View description", systemImage: "text.alignleft")
+                }
+                Divider()
+            }
+            Button(action: { onEdit?() }) {
+                Label("Edit", systemImage: "pencil")
+            }
+            Divider()
+            Button(role: .destructive, action: { onDelete?() }) {
+                Label("Delete", systemImage: "trash")
+            }
+        }
     }
 }
 

@@ -4,6 +4,7 @@ import SwiftData
 struct HabitDetailView: View {
     @Bindable var habit: Habit
     @State private var showingEditView = false
+    @State private var showingDescription = false
     @State private var selectedDate = Date.now
     
     var body: some View {
@@ -20,6 +21,13 @@ struct HabitDetailView: View {
         .inlineNavigationTitle()
         .toolbar { Button("Edit") { showingEditView = true } }
         .sheet(isPresented: $showingEditView) { AddEditHabitView(habit: habit) }
+        .sheet(isPresented: $showingDescription) {
+            if let desc = habit.habitDescription, !desc.isEmpty {
+                HabitDescriptionSheetView(title: habit.name, text: desc) {
+                    showingDescription = false
+                }
+            }
+        }
     }
     
     private var headerSection: some View {
@@ -27,13 +35,18 @@ struct HabitDetailView: View {
             IconCircle(iconName: habit.iconName, emoji: habit.emoji, color: habit.color.color, size: 60)
             VStack(alignment: .leading) {
                 Text(habit.name).font(.largeTitle).bold()
-                if let desc = habit.habitDescription {
-                    Text(desc).font(.subheadline).foregroundStyle(.secondary)
-                }
             }
             Spacer()
         }
         .padding()
+        .contentShape(Rectangle())
+        .contextMenu {
+            if let desc = habit.habitDescription, !desc.isEmpty {
+                Button(action: { showingDescription = true }) {
+                    Label("View description", systemImage: "text.alignleft")
+                }
+            }
+        }
     }
     
     private func streakSection(_ streak: Streak) -> some View {
