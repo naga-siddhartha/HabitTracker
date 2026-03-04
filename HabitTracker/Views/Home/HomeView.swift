@@ -51,8 +51,8 @@ struct HomeView: View {
         }
     }
 
-    /// Show floating + only when the user has habits; when empty, the card provides Add habit / From template.
-    private var showFloatingAddButton: Bool { !habits.isEmpty }
+    /// Show floating + only when there’s no Add habit on the page (i.e. when we have habits and we’re not in empty state).
+    private var showFloatingAddButton: Bool { !habits.isEmpty && !isEmptyState }
 
     private var isEmptyState: Bool {
         todayHabits.isEmpty && habitsCompletedToday.isEmpty
@@ -162,10 +162,10 @@ struct HomeView: View {
                     iconColor: .green,
                     title: habits.isEmpty ? "No habits yet" : "All caught up",
                     message: habits.isEmpty ? "Create your first habit or start from a template." : "No habits due today. Tap + to add one.",
-                    buttonTitle: "Add habit",
-                    buttonAction: { showingAddHabit = true },
-                    secondButtonTitle: habits.isEmpty ? "From template" : nil,
-                    secondButtonAction: habits.isEmpty ? { onPresentTemplates?() } : nil
+                    primaryButtonTitle: "New",
+                    primaryButtonAction: { showingAddHabit = true },
+                    secondaryButtonTitle: "From template",
+                    secondaryButtonAction: { onPresentTemplates?() }
                 )
             } else {
                 VStack(spacing: 16) {

@@ -108,7 +108,10 @@ struct AddEditHabitView: View {
         description = habit.habitDescription ?? ""
         selectedColor = habit.color
         frequency = habit.frequency
-        selectedDays = habit.activeDays
+        // Weekly with no days = show all days selected so the habit stays visible until user picks days
+        selectedDays = habit.frequency == .weekly && habit.activeDays.isEmpty
+            ? Set(Weekday.allCases)
+            : habit.activeDays
         reminders = zip(habit.reminderTimes, zip(habit.reminderNames, habit.sounds)).map {
             Reminder(name: $1.0, time: $0, sound: $1.1)
         }
@@ -121,7 +124,8 @@ struct AddEditHabitView: View {
             habit.emoji = HabitEmoji.suggest(for: name, description: description.isEmpty ? nil : description)
             habit.color = selectedColor
             habit.frequency = frequency
-            habit.activeDays = frequency == .weekly ? selectedDays : []
+            // Weekly with no days selected = show every day so the habit doesn’t disappear from Home
+            habit.activeDays = frequency == .weekly ? (selectedDays.isEmpty ? Set(Weekday.allCases) : selectedDays) : []
             habit.reminderTimes = reminders.map(\.time)
             habit.reminderNames = reminders.map(\.name)
             habit.sounds = reminders.map(\.sound)
@@ -139,7 +143,7 @@ struct AddEditHabitView: View {
                 reminderTimes: reminders.map(\.time),
                 reminderNames: reminders.map(\.name),
                 reminderSounds: reminders.map(\.sound),
-                activeDays: frequency == .weekly ? selectedDays : []
+                activeDays: frequency == .weekly ? (selectedDays.isEmpty ? Set(Weekday.allCases) : selectedDays) : []
             )
             HabitStore.shared.addHabit(newHabit)
             scheduleNotifications(for: newHabit)

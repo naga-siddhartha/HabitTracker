@@ -14,12 +14,12 @@ struct HomeEmptyState: View {
     let iconColor: Color
     let title: String
     let message: String
-    let buttonTitle: String
-    let buttonAction: () -> Void
-    var secondButtonTitle: String? = nil
-    var secondButtonAction: (() -> Void)? = nil
+    let primaryButtonTitle: String
+    let primaryButtonAction: () -> Void
+    let secondaryButtonTitle: String
+    let secondaryButtonAction: () -> Void
 
-    private var emptyStateButtonBackground: Color {
+    private var secondaryButtonBackground: Color {
         #if os(iOS)
         Color(uiColor: .quaternarySystemFill)
         #elseif os(macOS)
@@ -27,6 +27,10 @@ struct HomeEmptyState: View {
         #else
         Color.primary.opacity(0.06)
         #endif
+    }
+
+    private var primaryButtonBackground: Color {
+        Color.accentColor.opacity(0.15)
     }
 
     var body: some View {
@@ -61,40 +65,27 @@ struct HomeEmptyState: View {
             Divider()
                 .padding(.horizontal, 24)
 
-            if let secondButtonTitle, let secondButtonAction {
-                VStack(spacing: 12) {
-                    Button(action: secondButtonAction) {
-                        Label(secondButtonTitle, systemImage: "square.grid.2x2")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(.primary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(emptyStateButtonBackground, in: RoundedRectangle(cornerRadius: 14))
-                    }
-                    .buttonStyle(.plain)
-                    Button(action: buttonAction) {
-                        Label(buttonTitle, systemImage: "plus.circle")
-                            .font(.system(size: 17, weight: .semibold))
-                            .foregroundStyle(.primary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 16)
-                            .background(emptyStateButtonBackground, in: RoundedRectangle(cornerRadius: 14))
-                    }
-                    .buttonStyle(.plain)
-                }
-                .padding(20)
-            } else {
-                Button(action: buttonAction) {
-                    Text(buttonTitle)
+            VStack(spacing: 12) {
+                Button(action: primaryButtonAction) {
+                    Label(primaryButtonTitle, systemImage: "plus.circle")
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(.primary)
                         .frame(maxWidth: .infinity)
                         .padding(.vertical, 16)
-                        .background(emptyStateButtonBackground, in: RoundedRectangle(cornerRadius: 14))
+                        .background(primaryButtonBackground, in: RoundedRectangle(cornerRadius: 14))
                 }
                 .buttonStyle(.plain)
-                .padding(20)
+                Button(action: secondaryButtonAction) {
+                    Label(secondaryButtonTitle, systemImage: "square.grid.2x2")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(.primary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 16)
+                        .background(secondaryButtonBackground, in: RoundedRectangle(cornerRadius: 14))
+                }
+                .buttonStyle(.plain)
             }
+            .padding(20)
         }
         .background(Color.secondarySystemGroupedBackground)
         .clipShape(RoundedRectangle(cornerRadius: 18))

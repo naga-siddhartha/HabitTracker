@@ -38,29 +38,46 @@ struct WeeklyView: View {
                 .padding(.vertical, 28)
                 .padding(.horizontal, 20)
             } else {
-                Text("Habits this week")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
-                    .padding(.bottom, 8)
-                
-                HStack {
-                    Text("Habit").frame(width: 100, alignment: .leading)
-                    ForEach(weekDates, id: \.self) { date in
-                        Text(date, format: .dateTime.weekday(.narrow))
-                            .font(.caption.weight(.medium))
+                GeometryReader { geo in
+                    let horizontalPadding: CGFloat = 16
+                    let habitColumnWidth: CGFloat = 100
+                    let habitColumnLeadingPadding: CGFloat = 12
+                    let contentWidth = geo.size.width - (2 * horizontalPadding)
+                    let dayColumnWidth = (contentWidth - habitColumnWidth) / 7
+                    
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Habits this week")
+                            .font(.subheadline.weight(.semibold))
                             .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity)
+                            .padding(.leading, horizontalPadding)
+                        
+                        HStack(spacing: 0) {
+                            Text("Habit")
+                                .padding(.leading, habitColumnLeadingPadding)
+                                .frame(width: habitColumnWidth, alignment: .leading)
+                            ForEach(weekDates, id: \.self) { date in
+                                Text(date, format: .dateTime.weekday(.narrow))
+                                    .font(.caption.weight(.medium))
+                                    .foregroundStyle(.secondary)
+                                    .frame(width: dayColumnWidth, alignment: .center)
+                            }
+                        }
+                        .padding(.horizontal, horizontalPadding)
+                        
+                        ScrollView {
+                            ForEach(habits) { habit in
+                                WeeklyHabitRow(
+                                    habit: habit,
+                                    dates: weekDates,
+                                    dayColumnWidth: dayColumnWidth,
+                                    habitColumnLeadingPadding: habitColumnLeadingPadding
+                                )
+                            }
+                            .padding(.horizontal, horizontalPadding)
+                        }
                     }
                 }
-                .padding(.horizontal)
-                
-                ScrollView {
-                    ForEach(habits) { habit in
-                        WeeklyHabitRow(habit: habit, dates: weekDates)
-                    }
-                }
+                .frame(maxHeight: .infinity)
             }
         }
     }
@@ -80,9 +97,11 @@ struct WeeklyView: View {
 struct WeeklyHabitRow: View {
     @Bindable var habit: Habit
     let dates: [Date]
+    var dayColumnWidth: CGFloat = 0
+    var habitColumnLeadingPadding: CGFloat = 12
     
     var body: some View {
-        HStack(alignment: .top) {
+        HStack(alignment: .top, spacing: 0) {
             HStack(alignment: .top, spacing: 6) {
                 if let emoji = habit.emoji, !emoji.isEmpty {
                     Text(emoji).font(.caption)
@@ -98,17 +117,18 @@ struct WeeklyHabitRow: View {
                     }
                 }
             }
+            .padding(.leading, habitColumnLeadingPadding)
             .frame(width: 100, alignment: .leading)
             
             ForEach(dates, id: \.self) { date in
                 DayDot(habit: habit, date: date)
+                    .frame(width: dayColumnWidth)
             }
         }
-        .padding(.horizontal)
         .padding(.vertical, 8)
         .background(Color.systemGray6)
         .clipShape(RoundedRectangle(cornerRadius: 8))
-        .padding(.horizontal)
+        .padding(.horizontal, 16)
     }
 }
 
@@ -147,7 +167,7 @@ private struct DayDot: View {
         }
         .buttonStyle(.plain)
         .hapticFeedback(.success, trigger: isCompleted)
-        .frame(maxWidth: .infinity)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
