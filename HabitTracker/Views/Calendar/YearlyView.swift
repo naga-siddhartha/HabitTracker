@@ -69,7 +69,6 @@ struct YearlyView: View {
                 }
             }
         }
-        .navigationTitle("Yearly")
     }
     
     private func changeYear(by value: Int) {

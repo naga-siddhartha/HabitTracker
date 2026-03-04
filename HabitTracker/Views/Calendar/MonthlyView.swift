@@ -77,7 +77,6 @@ struct MonthlyView: View {
             
             Spacer()
         }
-        .navigationTitle("Monthly")
     }
     
     private var daysInMonth: [Date] {

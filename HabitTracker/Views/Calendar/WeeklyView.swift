@@ -65,7 +65,6 @@ struct WeeklyView: View {
                 }
             }
         }
-        .navigationTitle("Weekly")
     }
     
     private var weekRangeText: String {

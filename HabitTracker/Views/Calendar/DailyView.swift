@@ -44,7 +44,6 @@ struct DailyView: View {
                 }
             }
         }
-        .navigationTitle("Daily")
     }
 }
 

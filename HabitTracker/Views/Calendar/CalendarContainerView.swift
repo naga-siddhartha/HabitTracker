@@ -14,7 +14,16 @@ struct CalendarContainerView: View {
                 }
                 .pickerStyle(.segmented)
                 .labelsHidden()
-                .padding()
+                .padding(.horizontal)
+                .padding(.top, 12)
+                .padding(.bottom, 4)
+
+                Text(selectedView.rawValue)
+                    .font(.largeTitle.weight(.semibold))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
 
                 switch selectedView {
                 case .daily: DailyView()
