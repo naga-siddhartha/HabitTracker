@@ -5,8 +5,8 @@ import UniformTypeIdentifiers
 struct SettingsView: View {
     @Query private var habits: [Habit]
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
-    @AppStorage("weekStartsOnMonday") private var weekStartsOnMonday = false
-    
+    @AppStorage("appearanceMode") private var appearanceMode = AppearanceMode.system
+
     @State private var showingResetAlert = false
     @State private var showingShareSheet = false
     @State private var exportURL: URL?
@@ -14,7 +14,11 @@ struct SettingsView: View {
     
     var body: some View {
         NavigationStack {
-            List {
+            VStack(alignment: .leading, spacing: 0) {
+                PageHeading(title: "Settings")
+                    .padding(.bottom, 4)
+
+                List {
                 Section {
                     SettingsRow(icon: "bell.fill", iconColor: .red, title: "Notifications") {
                         Toggle("", isOn: $notificationsEnabled)
@@ -30,14 +34,16 @@ struct SettingsView: View {
                 } footer: {
                     Text("Each habit has its own reminder times")
                 }
-                
-                Section {
-                    SettingsRow(icon: "calendar", iconColor: .orange, title: "Week Starts Monday") {
-                        Toggle("", isOn: $weekStartsOnMonday)
-                            .labelsHidden()
+
+                Section("Appearance") {
+                    Picker("Theme", selection: $appearanceMode) {
+                        ForEach(AppearanceMode.allCases, id: \.self) { mode in
+                            Text(mode.displayName).tag(mode)
+                        }
                     }
+                    .pickerStyle(.segmented)
                 }
-                
+
                 Section("Data") {
                     Menu {
                         Button("JSON (Full Backup)") { exportData(format: .json) }
@@ -97,7 +103,10 @@ struct SettingsView: View {
                     }
                 }
             }
-            .navigationTitle("Settings")
+            .listStyle(.insetGrouped)
+            }
+            .navigationTitle("")
+            .inlineNavigationTitle()
             .overlay {
                 if isExporting {
                     Color.black.opacity(0.3)

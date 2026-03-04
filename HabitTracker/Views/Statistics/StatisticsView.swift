@@ -30,6 +30,8 @@ struct StatisticsView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 24) {
+                    PageHeading(title: "Statistics")
+
                     // Contribution Graph
                     VStack(alignment: .center, spacing: 8) {
                         Text("Activity")
@@ -94,8 +96,10 @@ struct StatisticsView: View {
                         )
                     }
                 }
+                .padding(.bottom, 32)
             }
-            .navigationTitle("Statistics")
+            .navigationTitle("")
+            .inlineNavigationTitle()
             .sheet(isPresented: $showingCompletionsDetail) { CompletionsDetailView(habits: habits, dateRange: dateRange) }
             .sheet(isPresented: $showingStreaksDetail) { StreaksDetailView(habits: habits) }
             .sheet(isPresented: $showingHabitsDetail) { HabitsDetailView(habits: habits) }

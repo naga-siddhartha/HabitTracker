@@ -2,11 +2,13 @@ import SwiftUI
 import SwiftData
 
 struct HomeView: View {
+    var onPresentTemplates: (() -> Void)?
+
     @Query(sort: \Habit.createdAt, order: .reverse) private var allHabits: [Habit]
     @State private var showingAddHabit = false
     @State private var selectedTab: HomeTab = .active
     @State private var editingHabit: Habit?
-    
+
     private let config = LayoutConfig.current
     
     enum HomeTab: String, CaseIterable {
@@ -23,10 +25,11 @@ struct HomeView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 28) {
+                VStack(spacing: 20) {
                     headerSection
                     segmentedPicker
-                    
+                    templatesLink
+
                     if selectedTab == .active {
                         activeSection
                     } else {
@@ -36,43 +39,68 @@ struct HomeView: View {
                 .padding(.bottom, 32)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color.systemGroupedBackground)
+            .background(Color.appGroupedBackground)
+            .navigationTitle("")
             .inlineNavigationTitle()
-            .toolbar { }
             .sheet(isPresented: $showingAddHabit) { AddEditHabitView() }
             .sheet(item: $editingHabit) { AddEditHabitView(habit: $0) }
         }
     }
     
     // MARK: - Header
-    
+
     private var headerSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text("Today")
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
-            Text(today.formatted(.dateTime.weekday(.wide)))
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-            Text(today.formatted(.dateTime.month(.wide).day()))
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: config.contentMaxWidth, alignment: .leading)
-        .padding(.horizontal, config.horizontalPadding)
-        .padding(.top, 20)
+        PageHeading(
+            title: today.formatted(.dateTime.weekday(.wide)),
+            subtitle: today.formatted(.dateTime.month(.wide).day())
+        )
     }
-    
-    // MARK: - Segmented Picker
-    
+
+    // MARK: - Templates
+
+    private var templatesLink: some View {
+        Group {
+            if let onPresentTemplates {
+                Button(action: onPresentTemplates) {
+                    HStack(spacing: 10) {
+                        Image(systemName: "square.grid.2x2")
+                            .font(.system(size: 15))
+                            .foregroundStyle(.purple)
+                        Text("Start from a template")
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 12)
+                    .background(Color.secondarySystemGroupedBackground)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
+                .buttonStyle(.plain)
+                .frame(maxWidth: config.contentMaxWidth)
+                .padding(.horizontal, config.horizontalPadding)
+            }
+        }
+    }
+
+    // MARK: - Segmented Picker (readable, card-style)
+
     private var segmentedPicker: some View {
         Picker("", selection: $selectedTab) {
-            ForEach(HomeTab.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+            ForEach(HomeTab.allCases, id: \.self) { tab in
+                Text(tab.rawValue)
+                    .font(.system(size: 16, weight: .semibold))
+                    .tag(tab)
+            }
         }
         .pickerStyle(.segmented)
-        .controlSize(.large)
         .labelsHidden()
         .padding(.horizontal, config.horizontalPadding)
         .frame(maxWidth: config.contentMaxWidth)
+        .padding(.vertical, 6)
     }
     
     // MARK: - Active Section
@@ -96,13 +124,14 @@ struct HomeView: View {
                     checklistItems
                 }
                 .background(Color.secondarySystemGroupedBackground)
-                .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
+                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 2)
                 .frame(maxWidth: config.contentMaxWidth)
                 .padding(.horizontal, config.horizontalPadding)
             }
         }
     }
-    
+
     private var progressHeader: some View {
         HStack(spacing: 20) {
             ProgressRing(progress: progress, count: completedCount, total: todayHabits.count, size: 64)

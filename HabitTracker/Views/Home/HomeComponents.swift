@@ -1,5 +1,11 @@
 import SwiftUI
 import SwiftData
+#if os(iOS)
+import UIKit
+#endif
+#if os(macOS)
+import AppKit
+#endif
 
 // MARK: - Home Empty State
 
@@ -11,40 +17,62 @@ struct HomeEmptyState: View {
     let buttonTitle: String
     let buttonAction: () -> Void
 
-    var body: some View {
-        VStack(spacing: 20) {
-            ZStack {
-                RoundedRectangle(cornerRadius: 24)
-                    .fill(iconColor.opacity(0.08))
-                    .frame(width: 80, height: 80)
-                Image(systemName: icon)
-                    .font(.system(size: 32, weight: .medium))
-                    .foregroundStyle(iconColor)
-            }
+    private var emptyStateButtonBackground: Color {
+        #if os(iOS)
+        Color(uiColor: .quaternarySystemFill)
+        #elseif os(macOS)
+        Color(nsColor: .quaternarySystemFill)
+        #else
+        Color.primary.opacity(0.06)
+        #endif
+    }
 
-            VStack(spacing: 6) {
-                Text(title)
-                    .font(.title3.weight(.semibold))
-                Text(message)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
+    var body: some View {
+        VStack(spacing: 0) {
+            // Message block: icon + copy grouped together
+            VStack(alignment: .center, spacing: 16) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(iconColor.opacity(0.12))
+                        .frame(width: 88, height: 88)
+                    Image(systemName: icon)
+                        .font(.system(size: 36, weight: .medium))
+                        .foregroundStyle(iconColor)
+                }
+
+                VStack(alignment: .center, spacing: 6) {
+                    Text(title)
+                        .font(.title2.weight(.bold))
+                        .multilineTextAlignment(.center)
+                    Text(message)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
             }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 28)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 24)
+
+            // Separator so the button reads as the card’s action, not another line of text
+            Divider()
+                .padding(.horizontal, 24)
 
             Button(action: buttonAction) {
-                Label(buttonTitle, systemImage: "plus.circle.fill")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 24)
-                    .padding(.vertical, 12)
-                    .background(Capsule().fill(Color.accentColor))
+                Text(buttonTitle)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 16)
+                    .background(emptyStateButtonBackground, in: RoundedRectangle(cornerRadius: 12))
             }
             .buttonStyle(.plain)
-            .padding(.top, 4)
+            .padding(20)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 40)
-        .padding(.horizontal, 32)
+        .background(Color.secondarySystemGroupedBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, 20)
     }
 }
 
@@ -152,7 +180,8 @@ struct HabitGridCard: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background(Color.secondarySystemGroupedBackground)
-            .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
         }
         .buttonStyle(.plain)
         .contextMenu {

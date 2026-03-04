@@ -8,22 +8,23 @@ struct CalendarContainerView: View {
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 0) {
+                PageHeading(title: "Calendar")
+                    .padding(.bottom, 4)
+
                 Picker("View", selection: $selectedView) {
-                    ForEach(CalendarViewType.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                    ForEach(CalendarViewType.allCases, id: \.self) { view in
+                        Text(view.rawValue)
+                            .font(.system(size: 17, weight: .semibold))
+                            .tag(view)
+                    }
                 }
                 .pickerStyle(.segmented)
+                .controlSize(.large)
                 .labelsHidden()
-                .padding(.horizontal)
+                .padding(.horizontal, 20)
                 .padding(.top, 12)
-                .padding(.bottom, 4)
-
-                Text(selectedView.rawValue)
-                    .font(.largeTitle.weight(.semibold))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
-                    .padding(.bottom, 4)
+                .padding(.bottom, 16)
 
                 switch selectedView {
                 case .daily: DailyView()
@@ -32,7 +33,7 @@ struct CalendarContainerView: View {
                 case .yearly: YearlyView()
                 }
             }
-            .navigationTitle("Calendar")
+            .navigationTitle("")
             #if os(iOS)
             .inlineNavigationTitle()
             #endif

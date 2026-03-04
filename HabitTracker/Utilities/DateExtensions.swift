@@ -11,6 +11,15 @@ extension Color {
     static var systemGray4: Color { Color(uiColor: .systemGray4) }
     static var systemGroupedBackground: Color { Color(uiColor: .systemGroupedBackground) }
     static var secondarySystemGroupedBackground: Color { Color(uiColor: .secondarySystemGroupedBackground) }
+    /// Softer background in light mode (reduces harsh white); unchanged in dark.
+    static var appGroupedBackground: Color {
+        Color(uiColor: UIColor { traitCollection in
+            if traitCollection.userInterfaceStyle == .dark {
+                return .systemGroupedBackground
+            }
+            return UIColor(red: 0.94, green: 0.94, blue: 0.96, alpha: 1)
+        })
+    }
     #elseif os(macOS)
     static var systemBackground: Color { Color(nsColor: .windowBackgroundColor) }
     static var systemGray6: Color { Color(nsColor: .controlBackgroundColor) }
@@ -18,6 +27,7 @@ extension Color {
     static var systemGray4: Color { Color(nsColor: .tertiaryLabelColor) }
     static var systemGroupedBackground: Color { Color(nsColor: .windowBackgroundColor) }
     static var secondarySystemGroupedBackground: Color { Color(nsColor: .controlBackgroundColor) }
+    static var appGroupedBackground: Color { Color(nsColor: .windowBackgroundColor) }
     #endif
 }
 
