@@ -45,16 +45,11 @@ struct MainTabView: View {
 
     private func performReset() {
         isResetting = true
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+        Task { @MainActor in
             NotificationService.shared.cancelAllNotifications()
-            HabitStore.shared.deleteAllHabits()
-            // Switch to Home first so when the cover dismisses, we're not on Settings/Stats (avoids re-rendering with stale @Query).
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                selectedTab = 0
-            }
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.4) {
-                isResetting = false
-            }
+            HabitStore.shared.deleteAllHabitsImmediate()
+            selectedTab = 0
+            isResetting = false
         }
     }
 }

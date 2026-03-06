@@ -14,6 +14,7 @@ struct HabitTrackerApp: App {
 
     init() {
         store.updateAllStreaks()
+        store.writeWidgetData()
         #if os(iOS)
         configureTabBarAppearance()
         // Set test device ID immediately so first ad request uses it (banner can load before async below runs).

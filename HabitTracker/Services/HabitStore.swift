@@ -42,16 +42,21 @@ final class HabitStore {
     }
     
     func deleteHabit(_ habit: Habit) {
-        repository.delete(habit)
-        reloadWidgets()
+        // Defer delete to next run loop so SwiftUI finishes current render cycle.
+        // Prevents "model instance was invalidated" crash when views still reference entries.
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            self.repository.delete(habit)
+            self.reloadWidgets()
+        }
     }
 
-    func deleteAllHabits() {
+    /// Synchronous delete for reset flow. Call from MainActor. Dismisses overlay when done.
+    func deleteAllHabitsImmediate() {
         repository.deleteAll()
-        // Reload widgets after UI has settled to avoid touching stale state during reset.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
-            self?.reloadWidgets()
-        }
+        writeWidgetData()
+        // Defer widget reload so overlay dismisses quickly; widget updates shortly after.
+        DispatchQueue.main.async { WidgetCenter.shared.reloadAllTimelines() }
     }
     
     // MARK: - Entries
@@ -131,6 +136,16 @@ final class HabitStore {
     }
     
     private func reloadWidgets() {
+        writeWidgetData()
         WidgetCenter.shared.reloadAllTimelines()
+    }
+
+    /// Write today's habit counts to shared UserDefaults for the widget. Call on launch and when data changes.
+    func writeWidgetData() {
+        let habits = fetchHabits().filter { !$0.isArchived }
+        let today = Date.now
+        let todayHabits = habits.filter { $0.isActive(on: today) }
+        let completed = todayHabits.filter { $0.isCompleted(on: today) }.count
+        WidgetDataStore.write(completedCount: completed, totalCount: todayHabits.count)
     }
 }

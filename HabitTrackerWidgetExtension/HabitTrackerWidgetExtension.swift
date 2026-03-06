@@ -17,12 +17,13 @@ struct HabitTimelineProvider: TimelineProvider {
     }
     
     func getSnapshot(in context: Context, completion: @escaping (WidgetEntry) -> Void) {
-        completion(WidgetEntry(date: .now, completedCount: 2, totalCount: 5))
+        let (completed, total) = WidgetDataStore.read()
+        completion(WidgetEntry(date: .now, completedCount: completed, totalCount: total))
     }
     
     func getTimeline(in context: Context, completion: @escaping (Timeline<WidgetEntry>) -> Void) {
-        // Simple placeholder - actual data requires App Groups setup
-        let entry = WidgetEntry(date: .now, completedCount: 0, totalCount: 0)
+        let (completed, total) = WidgetDataStore.read()
+        let entry = WidgetEntry(date: .now, completedCount: completed, totalCount: total)
         let midnight = Calendar.current.startOfDay(for: .now).addingTimeInterval(86400)
         let timeline = Timeline(entries: [entry], policy: .after(midnight))
         completion(timeline)
@@ -69,8 +70,8 @@ struct HabitTrackerWidgetExtension: Widget {
         StaticConfiguration(kind: kind, provider: HabitTimelineProvider()) { entry in
             SmallWidgetView(entry: entry)
         }
-        .configurationDisplayName("Habit Tracker")
-        .description("Track your daily habits.")
+        .configurationDisplayName("Ritual Log")
+        .description("Today's habit progress at a glance.")
         .supportedFamilies([.systemSmall])
     }
 }

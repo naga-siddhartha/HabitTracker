@@ -116,6 +116,8 @@ struct ChecklistRow: View {
                 }
             } label: { checkBox }
             .buttonStyle(.plain)
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
             .hapticFeedback(.light, trigger: isCompleted)
             Button {
                 onViewDescription?()
@@ -162,6 +164,8 @@ struct ChecklistRow: View {
                 Image(systemName: "checkmark").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
             }
         }
+        .frame(width: 34, height: 34)
+        .contentShape(Rectangle())
         .animation(.spring(duration: 0.25), value: isCompleted)
     }
 

@@ -1,6 +1,5 @@
 import Foundation
 import SwiftData
-import WidgetKit
 
 // MARK: - Repository Protocol
 

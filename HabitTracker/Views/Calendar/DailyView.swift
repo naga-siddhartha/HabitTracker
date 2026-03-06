@@ -98,6 +98,8 @@ struct DailyHabitRow: View {
                 }
             } label: { checkmarkIcon }
             .buttonStyle(.plain)
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
             .hapticFeedback(.success, trigger: isCompleted)
         }
         .padding(.horizontal, 16)

@@ -178,6 +178,8 @@ private struct DayDot: View {
                         .foregroundStyle(isActive ? Color.systemGray4 : Color.systemGray5.opacity(0.6))
                 }
             }
+            .frame(minWidth: 44, minHeight: 44)
+            .contentShape(Rectangle())
             .animation(.spring(duration: 0.2), value: isCompleted)
         }
         .buttonStyle(.plain)
