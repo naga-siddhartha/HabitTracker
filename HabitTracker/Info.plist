@@ -7,9 +7,9 @@
 	<key>CFBundleDisplayName</key>
 	<string>Habits</string>
 	<key>GADApplicationIdentifier</key>
-	<string>ca-app-pub-3940256099942544~1458002511</string>
+	<string>ca-app-pub-1864456501435529~1257203621</string>
 	<key>PrivacyPolicyURL</key>
-	<string>https://example.com/privacy</string>
+	<string>https://naga-siddhartha.github.io/Habit-Tracker-App/</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>
