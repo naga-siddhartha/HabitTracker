@@ -66,8 +66,7 @@ struct AddEditHabitView: View {
             }
         }
         
-        // Reminders (iOS only for now; one reminder per habit)
-        #if os(iOS)
+        // Reminders (name, time, sound; supports multiple per habit)
         Section("Reminders") {
             ForEach($reminders) { $reminder in
                 VStack(alignment: .leading, spacing: 8) {
@@ -86,7 +85,6 @@ struct AddEditHabitView: View {
                 }
             }
         }
-        #endif
     }
     
     // MARK: - Data Operations

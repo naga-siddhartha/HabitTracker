@@ -7,6 +7,7 @@ struct HomeView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Query(sort: \Habit.createdAt, order: .reverse) private var allHabits: [Habit]
     @State private var showingAddHabit = false
+    @State private var showingAddMenuPopover = false
     @State private var editingHabit: Habit?
     @State private var habitForDetailsSheet: Habit?
 
@@ -94,32 +95,87 @@ struct HomeView: View {
             .inlineNavigationTitle()
             .overlay(alignment: .bottomTrailing) {
                 if showFloatingAddButton {
-                    Menu {
-                        Button {
-                            onPresentTemplates?()
-                        } label: {
-                            Label("From template", systemImage: "square.grid.2x2")
-                        }
-                        Button {
-                            showingAddHabit = true
-                        } label: {
-                            Label("Add habit", systemImage: "plus.circle")
-                        }
-                    } label: {
-                        Image(systemName: "plus.circle.fill")
-                            .font(.system(size: 28))
-                            .foregroundStyle(.white)
-                            .frame(width: 56, height: 56)
-                            .background(Color(red: 0.22, green: 0.45, blue: 0.88), in: Circle())
-                            .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
-                    }
-                    .padding(config.horizontalPadding + 16)
+                    floatingAddButton
+                    .padding(.horizontal, config.horizontalPadding + 16)
+                    #if os(macOS)
+                    .padding(.bottom, 44)
+                    #else
                     .padding(.bottom, 32)
+                    #endif
                 }
             }
             .sheet(isPresented: $showingAddHabit) { AddEditHabitView() }
             .habitSheets(details: $habitForDetailsSheet, editing: $editingHabit)
         }
+    }
+
+    /// Same blue as iOS so the add button stands out on all platforms.
+    private static let floatingButtonBlue = Color(red: 0.22, green: 0.45, blue: 0.88)
+
+    @ViewBuilder
+    private var floatingAddButton: some View {
+        #if os(macOS)
+        Button {
+            showingAddMenuPopover = true
+        } label: {
+            floatingAddButtonLabel
+        }
+        .buttonStyle(.plain)
+        .popover(isPresented: $showingAddMenuPopover, arrowEdge: .bottom) {
+            VStack(alignment: .leading, spacing: 0) {
+                Button {
+                    showingAddMenuPopover = false
+                    onPresentTemplates?()
+                } label: {
+                    Label("From template", systemImage: "square.grid.2x2")
+                }
+                .buttonStyle(.plain)
+                Button {
+                    showingAddMenuPopover = false
+                    showingAddHabit = true
+                } label: {
+                    Label("Add habit", systemImage: "plus.circle")
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(12)
+            .frame(minWidth: 180)
+        }
+        #else
+        Menu {
+            Button {
+                onPresentTemplates?()
+            } label: {
+                Label("From template", systemImage: "square.grid.2x2")
+            }
+            Button {
+                showingAddHabit = true
+            } label: {
+                Label("Add habit", systemImage: "plus.circle")
+            }
+        } label: {
+            floatingAddButtonLabel
+        }
+        #endif
+    }
+
+    private var floatingAddButtonLabel: some View {
+        #if os(macOS)
+        Image(systemName: "plus.circle.fill")
+            .font(.system(size: 22))
+            .foregroundStyle(.white)
+            .frame(width: 44, height: 44)
+            .background(Self.floatingButtonBlue, in: Circle())
+            .overlay(Circle().strokeBorder(.white.opacity(0.4), lineWidth: 1))
+            .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
+        #else
+        Image(systemName: "plus.circle.fill")
+            .font(.system(size: 28))
+            .foregroundStyle(.white)
+            .frame(width: 56, height: 56)
+            .background(Self.floatingButtonBlue, in: Circle())
+            .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+        #endif
     }
     
     // MARK: - Header

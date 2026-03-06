@@ -8,13 +8,17 @@ struct DailyView: View {
     @State private var editingHabit: Habit?
     
     private var activeHabits: [Habit] { habits.filter { $0.isActive(on: selectedDate) } }
-    
+
     var body: some View {
         VStack(spacing: 0) {
             DatePicker("Date", selection: $selectedDate, displayedComponents: .date)
+                #if os(macOS)
+                .datePickerStyle(.field)
+                #else
                 .datePickerStyle(.compact)
+                #endif
                 .padding()
-            
+
             if activeHabits.isEmpty {
                 CalendarEmptyState(
                     icon: "calendar.badge.clock",

@@ -105,7 +105,11 @@ struct SettingsView: View {
                     }
                 }
             }
+            #if os(iOS)
             .listStyle(.insetGrouped)
+            #else
+            .listStyle(.inset)
+            #endif
             }
             .navigationTitle("")
             .inlineNavigationTitle()

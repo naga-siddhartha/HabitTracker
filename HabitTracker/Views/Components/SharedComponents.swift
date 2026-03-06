@@ -113,7 +113,7 @@ struct HabitDetailsSheetView: View {
             }
             .background(Color.appGroupedBackground)
             .navigationTitle(habit.name)
-            .navigationBarTitleDisplayMode(.inline)
+            .inlineNavigationTitle()
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done", action: onDismiss)

@@ -40,18 +40,7 @@ struct MainTabView: View {
                 }
         }
         .preferredColorScheme(appearanceMode.preferredColorScheme)
-        .fullScreenCover(isPresented: $isResetting) {
-            ZStack {
-                Color.appGroupedBackground.ignoresSafeArea()
-                VStack(spacing: 16) {
-                    ProgressView()
-                        .scaleEffect(1.2)
-                    Text("Resetting…")
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
+        .modifier(ResettingOverlayModifier(isPresented: $isResetting))
     }
 
     private func performReset() {
@@ -67,6 +56,39 @@ struct MainTabView: View {
                 isResetting = false
             }
         }
+    }
+}
+
+// MARK: - Resetting overlay (fullScreenCover on iOS, sheet on macOS)
+
+private struct ResettingOverlayModifier: ViewModifier {
+    @Binding var isPresented: Bool
+
+    private var resettingContent: some View {
+        ZStack {
+            Color.appGroupedBackground.ignoresSafeArea()
+            VStack(spacing: 16) {
+                ProgressView()
+                    .scaleEffect(1.2)
+                Text("Resetting…")
+                    .font(.headline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    func body(content: Content) -> some View {
+        #if os(iOS)
+        content
+            .fullScreenCover(isPresented: $isPresented) {
+                resettingContent
+            }
+        #else
+        content
+            .sheet(isPresented: $isPresented) {
+                resettingContent
+            }
+        #endif
     }
 }
 #endif

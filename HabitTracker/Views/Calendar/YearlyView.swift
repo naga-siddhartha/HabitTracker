@@ -71,12 +71,13 @@ struct YearlyView: View {
                     .padding(.bottom, 8)
                 
                 ScrollView {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 80))], spacing: 16) {
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
                         ForEach(months, id: \.self) { month in
                             YearMonthCell(month: month, habits: selectedHabit.map { [$0] } ?? habits)
                         }
                     }
-                    .padding()
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 8)
                 }
             }
         }
@@ -114,9 +115,11 @@ struct YearMonthCell: View {
     }
     
     var body: some View {
-        VStack {
+        VStack(spacing: 8) {
             Text(month, format: .dateTime.month(.abbreviated))
-                .font(.caption)
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
             
             ZStack {
                 Circle()
@@ -127,11 +130,13 @@ struct YearMonthCell: View {
                     .rotationEffect(.degrees(-90))
                 
                 Text("\(Int(completionRatio * 100))%")
-                    .font(.caption2)
+                    .font(.caption2.weight(.medium))
             }
             .frame(width: 50, height: 50)
         }
-        .padding()
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 12)
+        .padding(.horizontal, 8)
         .background(Color.systemGray6)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }

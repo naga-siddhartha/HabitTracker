@@ -204,7 +204,7 @@ struct AdCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Advertisement")
+            Text("Advertisement".uppercased().map { String($0) }.joined(separator: " "))
                 .font(.caption2.weight(.medium))
                 .foregroundStyle(.tertiary)
             AdBannerContentView(jws: AdService.currentImpressionJWS)
