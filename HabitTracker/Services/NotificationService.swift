@@ -31,11 +31,37 @@ final class NotificationService {
     
     func scheduleReminders(for habit: NotificationHabit) {
         #if canImport(UserNotifications)
-        removeReminders(for: habit.id)
         guard !habit.reminderTimes.isEmpty else { return }
-        
+        // Respect the app’s Notifications toggle (defaults to true when unset).
+        if UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool == false { return }
+        removeReminders(for: habit.id)
+
+        UNUserNotificationCenter.current().getNotificationSettings { [self] settings in
+            switch settings.authorizationStatus {
+            case .notDetermined:
+                requestAuthorizationAndSchedule(habit: habit)
+            case .authorized, .provisional, .ephemeral:
+                performScheduleReminders(for: habit)
+            case .denied:
+                break
+            @unknown default:
+                break
+            }
+        }
+        #endif
+    }
+
+    #if canImport(UserNotifications)
+    private func requestAuthorizationAndSchedule(habit: NotificationHabit) {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { [self] granted, _ in
+            guard granted else { return }
+            performScheduleReminders(for: habit)
+        }
+    }
+
+    private func performScheduleReminders(for habit: NotificationHabit) {
         let calendar = Calendar.current
-        
+
         for (index, reminderTime) in habit.reminderTimes.enumerated() {
             let timeComponents = calendar.dateComponents([.hour, .minute], from: reminderTime)
             let reminderName = habit.reminderNames.indices.contains(index) ? habit.reminderNames[index] : "Reminder"
@@ -75,9 +101,9 @@ final class NotificationService {
                 }
             }
         }
-        #endif
     }
-    
+    #endif
+
     func removeReminders(for habitId: UUID) {
         #if canImport(UserNotifications)
         UNUserNotificationCenter.current().getPendingNotificationRequests { requests in

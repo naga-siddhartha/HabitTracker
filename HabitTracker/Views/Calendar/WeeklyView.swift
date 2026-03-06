@@ -110,22 +110,28 @@ struct WeeklyHabitRow: View {
             .padding(.top, 12)
             .padding(.bottom, 10)
             
-            HStack(alignment: .center, spacing: 6) {
-                if let emoji = habit.emoji, !emoji.isEmpty {
-                    Text(emoji).font(.subheadline)
-                } else if let iconName = habit.iconName {
-                    Image(systemName: iconName)
-                        .font(.subheadline)
-                        .foregroundStyle(habit.color.color)
-                } else {
-                    Circle().fill(habit.color.color).frame(width: 18, height: 18)
+            Button {
+                onViewDescription?()
+            } label: {
+                HStack(alignment: .center, spacing: 6) {
+                    if let emoji = habit.emoji, !emoji.isEmpty {
+                        Text(emoji).font(.subheadline)
+                    } else if let iconName = habit.iconName {
+                        Image(systemName: iconName)
+                            .font(.subheadline)
+                            .foregroundStyle(habit.color.color)
+                    } else {
+                        Circle().fill(habit.color.color).frame(width: 18, height: 18)
+                    }
+                    Text(habit.name)
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                 }
-                Text(habit.name)
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
+                .frame(maxWidth: .infinity)
+                .contentShape(Rectangle())
             }
-            .frame(maxWidth: .infinity)
+            .buttonStyle(.plain)
             .padding(.bottom, 12)
         }
         .background(Color.systemGray6)

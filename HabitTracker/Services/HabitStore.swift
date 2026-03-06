@@ -48,8 +48,8 @@ final class HabitStore {
 
     func deleteAllHabits() {
         repository.deleteAll()
-        // Reload widgets after a short delay so the context and UI have settled.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+        // Reload widgets after UI has settled to avoid touching stale state during reset.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) { [weak self] in
             self?.reloadWidgets()
         }
     }

@@ -141,28 +141,36 @@ struct MonthlyHabitRow: View {
     private var isCompleted: Bool { habit.isCompleted(on: date) }
     
     var body: some View {
-        Button {
-            withAnimation(.snappy(duration: 0.3)) {
-                HabitStore.shared.toggleCompletion(for: habit, on: date)
-            }
-        } label: {
-            HStack(alignment: .top) {
-                if let emoji = habit.emoji, !emoji.isEmpty {
-                    Text(emoji).font(.subheadline)
-                } else {
-                    Circle().fill(habit.color.color).frame(width: 12, height: 12)
+        HStack(alignment: .top) {
+            Button {
+                onViewDescription?()
+            } label: {
+                HStack(alignment: .top) {
+                    if let emoji = habit.emoji, !emoji.isEmpty {
+                        Text(emoji).font(.subheadline)
+                    } else {
+                        Circle().fill(habit.color.color).frame(width: 12, height: 12)
+                    }
+                    Text(habit.name)
+                    Spacer(minLength: 0)
                 }
-                Text(habit.name)
-                Spacer()
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            Button {
+                withAnimation(.snappy(duration: 0.3)) {
+                    HabitStore.shared.toggleCompletion(for: habit, on: date)
+                }
+            } label: {
                 Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
                     .foregroundStyle(isCompleted ? habit.color.color : .secondary)
                     .contentTransition(.symbolEffect(.replace))
             }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
+            .buttonStyle(.plain)
+            .hapticFeedback(.success, trigger: isCompleted)
         }
-        .buttonStyle(.plain)
-        .hapticFeedback(.success, trigger: isCompleted)
+        .padding(.horizontal)
+        .padding(.vertical, 8)
         .contentShape(Rectangle())
         .contextMenu {
             HabitRowActions(

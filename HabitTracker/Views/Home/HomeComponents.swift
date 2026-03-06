@@ -114,9 +114,13 @@ struct ChecklistRow: View {
                 withAnimation(.spring(duration: 0.25)) {
                     HabitStore.shared.toggleCompletion(for: habit, on: date)
                 }
+            } label: { checkBox }
+            .buttonStyle(.plain)
+            .hapticFeedback(.light, trigger: isCompleted)
+            Button {
+                onViewDescription?()
             } label: {
                 HStack(spacing: 18) {
-                    checkBox
                     habitIcon
                     habitInfo
                     Spacer(minLength: 0)
@@ -146,7 +150,6 @@ struct ChecklistRow: View {
                 onDelete: onDelete
             )
         }
-        .hapticFeedback(.light, trigger: isCompleted)
     }
 
     private var checkBox: some View {
@@ -237,24 +240,32 @@ struct ScheduledRow: View {
 
     var body: some View {
         HStack(spacing: 18) {
-            Group {
-                if let emoji = habit.emoji, !emoji.isEmpty {
-                    Text(emoji).font(.system(size: 22))
-                } else {
-                    Image(systemName: habit.iconName ?? "circle.fill")
-                        .font(.system(size: 22))
-                        .foregroundStyle(habit.color.color)
+            Button {
+                onViewDescription?()
+            } label: {
+                HStack(spacing: 18) {
+                    Group {
+                        if let emoji = habit.emoji, !emoji.isEmpty {
+                            Text(emoji).font(.system(size: 22))
+                        } else {
+                            Image(systemName: habit.iconName ?? "circle.fill")
+                                .font(.system(size: 22))
+                                .foregroundStyle(habit.color.color)
+                        }
+                    }
+                    .frame(width: 28)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(habit.name)
+                            .font(.system(size: 18, weight: .semibold))
+                        Text(timeLabel)
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 0)
                 }
+                .contentShape(Rectangle())
             }
-            .frame(width: 28)
-            VStack(alignment: .leading, spacing: 2) {
-                Text(habit.name)
-                    .font(.system(size: 18, weight: .semibold))
-                Text(timeLabel)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
+            .buttonStyle(.plain)
             Menu {
                 HabitRowActions(
                     onViewDetails: { onViewDescription?() },

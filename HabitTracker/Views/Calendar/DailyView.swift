@@ -59,38 +59,48 @@ struct DailyHabitRow: View {
     
     private var isCompleted: Bool { habit.isCompleted(on: date) }
     
+    private var checkmarkIcon: some View {
+        Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+            .font(.title2)
+            .foregroundStyle(isCompleted ? habit.color.color : .secondary)
+            .contentTransition(.symbolEffect(.replace))
+    }
+
     var body: some View {
-        Button {
-            withAnimation(.snappy(duration: 0.3)) {
-                HabitStore.shared.toggleCompletion(for: habit, on: date)
-            }
-        } label: {
-            HStack(alignment: .center, spacing: 14) {
-                if let emoji = habit.emoji, !emoji.isEmpty {
-                    Text(emoji).font(.title2)
-                } else if let iconName = habit.iconName {
-                    Image(systemName: iconName).foregroundStyle(habit.color.color).font(.title2)
-                } else {
-                    Circle().fill(habit.color.color).frame(width: 28, height: 28)
+        HStack(alignment: .center, spacing: 14) {
+            Button {
+                onViewDescription?()
+            } label: {
+                HStack(alignment: .center, spacing: 14) {
+                    if let emoji = habit.emoji, !emoji.isEmpty {
+                        Text(emoji).font(.title2)
+                    } else if let iconName = habit.iconName {
+                        Image(systemName: iconName).foregroundStyle(habit.color.color).font(.title2)
+                    } else {
+                        Circle().fill(habit.color.color).frame(width: 28, height: 28)
+                    }
+                    Text(habit.name)
+                        .strikethrough(isCompleted)
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
+                    Spacer(minLength: 0)
                 }
-                Text(habit.name)
-                    .strikethrough(isCompleted)
-                    .font(.body.weight(.medium))
-                    .foregroundStyle(.primary)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
-                    .font(.title2)
-                    .foregroundStyle(isCompleted ? habit.color.color : .secondary)
-                    .contentTransition(.symbolEffect(.replace))
+                .contentShape(Rectangle())
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 14)
-            .frame(minHeight: 56)
-            .background(isCompleted ? habit.color.color.opacity(0.1) : Color.systemGray6)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .buttonStyle(.plain)
+            Button {
+                withAnimation(.snappy(duration: 0.3)) {
+                    HabitStore.shared.toggleCompletion(for: habit, on: date)
+                }
+            } label: { checkmarkIcon }
+            .buttonStyle(.plain)
+            .hapticFeedback(.success, trigger: isCompleted)
         }
-        .buttonStyle(.plain)
-        .hapticFeedback(.success, trigger: isCompleted)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
+        .frame(minHeight: 56)
+        .background(isCompleted ? habit.color.color.opacity(0.1) : Color.systemGray6)
+        .clipShape(RoundedRectangle(cornerRadius: 10))
         .contentShape(Rectangle())
         .contextMenu {
             HabitRowActions(

@@ -41,10 +41,14 @@ final class HabitRepository: HabitRepositoryProtocol {
     }
 
     func deleteAll() {
-        let descriptor = FetchDescriptor<Habit>()
-        guard let all = try? modelContext.fetch(descriptor) else { return }
-        for habit in all {
-            modelContext.delete(habit)
+        do {
+            try modelContext.delete(model: Habit.self)
+        } catch {
+            let descriptor = FetchDescriptor<Habit>()
+            guard let all = try? modelContext.fetch(descriptor) else { return }
+            for habit in all {
+                modelContext.delete(habit)
+            }
         }
         save()
     }

@@ -1,6 +1,6 @@
 import Foundation
 
-struct HabitTemplate: Identifiable {
+struct HabitTemplate: Identifiable, Equatable {
     let id: String
     let name: String
     let description: String?

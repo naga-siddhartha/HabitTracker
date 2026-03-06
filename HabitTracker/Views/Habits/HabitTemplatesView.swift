@@ -2,6 +2,7 @@ import SwiftUI
 
 struct HabitTemplatesView: View {
     @Environment(\.dismiss) private var dismiss
+    var onDismissTemplates: (() -> Void)? = nil
     @State private var selectedCategory: HabitTemplate.Category?
     @State private var templateToAdd: HabitTemplate?
     
@@ -50,6 +51,13 @@ struct HabitTemplatesView: View {
             }
             .sheet(item: $templateToAdd) { template in
                 AddEditHabitView(habit: nil, template: template)
+            }
+            .onChange(of: templateToAdd) { oldValue, newValue in
+                // When the add sheet dismisses (save or cancel), close the Templates sheet so the user lands on Home.
+                if oldValue != nil && newValue == nil {
+                    onDismissTemplates?()
+                    dismiss()
+                }
             }
         }
         .frame(minWidth: 400, minHeight: 500)
