@@ -4,9 +4,7 @@ import SwiftData
 struct WeeklyView: View {
     @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
     @State private var currentWeekStart = Date.now.startOfWeek ?? Date.now
-    @State private var showingDescriptionSheet = false
-    @State private var descriptionSheetTitle = ""
-    @State private var descriptionSheetText = ""
+    @State private var habitForDetailsSheet: Habit?
     @State private var editingHabit: Habit?
     
     private let calendar = Calendar.current
@@ -26,24 +24,14 @@ struct WeeklyView: View {
             .padding()
             
             if habits.isEmpty {
-                VStack(spacing: 10) {
-                    Image(systemName: "square.grid.2x2")
-                        .font(.system(size: 36))
-                        .foregroundStyle(.secondary.opacity(0.7))
-                    Text("No habits yet")
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
-                    Text("Add habits to see your week at a glance.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary.opacity(0.8))
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .padding(.vertical, 28)
-                .padding(.horizontal, 20)
+                CalendarEmptyState(
+                    icon: "square.grid.2x2",
+                    title: "No habits yet",
+                    message: "Add habits to see your week at a glance."
+                )
             } else {
                 GeometryReader { geo in
-                    let horizontalPadding: CGFloat = 16
+                    let horizontalPadding = LayoutConfig.current.horizontalPadding
                     let contentWidth = geo.size.width - (2 * horizontalPadding)
                     let dayColumnWidth = contentWidth / 7
                     
@@ -73,7 +61,7 @@ struct WeeklyView: View {
                                         habit: habit,
                                         dates: weekDates,
                                         dayColumnWidth: dayColumnWidth,
-                                        onViewDescription: habit.habitDescription.flatMap { d in d.isEmpty ? nil : { descriptionSheetTitle = habit.name; descriptionSheetText = d; showingDescriptionSheet = true } },
+                                        onViewDescription: { habitForDetailsSheet = habit },
                                         onEdit: { editingHabit = habit },
                                         onDelete: { HabitStore.shared.deleteHabit(habit) }
                                     )
@@ -86,16 +74,9 @@ struct WeeklyView: View {
                     }
                 }
                 .frame(maxHeight: .infinity)
-                .sheet(isPresented: $showingDescriptionSheet) {
-                    HabitDescriptionSheetView(title: descriptionSheetTitle, text: descriptionSheetText) {
-                        showingDescriptionSheet = false
-                    }
-                }
-                .sheet(item: $editingHabit) { habit in
-                    AddEditHabitView(habit: habit)
-                }
             }
         }
+        .habitSheets(details: $habitForDetailsSheet, editing: $editingHabit)
     }
     
     private var weekRangeText: String {
@@ -151,19 +132,11 @@ struct WeeklyHabitRow: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .contentShape(Rectangle())
         .contextMenu {
-            if habit.habitDescription.flatMap({ !$0.isEmpty }) == true {
-                Button(action: { onViewDescription?() }) {
-                    Label("View description", systemImage: "text.alignleft")
-                }
-                Divider()
-            }
-            Button(action: { onEdit?() }) {
-                Label("Edit", systemImage: "pencil")
-            }
-            Divider()
-            Button(role: .destructive, action: { onDelete?() }) {
-                Label("Delete", systemImage: "trash")
-            }
+            HabitRowActions(
+                onViewDetails: { onViewDescription?() },
+                onEdit: { onEdit?() },
+                onDelete: { onDelete?() }
+            )
         }
     }
 }

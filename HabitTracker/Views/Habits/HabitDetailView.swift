@@ -4,7 +4,7 @@ import SwiftData
 struct HabitDetailView: View {
     @Bindable var habit: Habit
     @State private var showingEditView = false
-    @State private var showingDescription = false
+    @State private var showingDetailsSheet = false
     @State private var selectedDate = Date.now
     
     var body: some View {
@@ -21,11 +21,9 @@ struct HabitDetailView: View {
         .inlineNavigationTitle()
         .toolbar { Button("Edit") { showingEditView = true } }
         .sheet(isPresented: $showingEditView) { AddEditHabitView(habit: habit) }
-        .sheet(isPresented: $showingDescription) {
-            if let desc = habit.habitDescription, !desc.isEmpty {
-                HabitDescriptionSheetView(title: habit.name, text: desc) {
-                    showingDescription = false
-                }
+        .sheet(isPresented: $showingDetailsSheet) {
+            HabitDetailsSheetView(habit: habit) {
+                showingDetailsSheet = false
             }
         }
     }
@@ -41,10 +39,8 @@ struct HabitDetailView: View {
         .padding()
         .contentShape(Rectangle())
         .contextMenu {
-            if let desc = habit.habitDescription, !desc.isEmpty {
-                Button(action: { showingDescription = true }) {
-                    Label("View description", systemImage: "text.alignleft")
-                }
+            Button(action: { showingDetailsSheet = true }) {
+                Label("View details", systemImage: "doc.text")
             }
         }
     }

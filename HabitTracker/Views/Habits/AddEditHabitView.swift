@@ -15,6 +15,7 @@ struct Reminder: Identifiable {
 struct AddEditHabitView: View {
     @Environment(\.dismiss) private var dismiss
     var habit: Habit?
+    var template: HabitTemplate? = nil
     
     @State private var name = ""
     @State private var description = ""
@@ -46,18 +47,6 @@ struct AddEditHabitView: View {
             TextField("Habit Name", text: $name)
             TextField("Description (Optional)", text: $description, axis: .vertical)
                 .lineLimit(2...4)
-        }
-        
-        // Appearance
-        Section("Appearance") {
-            Picker("Color", selection: $selectedColor) {
-                ForEach(HabitColor.allCases, id: \.self) { color in
-                    HStack {
-                        Circle().fill(color.color).frame(width: 16, height: 16)
-                        Text(color.rawValue.capitalized)
-                    }.tag(color)
-                }
-            }
         }
         
         // Frequency
@@ -103,17 +92,22 @@ struct AddEditHabitView: View {
     // MARK: - Data Operations
     
     private func loadHabit() {
-        guard let habit else { return }
-        name = habit.name
-        description = habit.habitDescription ?? ""
-        selectedColor = habit.color
-        frequency = habit.frequency
-        // Weekly with no days = show all days selected so the habit stays visible until user picks days
-        selectedDays = habit.frequency == .weekly && habit.activeDays.isEmpty
-            ? Set(Weekday.allCases)
-            : habit.activeDays
-        reminders = zip(habit.reminderTimes, zip(habit.reminderNames, habit.sounds)).map {
-            Reminder(name: $1.0, time: $0, sound: $1.1)
+        if let habit {
+            name = habit.name
+            description = habit.habitDescription ?? ""
+            selectedColor = habit.color
+            frequency = habit.frequency
+            // Weekly with no days = show all days selected so the habit stays visible until user picks days
+            selectedDays = habit.frequency == .weekly && habit.activeDays.isEmpty
+                ? Set(Weekday.allCases)
+                : habit.activeDays
+            reminders = zip(habit.reminderTimes, zip(habit.reminderNames, habit.sounds)).map {
+                Reminder(name: $1.0, time: $0, sound: $1.1)
+            }
+        } else if let template {
+            name = template.name
+            description = template.description ?? ""
+            selectedColor = template.color
         }
     }
     
@@ -136,7 +130,7 @@ struct AddEditHabitView: View {
             let newHabit = Habit(
                 name: name,
                 description: description.isEmpty ? nil : description,
-                iconName: nil,
+                iconName: template?.iconName,
                 emoji: HabitEmoji.suggest(for: name, description: description.isEmpty ? nil : description),
                 color: selectedColor,
                 frequency: frequency,

@@ -4,9 +4,7 @@ import SwiftData
 struct DailyView: View {
     @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
     @State private var selectedDate = Date.now
-    @State private var showingDescriptionSheet = false
-    @State private var descriptionSheetTitle = ""
-    @State private var descriptionSheetText = ""
+    @State private var habitForDetailsSheet: Habit?
     @State private var editingHabit: Habit?
     
     private var activeHabits: [Habit] { habits.filter { $0.isActive(on: selectedDate) } }
@@ -18,21 +16,11 @@ struct DailyView: View {
                 .padding()
             
             if activeHabits.isEmpty {
-                VStack(spacing: 10) {
-                    Image(systemName: "calendar.badge.clock")
-                        .font(.system(size: 36))
-                        .foregroundStyle(.secondary.opacity(0.7))
-                    Text("No habits scheduled")
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
-                    Text("Pick another date or add habits that are active on this day.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary.opacity(0.8))
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .padding(.vertical, 28)
-                .padding(.horizontal, 20)
+                CalendarEmptyState(
+                    icon: "calendar.badge.clock",
+                    title: "No habits scheduled",
+                    message: "Pick another date or add habits that are active on this day."
+                )
             } else {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Habits for this day")
@@ -45,7 +33,7 @@ struct DailyView: View {
                         DailyHabitRow(
                             habit: habit,
                             date: selectedDate,
-                            onViewDescription: habit.habitDescription.flatMap { d in d.isEmpty ? nil : { descriptionSheetTitle = habit.name; descriptionSheetText = d; showingDescriptionSheet = true } },
+                            onViewDescription: { habitForDetailsSheet = habit },
                             onEdit: { editingHabit = habit },
                             onDelete: { HabitStore.shared.deleteHabit(habit) }
                         )
@@ -58,14 +46,7 @@ struct DailyView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingDescriptionSheet) {
-            HabitDescriptionSheetView(title: descriptionSheetTitle, text: descriptionSheetText) {
-                showingDescriptionSheet = false
-            }
-        }
-        .sheet(item: $editingHabit) { habit in
-            AddEditHabitView(habit: habit)
-        }
+        .habitSheets(details: $habitForDetailsSheet, editing: $editingHabit)
     }
 }
 
@@ -84,42 +65,39 @@ struct DailyHabitRow: View {
                 HabitStore.shared.toggleCompletion(for: habit, on: date)
             }
         } label: {
-            HStack(alignment: .top) {
+            HStack(alignment: .center, spacing: 14) {
                 if let emoji = habit.emoji, !emoji.isEmpty {
                     Text(emoji).font(.title2)
                 } else if let iconName = habit.iconName {
                     Image(systemName: iconName).foregroundStyle(habit.color.color).font(.title2)
                 } else {
-                    Circle().fill(habit.color.color).frame(width: 30, height: 30)
+                    Circle().fill(habit.color.color).frame(width: 28, height: 28)
                 }
-                
-                Text(habit.name).strikethrough(isCompleted)
-                Spacer()
+                Text(habit.name)
+                    .strikethrough(isCompleted)
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
                 Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                    .font(.title2)
                     .foregroundStyle(isCompleted ? habit.color.color : .secondary)
                     .contentTransition(.symbolEffect(.replace))
             }
-            .padding(.vertical, 4)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 14)
+            .frame(minHeight: 56)
             .background(isCompleted ? habit.color.color.opacity(0.1) : Color.systemGray6)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: 10))
         }
         .buttonStyle(.plain)
         .hapticFeedback(.success, trigger: isCompleted)
         .contentShape(Rectangle())
         .contextMenu {
-            if let desc = habit.habitDescription, !desc.isEmpty {
-                Button(action: { onViewDescription?() }) {
-                    Label("View description", systemImage: "text.alignleft")
-                }
-                Divider()
-            }
-            Button(action: { onEdit?() }) {
-                Label("Edit", systemImage: "pencil")
-            }
-            Divider()
-            Button(role: .destructive, action: { onDelete?() }) {
-                Label("Delete", systemImage: "trash")
-            }
+            HabitRowActions(
+                onViewDetails: { onViewDescription?() },
+                onEdit: { onEdit?() },
+                onDelete: { onDelete?() }
+            )
         }
     }
 }

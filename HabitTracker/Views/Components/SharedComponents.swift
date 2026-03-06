@@ -1,4 +1,5 @@
 import SwiftUI
+import SwiftData
 
 // MARK: - Icon Circle
 
@@ -59,41 +60,59 @@ struct ProgressRing: View {
     }
 }
 
-// MARK: - Habit Description Sheet
+// MARK: - Habit Details Sheet (read-only, all edit fields)
 
-struct HabitDescriptionSheetView: View {
-    let title: String
-    let text: String
+@available(iOS 17.0, macOS 14.0, *)
+struct HabitDetailsSheetView: View {
+    @Bindable var habit: Habit
     var onDismiss: () -> Void = {}
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack(spacing: 10) {
-                        Image(systemName: "text.alignleft")
-                            .font(.title2)
-                            .foregroundStyle(.secondary)
-                        Text("Description")
-                            .font(.subheadline.weight(.semibold))
-                            .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 20) {
+                    headerCard
+                    if habit.habitDescription.flatMap({ !$0.isEmpty }) == true {
+                        sectionCard(title: "Description", systemImage: "text.alignleft") {
+                            Text(habit.habitDescription ?? "")
+                                .font(.body)
+                                .lineSpacing(6)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
-                    .padding(.top, 4)
-
-                    Text(text)
-                        .font(.body)
-                        .lineSpacing(6)
-                        .foregroundStyle(.primary)
+                    sectionCard(title: "Schedule", systemImage: "calendar") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(habit.frequency == .daily ? "Daily" : "Weekly")
+                                .font(.body.weight(.medium))
+                            if habit.frequency == .weekly && !habit.activeDays.isEmpty {
+                                Text(habit.activeDays.sorted(by: { $0.rawValue < $1.rawValue }).map(\.fullName).joined(separator: ", "))
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(16)
-                        .background(Color.secondarySystemGroupedBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                    }
+                    if !habit.reminderTimes.isEmpty {
+                        sectionCard(title: "Reminders", systemImage: "bell") {
+                            VStack(alignment: .leading, spacing: 8) {
+                                ForEach(Array(habit.reminderTimes.enumerated()), id: \.offset) { index, time in
+                                    HStack {
+                                        Text((index < habit.reminderNames.count && !habit.reminderNames[index].isEmpty) ? habit.reminderNames[index] : "Reminder")
+                                            .font(.subheadline.weight(.medium))
+                                        Spacer()
+                                        Text(time, format: .dateTime.hour().minute())
+                                            .font(.subheadline)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
-                .padding(.horizontal, 20)
-                .padding(.vertical, 16)
+                .padding(20)
             }
             .background(Color.appGroupedBackground)
-            .navigationTitle(title)
+            .navigationTitle(habit.name)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -102,5 +121,104 @@ struct HabitDescriptionSheetView: View {
             }
         }
     }
+
+    private var headerCard: some View {
+        HStack(spacing: 14) {
+            if let emoji = habit.emoji, !emoji.isEmpty {
+                Text(emoji).font(.system(size: 44))
+            } else {
+                Circle()
+                    .fill(habit.color.color.opacity(0.2))
+                    .frame(width: 52, height: 52)
+                    .overlay(
+                        Image(systemName: habit.iconName ?? "circle.fill")
+                            .font(.title2)
+                            .foregroundStyle(habit.color.color)
+                    )
+            }
+            VStack(alignment: .leading, spacing: 4) {
+                Text(habit.name)
+                    .font(.title2.weight(.semibold))
+                Text(habit.color.rawValue.capitalized)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(16)
+        .background(Color.secondarySystemGroupedBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func sectionCard<Content: View>(title: String, systemImage: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Label(title, systemImage: systemImage)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+            content()
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.secondarySystemGroupedBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
 }
 
+// MARK: - Habit Sheet Modifier (details + edit)
+
+extension View {
+    @ViewBuilder
+    func habitSheets(details: Binding<Habit?>, editing: Binding<Habit?>) -> some View {
+        self
+            .sheet(item: details) { habit in
+                HabitDetailsSheetView(habit: habit) { details.wrappedValue = nil }
+            }
+            .sheet(item: editing) { habit in
+                AddEditHabitView(habit: habit)
+            }
+    }
+}
+
+// MARK: - Calendar Empty State
+
+struct CalendarEmptyState: View {
+    let icon: String
+    let title: String
+    let message: String
+
+    private let config = LayoutConfig.current
+
+    var body: some View {
+        VStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 36))
+                .foregroundStyle(.secondary.opacity(0.7))
+            Text(title)
+                .font(.headline)
+                .foregroundStyle(.secondary)
+            Text(message)
+                .font(.subheadline)
+                .foregroundStyle(.secondary.opacity(0.8))
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .padding(.vertical, 28)
+        .padding(.horizontal, config.horizontalPadding)
+    }
+}
+
+// MARK: - Habit Row Actions (shared Menu / contextMenu content)
+
+struct HabitRowActions: View {
+    var onViewDetails: () -> Void
+    var onEdit: () -> Void
+    var onDelete: () -> Void
+
+    var body: some View {
+        Button(action: onViewDetails) { Label("View details", systemImage: "doc.text") }
+        Divider()
+        Button(action: onEdit) { Label("Edit", systemImage: "pencil") }
+        Divider()
+        Button(role: .destructive, action: onDelete) { Label("Delete", systemImage: "trash") }
+    }
+}

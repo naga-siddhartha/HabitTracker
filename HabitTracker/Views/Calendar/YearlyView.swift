@@ -5,9 +5,7 @@ struct YearlyView: View {
     @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
     @State private var currentYear = Date.now
     @State private var selectedHabit: Habit?
-    @State private var showingDescriptionSheet = false
-    @State private var descriptionSheetTitle = ""
-    @State private var descriptionSheetText = ""
+    @State private var habitForDetailsSheet: Habit?
     @State private var editingHabit: Habit?
     
     private let calendar = Calendar.current
@@ -29,21 +27,11 @@ struct YearlyView: View {
             .padding()
             
             if habits.isEmpty {
-                VStack(spacing: 10) {
-                    Image(systemName: "calendar")
-                        .font(.system(size: 36))
-                        .foregroundStyle(.secondary.opacity(0.7))
-                    Text("No habits to show")
-                        .font(.headline)
-                        .foregroundStyle(.secondary)
-                    Text("Add habits to see your year at a glance.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary.opacity(0.8))
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .padding(.vertical, 28)
-                .padding(.horizontal, 20)
+                CalendarEmptyState(
+                    icon: "calendar",
+                    title: "No habits to show",
+                    message: "Add habits to see your year at a glance."
+                )
             } else {
                 Picker("Habit", selection: $selectedHabit) {
                     Text("All Habits").tag(nil as Habit?)
@@ -57,15 +45,11 @@ struct YearlyView: View {
                 
                 if let habit = selectedHabit {
                     HStack(spacing: 12) {
-                        if let desc = habit.habitDescription, !desc.isEmpty {
-                            Button {
-                                descriptionSheetTitle = habit.name
-                                descriptionSheetText = desc
-                                showingDescriptionSheet = true
-                            } label: {
-                                Label("View description", systemImage: "text.alignleft")
-                                    .font(.subheadline)
-                            }
+                        Button {
+                            habitForDetailsSheet = habit
+                        } label: {
+                            Label("View details", systemImage: "doc.text")
+                                .font(.subheadline)
                         }
                         Button {
                             editingHabit = habit
@@ -96,14 +80,7 @@ struct YearlyView: View {
                 }
             }
         }
-        .sheet(isPresented: $showingDescriptionSheet) {
-            HabitDescriptionSheetView(title: descriptionSheetTitle, text: descriptionSheetText) {
-                showingDescriptionSheet = false
-            }
-        }
-        .sheet(item: $editingHabit) { habit in
-            AddEditHabitView(habit: habit)
-        }
+        .habitSheets(details: $habitForDetailsSheet, editing: $editingHabit)
     }
     
     private func changeYear(by value: Int) {

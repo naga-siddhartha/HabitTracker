@@ -125,8 +125,11 @@ struct ChecklistRow: View {
             }
             .buttonStyle(.plain)
             Menu {
-                Button(action: onEdit) { Label("Edit", systemImage: "pencil") }
-                Button(role: .destructive, action: onDelete) { Label("Delete", systemImage: "trash") }
+                HabitRowActions(
+                    onViewDetails: { onViewDescription?() },
+                    onEdit: onEdit,
+                    onDelete: onDelete
+                )
             } label: {
                 Image(systemName: "ellipsis.circle")
                     .font(.system(size: 22))
@@ -137,13 +140,11 @@ struct ChecklistRow: View {
         .padding(.vertical, 16)
         .contentShape(Rectangle())
         .contextMenu {
-            if let desc = habit.habitDescription, !desc.isEmpty {
-                Button(action: { onViewDescription?() }) { Label("View description", systemImage: "text.alignleft") }
-                Divider()
-            }
-            Button(action: onEdit) { Label("Edit", systemImage: "pencil") }
-            Divider()
-            Button(role: .destructive, action: onDelete) { Label("Delete", systemImage: "trash") }
+            HabitRowActions(
+                onViewDetails: { onViewDescription?() },
+                onEdit: onEdit,
+                onDelete: onDelete
+            )
         }
         .hapticFeedback(.light, trigger: isCompleted)
     }
@@ -255,8 +256,11 @@ struct ScheduledRow: View {
             }
             Spacer()
             Menu {
-                Button(action: onEdit) { Label("Edit", systemImage: "pencil") }
-                Button(role: .destructive, action: onDelete) { Label("Delete", systemImage: "trash") }
+                HabitRowActions(
+                    onViewDetails: { onViewDescription?() },
+                    onEdit: onEdit,
+                    onDelete: onDelete
+                )
             } label: {
                 Image(systemName: "ellipsis.circle")
                     .font(.system(size: 22))
@@ -265,13 +269,11 @@ struct ScheduledRow: View {
         }
         .contentShape(Rectangle())
         .contextMenu {
-            if let desc = habit.habitDescription, !desc.isEmpty {
-                Button(action: { onViewDescription?() }) { Label("View description", systemImage: "text.alignleft") }
-                Divider()
-            }
-            Button(action: onEdit) { Label("Edit", systemImage: "pencil") }
-            Divider()
-            Button(role: .destructive, action: onDelete) { Label("Delete", systemImage: "trash") }
+            HabitRowActions(
+                onViewDetails: { onViewDescription?() },
+                onEdit: onEdit,
+                onDelete: onDelete
+            )
         }
     }
 }

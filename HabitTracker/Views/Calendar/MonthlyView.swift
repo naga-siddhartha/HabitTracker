@@ -5,9 +5,7 @@ struct MonthlyView: View {
     @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
     @State private var currentMonth = Date.now
     @State private var selectedDate = Date.now
-    @State private var showingDescriptionSheet = false
-    @State private var descriptionSheetTitle = ""
-    @State private var descriptionSheetText = ""
+    @State private var habitForDetailsSheet: Habit?
     @State private var editingHabit: Habit?
     
     private let calendar = Calendar.current
@@ -44,21 +42,11 @@ struct MonthlyView: View {
             Divider().padding(.vertical, 16)
             
             if activeHabits.isEmpty {
-                VStack(spacing: 12) {
-                    Image(systemName: "calendar.badge.clock")
-                        .font(.system(size: 44))
-                        .foregroundStyle(.secondary.opacity(0.7))
-                    Text("No habits scheduled")
-                        .font(.title3.weight(.medium))
-                        .foregroundStyle(.secondary)
-                    Text("Tap a day above to see habits for that date.")
-                        .font(.subheadline)
-                        .foregroundStyle(.tertiary)
-                        .multilineTextAlignment(.center)
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                .padding(.vertical, 32)
-                .padding(.horizontal, 24)
+                CalendarEmptyState(
+                    icon: "calendar.badge.clock",
+                    title: "No habits scheduled",
+                    message: "Tap a day above to see habits for that date."
+                )
             } else {
                 VStack(alignment: .leading, spacing: 0) {
                     Text("Habits for this day")
@@ -73,7 +61,7 @@ struct MonthlyView: View {
                             MonthlyHabitRow(
                                 habit: habit,
                                 date: selectedDate,
-                                onViewDescription: habit.habitDescription.flatMap { d in d.isEmpty ? nil : { descriptionSheetTitle = habit.name; descriptionSheetText = d; showingDescriptionSheet = true } },
+                                onViewDescription: { habitForDetailsSheet = habit },
                                 onEdit: { editingHabit = habit },
                                 onDelete: { HabitStore.shared.deleteHabit(habit) }
                             )
@@ -87,14 +75,7 @@ struct MonthlyView: View {
             
             Spacer()
         }
-        .sheet(isPresented: $showingDescriptionSheet) {
-            HabitDescriptionSheetView(title: descriptionSheetTitle, text: descriptionSheetText) {
-                showingDescriptionSheet = false
-            }
-        }
-        .sheet(item: $editingHabit) { habit in
-            AddEditHabitView(habit: habit)
-        }
+        .habitSheets(details: $habitForDetailsSheet, editing: $editingHabit)
     }
     
     private var daysInMonth: [Date] {
@@ -184,19 +165,11 @@ struct MonthlyHabitRow: View {
         .hapticFeedback(.success, trigger: isCompleted)
         .contentShape(Rectangle())
         .contextMenu {
-            if let desc = habit.habitDescription, !desc.isEmpty {
-                Button(action: { onViewDescription?() }) {
-                    Label("View description", systemImage: "text.alignleft")
-                }
-                Divider()
-            }
-            Button(action: { onEdit?() }) {
-                Label("Edit", systemImage: "pencil")
-            }
-            Divider()
-            Button(role: .destructive, action: { onDelete?() }) {
-                Label("Delete", systemImage: "trash")
-            }
+            HabitRowActions(
+                onViewDetails: { onViewDescription?() },
+                onEdit: { onEdit?() },
+                onDelete: { onDelete?() }
+            )
         }
     }
 }

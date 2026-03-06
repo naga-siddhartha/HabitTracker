@@ -8,16 +8,13 @@ struct HomeView: View {
     @Query(sort: \Habit.createdAt, order: .reverse) private var allHabits: [Habit]
     @State private var showingAddHabit = false
     @State private var editingHabit: Habit?
-    @State private var showingDescriptionSheet = false
-    @State private var descriptionSheetTitle = ""
-    @State private var descriptionSheetText = ""
+    @State private var habitForDetailsSheet: Habit?
 
     private let config = LayoutConfig.current
     private let calendar = Calendar.current
 
     private var cardShadowColor: Color { colorScheme == .dark ? .white.opacity(0.04) : .black.opacity(0.05) }
     private var cardShadowRadius: CGFloat { 8 }
-    private var cardCornerRadius: CGFloat { 16 }
     private var sectionHeaderPadding: (top: CGFloat, bottom: CGFloat) { (16, 12) }
 
     /// Current date/time so Home always reflects "today" when the view is evaluated.
@@ -121,12 +118,7 @@ struct HomeView: View {
                 }
             }
             .sheet(isPresented: $showingAddHabit) { AddEditHabitView() }
-            .sheet(item: $editingHabit) { AddEditHabitView(habit: $0) }
-            .sheet(isPresented: $showingDescriptionSheet) {
-                HabitDescriptionSheetView(title: descriptionSheetTitle, text: descriptionSheetText) {
-                    showingDescriptionSheet = false
-                }
-            }
+            .habitSheets(details: $habitForDetailsSheet, editing: $editingHabit)
         }
     }
     
@@ -147,17 +139,15 @@ struct HomeView: View {
         }
     }
 
+    /// Line below the date only. Kept separate from the active card so we don’t repeat "X of Y done".
     private var headerTagline: String {
-        if todayHabits.isEmpty && habitsCompletedToday.isEmpty {
-            return habits.isEmpty ? "Your day at a glance" : "All set for today"
+        if habits.isEmpty {
+            return "Your day at a glance"
         }
         if todayHabits.isEmpty {
-            return "\(habitsCompletedToday.count) completed today"
+            return "All set for today"
         }
-        if completedCount == todayHabits.count {
-            return "All \(todayHabits.count) done — great job!"
-        }
-        return "\(completedCount) of \(todayHabits.count) done"
+        return "Your habits for today"
     }
 
     // MARK: - Home Content (Active, Scheduled, Completed cards)
@@ -220,7 +210,7 @@ struct HomeView: View {
                             date: today,
                             onEdit: { editingHabit = habit },
                             onDelete: { deleteHabit(habit) },
-                            onViewDescription: habit.habitDescription.flatMap { d in d.isEmpty ? nil : { descriptionSheetTitle = habit.name; descriptionSheetText = d; showingDescriptionSheet = true } }
+                            onViewDescription: { habitForDetailsSheet = habit }
                         )
                             .padding(.horizontal, 20)
                             .padding(.vertical, 10)
@@ -233,9 +223,9 @@ struct HomeView: View {
             }
         }
         .background(Color.secondarySystemGroupedBackground)
-        .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
+        .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
         .overlay(
-            RoundedRectangle(cornerRadius: cardCornerRadius)
+            RoundedRectangle(cornerRadius: config.cardCornerRadius)
                 .stroke(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.05), lineWidth: 1)
         )
         .shadow(color: cardShadowColor, radius: cardShadowRadius, x: 0, y: 3)
@@ -263,7 +253,7 @@ struct HomeView: View {
                         habit: habit,
                         onEdit: { editingHabit = habit },
                         onDelete: { deleteHabit(habit) },
-                        onViewDescription: habit.habitDescription.flatMap { d in d.isEmpty ? nil : { descriptionSheetTitle = habit.name; descriptionSheetText = d; showingDescriptionSheet = true } }
+                        onViewDescription: { habitForDetailsSheet = habit }
                     )
                         .padding(.horizontal, 20)
                         .padding(.vertical, 10)
@@ -275,9 +265,9 @@ struct HomeView: View {
             }
         }
         .background(Color.secondarySystemGroupedBackground)
-        .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
+        .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
         .overlay(
-            RoundedRectangle(cornerRadius: cardCornerRadius)
+            RoundedRectangle(cornerRadius: config.cardCornerRadius)
                 .stroke(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.05), lineWidth: 1)
         )
         .shadow(color: cardShadowColor, radius: cardShadowRadius, x: 0, y: 3)
@@ -306,7 +296,7 @@ struct HomeView: View {
                         date: today,
                         onEdit: { editingHabit = habit },
                         onDelete: { deleteHabit(habit) },
-                        onViewDescription: habit.habitDescription.flatMap { d in d.isEmpty ? nil : { descriptionSheetTitle = habit.name; descriptionSheetText = d; showingDescriptionSheet = true } }
+                        onViewDescription: { habitForDetailsSheet = habit }
                     )
                         .padding(.horizontal, 20)
                         .padding(.vertical, 10)
@@ -318,9 +308,9 @@ struct HomeView: View {
             }
         }
         .background(Color.secondarySystemGroupedBackground)
-        .clipShape(RoundedRectangle(cornerRadius: cardCornerRadius))
+        .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
         .overlay(
-            RoundedRectangle(cornerRadius: cardCornerRadius)
+            RoundedRectangle(cornerRadius: config.cardCornerRadius)
                 .stroke(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.05), lineWidth: 1)
         )
         .shadow(color: cardShadowColor, radius: cardShadowRadius, x: 0, y: 3)
