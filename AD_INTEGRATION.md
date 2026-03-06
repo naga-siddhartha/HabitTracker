@@ -1,12 +1,12 @@
 # Putting Ads in the Home Page Ad Card
 
-The home page already has an **Ad Card** slot that shows either a placeholder or a real ad. You can fill it in two ways.
+The home page has an **Ad Card** slot on **iOS** that shows a banner ad. You can fill it in two ways.
 
 ---
 
-## Option 1: Apple AdAttributionKit (current wiring)
+## Option 1: Apple AdAttributionKit (not implemented)
 
-The app is already set up for **App Impressions** (AdAttributionKit, iOS 17.4+). When an ad network gives you a **compact JWS** string for an impression, the card shows that ad and records view/click attribution.
+To use **App Impressions** (AdAttributionKit, iOS 17.4+), you would add code that receives a **compact JWS** string from an ad network and a view that displays it and records view/click attribution. The following steps describe what to implement.
 
 ### Step 1: Find an ad network that supports App Impressions
 
@@ -51,55 +51,48 @@ Replace `your-network-id.adattributionkit` with the value your network gave you.
 
 ### Step 3: Set the JWS when you receive an impression
 
-Whenever the network gives you a new ad impression (a compact JWS string), assign it in your app. The ad card reads from `AdService.currentImpressionJWS`.
-
-**On the main thread** (e.g. in a completion handler or async MainActor code):
-
-```swift
-AdService.currentImpressionJWS = "eyJ..."  // The compact JWS from the network
-```
-
-- If you use the network’s **SDK**: in their callback that delivers the JWS, set `AdService.currentImpressionJWS = jwsString`.
-- If you use a **backend**: when your app receives the JWS (e.g. from an API response), set `AdService.currentImpressionJWS` with that value.
-
-The existing **AdBannerContentView** on the home page will then show the ad and handle view/click attribution automatically.
+Add a shared place (e.g. a singleton or `@Observable` state) to hold the current JWS. Whenever the network gives you a new ad impression, set it on the main thread. Your custom view would read from this and display the ad via AdAttributionKit (e.g. `AppImpression(compactJWS:)`, `EventAttributionOverlayView`, `beginView`/`endView`/`handleTap`).
 
 ### Step 4: Refresh ads when you get a new impression
 
-- When the network sends a **new** JWS (e.g. for a new impression or after a timeout), set it again:  
-  `AdService.currentImpressionJWS = newJWSString`
-- You can refresh based on:
-  - A timer (e.g. every 60 seconds),
-  - When the home screen appears (`onAppear`),
-  - Or whenever the network’s SDK/API provides a new JWS.
+When the network sends a new JWS, update your stored value. Refresh based on a timer, `onAppear`, or the network’s SDK/API.
 
 ---
 
-## Option 2: Google AdMob (or another SDK banner)
+## Option 2: Google AdMob (or another SDK banner) — **implemented**
 
-If you prefer **Google AdMob** (or a similar SDK), you show a banner view inside the same card and do **not** use the JWS path.
+Google AdMob banner ads are integrated on the **iOS** home page. The same “Advertisement” card shows a live banner from the Google Mobile Ads SDK.
 
-### Steps
+**iOS vs macOS:** The Google Mobile Ads SDK only provides iOS libraries (no macOS or visionOS). The project has two app targets: **HabitTracker** (iOS only, with AdMob) and **HabitTracker Mac** (macOS only, no AdMob). Use the **HabitTracker** scheme to build/run on iPhone; use the **HabitTracker Mac** scheme to build/run on Mac. The ad card is only shown on iOS; it is not shown on macOS.
 
-1. **Add the SDK**
-   - Add [Google Mobile Ads](https://developers.google.com/admob/ios/quick-start) via Swift Package Manager (or CocoaPods).
-   - In the App’s initialization, call `GADMobileAds.sharedInstance().start(completionHandler: nil)`.
+### What’s in place
 
-2. **Create an ad unit**
-   - In [AdMob](https://admob.google.com) create an app and a **Banner** ad unit; copy the **Ad unit ID**.
+1. **SDK**
+   - [Google Mobile Ads](https://developers.google.com/admob/ios/quick-start) is added via Swift Package Manager (`https://github.com/googleads/swift-package-manager-google-mobile-ads`).
+   - The app calls `MobileAds.shared.start(completionHandler:)` after launch (iOS only), with test device IDs set so test ads can be requested.
 
-3. **Info.plist**
-   - Add your AdMob App ID, e.g.:
-   - Key: `GADApplicationIdentifier`
-   - Value: `ca-app-pub-xxxxxxxx~yyyyyyyyyy` (your app ID from AdMob).
+2. **Info.plist**
+   - `GADApplicationIdentifier`: your AdMob app ID (use the test ID while developing).
+   - `SKAdNetworkItems`: set of SKAdNetwork identifiers required by the SDK.
 
-4. **Replace or wrap the banner content**
-   - The card is built in `HabitTracker/Views/Home/HomeComponents.swift` (`AdCardView`) and `AdBannerView.swift` (`AdBannerContentView`).
-   - Add a **UIViewRepresentable** that creates a `GADBannerView`, sets the ad unit ID, and loads a request (e.g. `GADRequest()`).
-   - In `AdCardView`, instead of (or in addition to) `AdBannerContentView(jws: AdService.currentImpressionJWS)`, present this AdMob banner view so it sits inside the same “Advertisement” card.
+3. **Banner implementation**
+   - `HabitTracker/Views/Home/AdMobBannerView.swift`: SwiftUI view that wraps a `BannerView` in a `UIViewRepresentable`, using **large anchored adaptive** banner size and your banner ad unit ID.
+   - `AdCardView` in `HomeComponents.swift`: on **iOS** it shows `AdMobBannerView()`; the ad card is not shown on macOS.
 
-5. **Optional: App Tracking Transparency**
-   - If you use personalized ads, add the **App Tracking Transparency** capability and request `ATTrackingManager.requestTrackingAuthorization` when appropriate; pass the result into ad request if needed.
+### Before release (production)
+
+1. **Create an AdMob app and banner ad unit**
+   - In [AdMob](https://admob.google.com) create an app and a **Banner** ad unit; copy the **App ID** and **Ad unit ID**.
+
+2. **Switch from test IDs to production**
+   - In **Info.plist**: replace `GADApplicationIdentifier` with your real AdMob app ID (e.g. `ca-app-pub-xxxxxxxx~yyyyyyyyyy`).
+   - In **AdMobBannerView.swift**: replace `bannerAdUnitID` with your production banner ad unit ID (and remove or guard the test ID comment).
+
+3. **Optional: App Tracking Transparency**
+   - If you use personalized ads, add the **App Tracking Transparency** capability and request `ATTrackingManager.requestTrackingAuthorization` when appropriate; pass the result into the ad request if needed.
+
+4. **Optional: more SKAdNetwork IDs**
+   - You can add more entries to `SKAdNetworkItems` in Info.plist from [Google’s full list](https://developers.google.com/admob/ios/quick-start#update_your_infoplist).
 
 ---
 
@@ -107,7 +100,7 @@ If you prefer **Google AdMob** (or a similar SDK), you show a banner view inside
 
 | Approach              | Best if you…                          | Where to plug in                          |
 |-----------------------|----------------------------------------|------------------------------------------|
-| **AdAttributionKit**  | Have a partner that gives you JWS      | Set `AdService.currentImpressionJWS` + Info.plist `AdNetworkIdentifiers` |
-| **AdMob (or similar)**| Want a standard banner from Google etc.| Add SDK, then a `GADBannerView` inside `AdCardView` / `AdBannerContentView` |
+| **AdAttributionKit**  | Have a partner that gives you JWS      | Implement a store for JWS + a view using AdAttributionKit; add Info.plist `AdNetworkIdentifiers` |
+| **AdMob (implemented)**| Want a standard banner from Google     | `AdMobBannerView` inside `AdCardView` on iOS |
 
-The **physical slot** is always the same: the “Advertisement” card on the home screen. You only choose whether to fill it via AdAttributionKit (JWS) or via an SDK banner view.
+The ad card is shown only on **iOS**; it uses AdMob. To use AdAttributionKit instead, you would add the integration described in Option 1.

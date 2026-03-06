@@ -207,7 +207,9 @@ struct AdCardView: View {
             Text("Advertisement".uppercased().map { String($0) }.joined(separator: " "))
                 .font(.caption2.weight(.medium))
                 .foregroundStyle(.tertiary)
-            AdBannerContentView(jws: AdService.currentImpressionJWS)
+            #if os(iOS)
+            AdMobBannerView()
+            #endif
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)

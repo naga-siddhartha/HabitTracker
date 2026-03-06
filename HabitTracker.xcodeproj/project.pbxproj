@@ -10,6 +10,7 @@
 		E4AD556E2F1725900053BADC /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E4AD556D2F1725900053BADC /* WidgetKit.framework */; };
 		E4AD55702F1725900053BADC /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E4AD556F2F1725900053BADC /* SwiftUI.framework */; };
 		E4AD557D2F1725910053BADC /* HabitTrackerWidgetExtensionExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = E4AD556B2F1725900053BADC /* HabitTrackerWidgetExtensionExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		E4AD55852F1725920053BADC /* GoogleMobileAds in Frameworks */ = {isa = PBXBuildFile; productRef = E4AD55842F1725920053BADC /* GoogleMobileAds */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +58,7 @@
 		E4AD556B2F1725900053BADC /* HabitTrackerWidgetExtensionExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HabitTrackerWidgetExtensionExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		E4AD556D2F1725900053BADC /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		E4AD556F2F1725900053BADC /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
+		E4AD55862F1725920053BADC /* HabitTracker Mac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "HabitTracker Mac.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -74,6 +76,13 @@
 			);
 			target = E4AD542D2F1723490053BADC /* HabitTracker */;
 		};
+		E4AD55872F1725920053BADE /* Exceptions for "HabitTracker" folder in "HabitTracker Mac" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = E4AD55882F1725920053BADC /* HabitTracker Mac */;
+		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -81,6 +90,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				E4AD55822F1725910053BADE /* Exceptions for "HabitTracker" folder in "HabitTracker" target */,
+				E4AD55872F1725920053BADE /* Exceptions for "HabitTracker" folder in "HabitTracker Mac" target */,
 			);
 			path = HabitTracker;
 			sourceTree = "<group>";
@@ -110,6 +120,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				E4AD55852F1725920053BADC /* GoogleMobileAds in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -136,6 +147,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E4AD558A2F1725920053BADC /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -155,6 +173,7 @@
 			isa = PBXGroup;
 			children = (
 				E4AD542E2F1723490053BADC /* HabitTracker.app */,
+				E4AD55862F1725920053BADC /* HabitTracker Mac.app */,
 				E4AD543F2F17234B0053BADC /* HabitTrackerTests.xctest */,
 				E4AD54492F17234B0053BADC /* HabitTrackerUITests.xctest */,
 				E4AD556B2F1725900053BADC /* HabitTrackerWidgetExtensionExtension.appex */,
@@ -193,6 +212,7 @@
 			);
 			name = HabitTracker;
 			packageProductDependencies = (
+				E4AD55842F1725920053BADC /* GoogleMobileAds */,
 			);
 			productName = HabitTracker;
 			productReference = E4AD542E2F1723490053BADC /* HabitTracker.app */;
@@ -266,6 +286,28 @@
 			productReference = E4AD556B2F1725900053BADC /* HabitTrackerWidgetExtensionExtension.appex */;
 			productType = "com.apple.product-type.app-extension";
 		};
+		E4AD55882F1725920053BADC /* HabitTracker Mac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E4AD558C2F1725920053BADC /* Build configuration list for PBXNativeTarget "HabitTracker Mac" */;
+			buildPhases = (
+				E4AD55892F1725920053BADC /* Sources */,
+				E4AD558A2F1725920053BADC /* Frameworks */,
+				E4AD558B2F1725920053BADC /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				E4AD54302F1723490053BADC /* HabitTracker */,
+			);
+			name = "HabitTracker Mac";
+			packageProductDependencies = (
+			);
+			productName = "HabitTracker Mac";
+			productReference = E4AD55862F1725920053BADC /* HabitTracker Mac.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -290,6 +332,9 @@
 					E4AD556A2F1725900053BADC = {
 						CreatedOnToolsVersion = 26.2;
 					};
+					E4AD55882F1725920053BADC = {
+						CreatedOnToolsVersion = 26.2;
+					};
 				};
 			};
 			buildConfigurationList = E4AD54292F1723490053BADC /* Build configuration list for PBXProject "HabitTracker" */;
@@ -301,12 +346,16 @@
 			);
 			mainGroup = E4AD54252F1723490053BADC;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				E4AD55832F1725920053BADC /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = E4AD542F2F1723490053BADC /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				E4AD542D2F1723490053BADC /* HabitTracker */,
+				E4AD55882F1725920053BADC /* HabitTracker Mac */,
 				E4AD543E2F17234B0053BADC /* HabitTrackerTests */,
 				E4AD54482F17234B0053BADC /* HabitTrackerUITests */,
 				E4AD556A2F1725900053BADC /* HabitTrackerWidgetExtensionExtension */,
@@ -343,6 +392,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		E4AD558B2F1725920053BADC /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -368,6 +424,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		E4AD55672F1725900053BADC /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E4AD55892F1725920053BADC /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -422,22 +485,19 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
-				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nagasiddharthadonepudi.HabitTracker;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
-				SDKROOT = auto;
+				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
-				XROS_DEPLOYMENT_TARGET = 26.2;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
@@ -468,22 +528,19 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
-				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
-				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nagasiddharthadonepudi.HabitTracker;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
-				SDKROOT = auto;
+				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator macosx xros xrsimulator";
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2,7";
-				XROS_DEPLOYMENT_TARGET = 26.2;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -782,6 +839,70 @@
 			};
 			name = Release;
 		};
+		E4AD558D2F1725920053BADC /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = T6VSDYRN99;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HabitTracker/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nagasiddharthadonepudi.HabitTracker;
+				PRODUCT_NAME = "HabitTracker Mac";
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		E4AD558E2F1725920053BADC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				COMBINE_HIDPI_IMAGES = YES;
+				CURRENT_PROJECT_VERSION = 1;
+				DEAD_CODE_STRIPPING = YES;
+				DEVELOPMENT_TEAM = T6VSDYRN99;
+				ENABLE_APP_SANDBOX = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				ENABLE_PREVIEWS = YES;
+				ENABLE_USER_SELECTED_FILES = readonly;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = HabitTracker/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+				MACOSX_DEPLOYMENT_TARGET = 14.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.nagasiddharthadonepudi.HabitTracker;
+				PRODUCT_NAME = "HabitTracker Mac";
+				SDKROOT = macosx;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -830,7 +951,35 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		E4AD558C2F1725920053BADC /* Build configuration list for PBXNativeTarget "HabitTracker Mac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E4AD558D2F1725920053BADC /* Debug */,
+				E4AD558E2F1725920053BADC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		E4AD55832F1725920053BADC /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/googleads/swift-package-manager-google-mobile-ads";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 13.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		E4AD55842F1725920053BADC /* GoogleMobileAds */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E4AD55832F1725920053BADC /* XCRemoteSwiftPackageReference "swift-package-manager-google-mobile-ads" */;
+			productName = GoogleMobileAds;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = E4AD54262F1723490053BADC /* Project object */;
 }

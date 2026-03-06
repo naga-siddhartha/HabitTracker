@@ -69,10 +69,12 @@ struct HomeView: View {
                         homeContent
                             .frame(maxWidth: config.contentMaxWidth)
                             .padding(.horizontal, config.horizontalPadding)
+                        #if os(iOS)
                         AdCardView()
                             .frame(maxWidth: config.contentMaxWidth)
                             .padding(.horizontal, config.horizontalPadding)
                             .padding(.top, 24)
+                        #endif
                         Spacer(minLength: 0)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -81,9 +83,11 @@ struct HomeView: View {
                         VStack(spacing: 24) {
                             headerSection
                             homeContent
+                            #if os(iOS)
                             AdCardView()
                                 .frame(maxWidth: config.contentMaxWidth)
                                 .padding(.horizontal, config.horizontalPadding)
+                            #endif
                         }
                         .padding(.bottom, 32)
                     }
