@@ -10,10 +10,27 @@ The app is already set up for **App Impressions** (AdAttributionKit, iOS 17.4+).
 
 ### Step 1: Find an ad network that supports App Impressions
 
-- Use a network that supports [App Impressions / AdAttributionKit](https://developer.apple.com/documentation/adattributionkit).
-- Sign up as a publisher and get:
-  - Your **ad network identifier** (e.g. `example.adattributionkit`).
-  - A way to receive **compact JWS** strings for each ad impression (e.g. from their SDK, API, or server callback).
+Apple does not publish a single “supported networks” list. Use the following to find a partner:
+
+- **Apple’s docs**
+  - [AdAttributionKit](https://developer.apple.com/documentation/adattributionkit) – overview.
+  - [Configuring a publisher app](https://developer.apple.com/documentation/AdAttributionKit/configuring-a-publisher-app) – what you need (e.g. `AdNetworkIdentifiers`).
+  - [Registering an ad network](https://developer.apple.com/documentation/AdAttributionKit/registering-an-ad-network) – how networks get an ID; any such network *can* support App Impressions.
+- **Registered networks**
+  - Ad networks register with Apple and get an ad network ID (e.g. `example123.skadnetwork`). AdAttributionKit is interoperable with SKAdNetwork.
+  - **IAB Tech Lab [SKAdNetwork ID list](https://iabtechlab.com/software/skadnetwork-id-list/)** – many ad networks register here; you can see who has IDs. Then contact them and ask: “Do you support **App Impressions** (AdAttributionKit) for **publishers** and can you deliver **compact JWS** for in-app display?”
+- **What to ask any network**
+  - “Do you support Apple’s App Impressions / AdAttributionKit for publisher apps?”
+  - “Can you supply **compact JWS** strings for each impression so we can display the ad and record view/click attribution?”
+  - “What is your **ad network identifier** (for our Info.plist `AdNetworkIdentifiers`)?”
+- **Where to look**
+  - Mediation / demand platforms you already use (e.g. **Google AdMob**, **AppLovin MAX**, **Unity Ads**) – ask if they support App Impressions and JWS for publishers.
+  - Networks that run app-install campaigns (Meta, Google, TikTok, etc.) – some may offer publisher inventory with AdAttributionKit; confirm with their publisher or partner docs/support.
+
+Once you have a partner, sign up as a publisher and get:
+
+- Their **ad network identifier** (e.g. `example123.skadnetwork`).
+- A way to receive **compact JWS** strings for each ad impression (e.g. from their SDK, API, or server callback).
 
 ### Step 2: Add the network identifier in Info.plist
 

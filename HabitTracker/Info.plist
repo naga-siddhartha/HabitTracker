@@ -9,6 +9,6 @@
 	<key>PrivacyPolicyURL</key>
 	<string>https://example.com/privacy</string>
 	<key>SupportURL</key>
-	<string>https://example.com/support</string>
+	<string>mailto:nagasiddhartha.d@gmail.com</string>
 </dict>
 </plist>
