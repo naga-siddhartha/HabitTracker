@@ -27,7 +27,11 @@ struct ContributionGraphView: View {
                     Text(label.name)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
-                        .frame(width: CGFloat(label.weeks) * (cellSize + cellSpacing), alignment: .leading)
+                        .lineLimit(1)
+                        .frame(
+                            width: max(CGFloat(label.weeks) * (cellSize + cellSpacing), 26),
+                            alignment: .leading
+                        )
                 }
             }
             .padding(.leading, 28)
