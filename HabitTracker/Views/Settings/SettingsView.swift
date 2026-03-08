@@ -28,226 +28,283 @@ struct SettingsView: View {
     @State private var showingFileImporter = false
     @State private var exportError: String?
     @State private var showingExportErrorAlert = false
+    @State private var showingAccountProfile = false
     
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 0) {
-                PageHeading(title: "Settings")
-                    .padding(.bottom, 4)
+            mainContent
+                .navigationTitle("")
+                .inlineNavigationTitle()
+                .sheet(isPresented: $showingShareSheet) {
+                    if let url = exportURL {
+                        ShareSheet(url: url)
+                    }
+                }
+                .alert("Reset All Data?", isPresented: $showingResetAlert) {
+                    Button("Cancel", role: .cancel) {}
+                    Button("Reset", role: .destructive) {
+                        DispatchQueue.main.async {
+                            onRequestReset?()
+                        }
+                    }
+                } message: {
+                    Text("This will delete all habits and entries. This cannot be undone.")
+                }
+                .sheet(isPresented: $showingAccountProfile) {
+                    AccountProfileView()
+                }
+                .alert("Sign in", isPresented: $showingAuthErrorAlert) {
+                    Button("OK") { authError = nil }
+                } message: {
+                    if let authError { Text(authError) }
+                }
+                .fileImporter(
+                    isPresented: $showingFileImporter,
+                    allowedContentTypes: [.json],
+                    allowsMultipleSelection: false
+                ) { result in
+                    switch result {
+                    case .success(let urls):
+                        guard let url = urls.first else { return }
+                        restoreURL = url
+                        showingRestoreConfirmation = true
+                    case .failure:
+                        importError = "Could not open file."
+                    }
+                }
+                .alert("Restore from backup?", isPresented: $showingRestoreConfirmation) {
+                    Button("Cancel", role: .cancel) { restoreURL = nil }
+                    Button("Restore", role: .destructive) {
+                        performRestore()
+                    }
+                } message: {
+                    Text("This will replace all current habits and entries with the backup. This cannot be undone.")
+                }
+                .alert("Restore failed", isPresented: $showingImportErrorAlert) {
+                    Button("Retry") { retryImport() }
+                    Button("OK") { importError = nil }
+                } message: {
+                    if let importError { Text(importError) }
+                }
+                .alert("Export failed", isPresented: $showingExportErrorAlert) {
+                    Button("OK") { exportError = nil }
+                } message: {
+                    if let exportError { Text(exportError) }
+                }
+                .alert("Restore complete", isPresented: $importSuccess) {
+                    Button("OK") { importSuccess = false }
+                } message: {
+                    Text("Your habits have been restored from the backup.")
+                }
+        }
+    }
 
-                List {
-                Section("Account") {
-                    if authService.isSignedIn {
-                        SettingsRow(icon: "person.crop.circle.fill", iconColor: .blue, title: "Signed in with Apple") {
-                            Text("Active").font(.subheadline).foregroundStyle(.secondary)
-                        }
-                        Button {
-                            authService.signOut()
-                        } label: {
-                            SettingsRow(icon: "rectangle.portrait.and.arrow.right", iconColor: .orange, title: "Sign out") {
-                                Image(systemName: "chevron.right")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.tertiary)
-                            }
-                        }
-                        .buttonStyle(.plain)
+    private var mainContent: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            PageHeading(title: "Settings")
+                .padding(.bottom, 4)
+            settingsList
+        }
+        .overlay { exportOverlay }
+    }
+
+    private var settingsList: some View {
+        List {
+            accountSection
+            notificationsSection
+            appearanceSection
+            dataSection
+            supportSection
+            aboutSection
+        }
+        #if os(iOS)
+        .listStyle(.insetGrouped)
+        #else
+        .listStyle(.inset)
+        #endif
+    }
+
+    @ViewBuilder
+    private var accountSection: some View {
+        Section(header: Text("Account"), footer: accountSectionFooter, content: { accountSectionContent })
+    }
+
+    @ViewBuilder
+    private var accountSectionFooter: some View {
+        if !authService.isSignedIn {
+            Text("Sign in to back up your habits and sync across your devices.")
+        }
+    }
+
+    @ViewBuilder
+    private var accountSectionContent: some View {
+        if authService.isSignedIn {
+            Button {
+                showingAccountProfile = true
+            } label: {
+                SettingsRow(
+                    icon: "person.crop.circle.fill",
+                    iconColor: .blue,
+                    title: authService.userDisplayName ?? "Signed in with Apple"
+                ) {
+                    Image(systemName: "chevron.right")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tertiary)
+                }
+            }
+            .buttonStyle(.plain)
+            Button {
+                authService.signOut()
+            } label: {
+                SettingsRow(icon: "rectangle.portrait.and.arrow.right", iconColor: .orange, title: "Sign out") {
+                    chevronAccessory
+                }
+            }
+            .buttonStyle(.plain)
+        } else {
+            Button {
+                signInTapped()
+            } label: {
+                SettingsRow(icon: "person.crop.circle.badge.plus", iconColor: .blue, title: "Sign in with Apple") {
+                    if isSigningIn {
+                        ProgressView().scaleEffect(0.8)
                     } else {
-                        Button {
-                            signInTapped()
-                        } label: {
-                            SettingsRow(icon: "person.crop.circle.badge.plus", iconColor: .blue, title: "Sign in with Apple") {
-                                if isSigningIn {
-                                    ProgressView().scaleEffect(0.8)
-                                } else {
-                                    Image(systemName: "chevron.right")
-                                        .font(.caption.weight(.semibold))
-                                        .foregroundStyle(.tertiary)
-                                }
-                            }
-                        }
-                        .buttonStyle(.plain)
-                        .disabled(isSigningIn)
-                    }
-                    if let authError {
-                        Text(authError).font(.caption).foregroundStyle(.red)
+                        chevronAccessory
                     }
                 }
+            }
+            .buttonStyle(.plain)
+            .disabled(isSigningIn)
+        }
+        if let authError {
+            Text(authError).font(.caption).foregroundStyle(.red)
+        }
+    }
 
-                Section {
-                    SettingsRow(icon: "bell.fill", iconColor: .red, title: "Notifications") {
-                        Toggle("", isOn: $notificationsEnabled)
-                            .labelsHidden()
-                            .onChange(of: notificationsEnabled) { _, newValue in
-                                if newValue {
-                                    NotificationService.shared.requestAuthorization()
-                                } else {
-                                    NotificationService.shared.cancelAllNotifications()
-                                }
-                            }
-                    }
-                } footer: {
-                    Text("Each habit has its own reminder times")
-                }
+    private var chevronAccessory: some View {
+        Image(systemName: "chevron.right")
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.tertiary)
+    }
 
-                Section("Appearance") {
-                    Picker("Theme", selection: $appearanceMode) {
-                        ForEach(AppearanceMode.allCases, id: \.self) { mode in
-                            Text(mode.displayName).tag(mode)
+    @ViewBuilder
+    private var notificationsSection: some View {
+        Section {
+            SettingsRow(icon: "bell.fill", iconColor: .red, title: "Notifications") {
+                Toggle("", isOn: $notificationsEnabled)
+                    .labelsHidden()
+                    .onChange(of: notificationsEnabled) { _, newValue in
+                        if newValue {
+                            NotificationService.shared.requestAuthorization()
+                        } else {
+                            NotificationService.shared.cancelAllNotifications()
                         }
                     }
-                    .pickerStyle(.segmented)
-                }
+            }
+        } footer: {
+            Text("Each habit has its own reminder times")
+        }
+    }
 
-                Section("Data") {
-                    Menu {
-                        Button("JSON (Full Backup)") { exportData(format: .json) }
-                        Button("CSV (Entries)") { exportData(format: .csvEntries) }
-                        Button("CSV (Summary)") { exportData(format: .csvSummary) }
-                    } label: {
-                        SettingsRow(icon: "square.and.arrow.up.fill", iconColor: .green, title: "Export Data") {
-                            Image(systemName: "chevron.right")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.tertiary)
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    
-                    Button {
-                        showingFileImporter = true
-                    } label: {
-                        SettingsRow(icon: "square.and.arrow.down.fill", iconColor: .indigo, title: "Restore from backup") {
-                            if isImporting {
-                                ProgressView().scaleEffect(0.8)
-                            } else {
-                                Image(systemName: "chevron.right")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.tertiary)
-                            }
-                        }
-                    }
-                    .buttonStyle(.plain)
-                    .disabled(isImporting)
-                    
-                    Button { showingResetAlert = true } label: {
-                        SettingsRow(icon: "trash.fill", iconColor: .red, title: "Reset All Data") {
-                            Image(systemName: "chevron.right")
-                                .font(.caption.weight(.semibold))
-                                .foregroundStyle(.tertiary)
-                        }
-                    }
-                    .buttonStyle(.plain)
+    private var appearanceSection: some View {
+        Section(header: Text("Appearance")) {
+            Picker("Theme", selection: $appearanceMode) {
+                ForEach(AppearanceMode.allCases, id: \.self) { mode in
+                    Text(mode.displayName).tag(mode)
                 }
-                
-                Section("Support") {
-                    if let privacyURL = AppLinks.privacyPolicyURL {
-                        Link(destination: privacyURL) {
-                            SettingsRow(icon: "hand.raised.fill", iconColor: .indigo, title: "Privacy Policy") {
-                                Image(systemName: "arrow.up.right")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.tertiary)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                    }
-                    if let supportURL = AppLinks.supportURL {
-                        Link(destination: supportURL) {
-                            SettingsRow(icon: "envelope.fill", iconColor: .blue, title: "Contact & Support") {
-                                Image(systemName: "arrow.up.right")
-                                    .font(.caption.weight(.semibold))
-                                    .foregroundStyle(.tertiary)
-                            }
-                        }
-                        .buttonStyle(.plain)
-                    }
+            }
+            .pickerStyle(.segmented)
+        }
+    }
+
+    private var dataSection: some View {
+        Section(header: Text("Data")) {
+            Menu {
+                Button("JSON (Full Backup)") { exportData(format: .json) }
+                Button("CSV (Entries)") { exportData(format: .csvEntries) }
+                Button("CSV (Summary)") { exportData(format: .csvSummary) }
+            } label: {
+                SettingsRow(icon: "square.and.arrow.up.fill", iconColor: .green, title: "Export Data") {
+                    chevronAccessory
                 }
-                
-                Section("About") {
-                    SettingsRow(icon: "info.circle.fill", iconColor: .gray, title: "Version") {
-                        Text("1.0.0").foregroundStyle(.secondary)
-                    }
-                    SettingsRow(icon: "checkmark.circle.fill", iconColor: .blue, title: "Habits") {
-                        Text("\(habits.count)").foregroundStyle(.secondary)
-                    }
-                    SettingsRow(icon: "chart.bar.fill", iconColor: .purple, title: "Total Entries") {
-                        Text("\(habits.reduce(0) { $0 + $1.entries.count })").foregroundStyle(.secondary)
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                showingFileImporter = true
+            } label: {
+                SettingsRow(icon: "square.and.arrow.down.fill", iconColor: .indigo, title: "Restore from backup") {
+                    if isImporting {
+                        ProgressView().scaleEffect(0.8)
+                    } else {
+                        chevronAccessory
                     }
                 }
             }
-            #if os(iOS)
-            .listStyle(.insetGrouped)
-            #else
-            .listStyle(.inset)
-            #endif
-            }
-            .navigationTitle("")
-            .inlineNavigationTitle()
-            .overlay {
-                if isExporting {
-                    Color.black.opacity(0.3)
-                        .ignoresSafeArea()
-                    ProgressView("Preparing export…")
-                        .padding(20)
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            .buttonStyle(.plain)
+            .disabled(isImporting)
+
+            Button { showingResetAlert = true } label: {
+                SettingsRow(icon: "trash.fill", iconColor: .red, title: "Reset All Data") {
+                    chevronAccessory
                 }
             }
-            .sheet(isPresented: $showingShareSheet) {
-                if let url = exportURL {
-                    ShareSheet(url: url)
-                }
-            }
-            .alert("Reset All Data?", isPresented: $showingResetAlert) {
-                Button("Cancel", role: .cancel) {}
-                Button("Reset", role: .destructive) {
-                    DispatchQueue.main.async {
-                        onRequestReset?()
+            .buttonStyle(.plain)
+        }
+    }
+
+    @ViewBuilder
+    private var supportSection: some View {
+        Section(header: Text("Support")) {
+            if let privacyURL = AppLinks.privacyPolicyURL {
+                Link(destination: privacyURL) {
+                    SettingsRow(icon: "hand.raised.fill", iconColor: .indigo, title: "Privacy Policy") {
+                        Image(systemName: "arrow.up.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
                     }
                 }
-            } message: {
-                Text("This will delete all habits and entries. This cannot be undone.")
+                .buttonStyle(.plain)
             }
-            .alert("Sign in", isPresented: $showingAuthErrorAlert) {
-                Button("OK") { authError = nil }
-            } message: {
-                if let authError { Text(authError) }
-            }
-            .fileImporter(
-                isPresented: $showingFileImporter,
-                allowedContentTypes: [.json],
-                allowsMultipleSelection: false
-            ) { result in
-                switch result {
-                case .success(let urls):
-                    guard let url = urls.first else { return }
-                    restoreURL = url
-                    showingRestoreConfirmation = true
-                case .failure:
-                    importError = "Could not open file."
+            if let supportURL = AppLinks.supportURL {
+                Link(destination: supportURL) {
+                    SettingsRow(icon: "envelope.fill", iconColor: .blue, title: "Contact & Support") {
+                        Image(systemName: "arrow.up.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
                 }
+                .buttonStyle(.plain)
             }
-            .alert("Restore from backup?", isPresented: $showingRestoreConfirmation) {
-                Button("Cancel", role: .cancel) { restoreURL = nil }
-                Button("Restore", role: .destructive) {
-                    performRestore()
-                }
-            } message: {
-                Text("This will replace all current habits and entries with the backup. This cannot be undone.")
+        }
+    }
+
+    private var aboutSection: some View {
+        Section(header: Text("About")) {
+            SettingsRow(icon: "info.circle.fill", iconColor: .gray, title: "Version") {
+                Text("1.0.0").foregroundStyle(.secondary)
             }
-            .alert("Restore failed", isPresented: $showingImportErrorAlert) {
-                Button("Retry") { retryImport() }
-                Button("OK") { importError = nil }
-            } message: {
-                if let importError { Text(importError) }
+            SettingsRow(icon: "checkmark.circle.fill", iconColor: .blue, title: "Habits") {
+                Text("\(habits.count)").foregroundStyle(.secondary)
             }
-            .alert("Export failed", isPresented: $showingExportErrorAlert) {
-                Button("OK") { exportError = nil }
-            } message: {
-                if let exportError { Text(exportError) }
+            SettingsRow(icon: "chart.bar.fill", iconColor: .purple, title: "Total Entries") {
+                Text("\(totalEntriesCount)").foregroundStyle(.secondary)
             }
-            .alert("Restore complete", isPresented: $importSuccess) {
-                Button("OK") { importSuccess = false }
-            } message: {
-                Text("Your habits have been restored from the backup.")
-            }
+        }
+    }
+
+    private var totalEntriesCount: Int {
+        habits.reduce(0) { $0 + $1.entries.count }
+    }
+
+    @ViewBuilder
+    private var exportOverlay: some View {
+        if isExporting {
+            Color.black.opacity(0.3)
+                .ignoresSafeArea()
+            ProgressView("Preparing export…")
+                .padding(20)
+                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
         }
     }
     

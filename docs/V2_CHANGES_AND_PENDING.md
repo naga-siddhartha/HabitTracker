@@ -52,8 +52,43 @@ Track of what is done on the v2 branch and what remains before merging to main a
 ### Core UI polish
 - [x] Settings – Export failure alert; import error alert with Retry; Account at top; loading states for export/import.
 
+### Phase 1 review & cleanup
+- [x] Removed dead code (e.g. `authCredential` from AuthService).
+- [x] Organized code with MARK sections (AuthService, KeychainHelper, ImportService).
+- [x] Used `ImportError.invalidData` for empty backup data in `parseExportData`.
+
 ### Not done on this branch (by design)
 - [ ] **Privacy policy** – Left unchanged. To be updated when merging v2 to main (account data, Sign in with Apple, optional iCloud/CloudKit sync).
+
+---
+
+## Signing & Capabilities (fix provisioning errors)
+
+If you see **"No Accounts"** or **"Provisioning profile doesn't include the Sign In with Apple capability"**:
+
+1. **Add your Apple ID in Xcode**
+   - **Xcode → Settings… (or Preferences) → Accounts**
+   - Click **+** (bottom left) → **Apple ID** → sign in with your Apple ID.
+   - A free Apple ID works for running on your device; **App Store distribution** needs an [Apple Developer Program](https://developer.apple.com/programs/) membership.
+
+2. **Select the correct team**
+   - In the project navigator, select the **HabitTracker** project (blue icon).
+   - Select the **HabitTracker** target.
+   - Open the **Signing & Capabilities** tab.
+   - Under **Signing**, set **Team** to your account (e.g. "Your Name (Personal Team)" or your developer team).
+
+3. **Add Sign in with Apple in Xcode**
+   - In **Signing & Capabilities**, click **+ Capability**.
+   - Search for **Sign in with Apple** and double‑click it.
+   - Xcode will add it to the entitlements and register it with your provisioning profile. (Our entitlements file already has `com.apple.developer.applesignin`; adding the capability here ensures the profile is updated.)
+
+4. **Let Xcode fix the profile**
+   - If errors persist, turn **Automatically manage signing** off and on, or use **Signing (Debug)** / **Signing (Release)** and re-select the same team so Xcode regenerates the profile.
+
+5. **Clean and build**
+   - **Product → Clean Build Folder**, then build again (**⌘B**).
+
+If you don’t want to use Sign in with Apple yet (e.g. no Apple ID in Xcode), you can temporarily remove the `com.apple.developer.applesignin` entry from **HabitTracker.entitlements** so the project builds; the Settings “Account” section will still appear, but “Sign in with Apple” will fail until the capability is re-added and the profile is fixed.
 
 ---
 

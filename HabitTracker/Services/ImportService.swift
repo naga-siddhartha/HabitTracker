@@ -4,7 +4,9 @@ import SwiftData
 /// Restore from Ritual Log v1 JSON export (ExportService.ExportData format).
 @available(iOS 17.0, macOS 14.0, *)
 struct ImportService {
-    
+
+    // MARK: - Errors
+
     enum ImportError: LocalizedError {
         case invalidData
         case decodingFailed(String)
@@ -16,9 +18,12 @@ struct ImportService {
             }
         }
     }
-    
+
+    // MARK: - Parsing
+
     /// Parse JSON data into export model. Does not touch the model context.
     static func parseExportData(_ data: Data) throws -> ExportService.ExportData {
+        guard !data.isEmpty else { throw ImportError.invalidData }
         let decoder = JSONDecoder()
         decoder.dateDecodingStrategy = .iso8601
         do {
@@ -27,7 +32,9 @@ struct ImportService {
             throw ImportError.decodingFailed(error.localizedDescription)
         }
     }
-    
+
+    // MARK: - Restore
+
     /// Replace all habits in the given context with the contents of the export. Call from MainActor with main context.
     static func restoreFromExport(_ exportData: ExportService.ExportData, context: ModelContext) throws {
         for exportHabit in exportData.habits {
@@ -50,7 +57,9 @@ struct ImportService {
         }
         try context.save()
     }
-    
+
+    // MARK: - Helpers
+
     private static func makeHabit(from export: ExportService.ExportHabit, context: ModelContext) throws -> Habit {
         let color = HabitColor(rawValue: export.color) ?? .blue
         let frequency = HabitFrequency(rawValue: export.frequency) ?? .daily
