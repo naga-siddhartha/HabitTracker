@@ -4,9 +4,8 @@ import Foundation
 enum WidgetDataStore {
     static let appGroupIdentifier = "group.com.nagasiddharthadonepudi.HabitTracker"
 
-    private static var userDefaults: UserDefaults? {
-        UserDefaults(suiteName: appGroupIdentifier)
-    }
+    /// Cached so we only open the App Group suite once per process (avoids repeated CFPreferences warnings when container is unavailable, e.g. Simulator).
+    private static let userDefaults: UserDefaults? = UserDefaults(suiteName: appGroupIdentifier)
 
     private static let completedCountKey = "widget_completedCount"
     private static let totalCountKey = "widget_totalCount"
