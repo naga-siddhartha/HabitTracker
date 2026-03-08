@@ -20,6 +20,8 @@ final class Habit {
     var createdAt: Date
     var updatedAt: Date
     var isArchived: Bool
+    /// When non-nil, habit is associated with a signed-in user (sync).
+    var userId: String?
     
     @Relationship(deleteRule: .cascade, inverse: \HabitEntry.habit)
     var entries: [HabitEntry] = []
@@ -53,6 +55,7 @@ final class Habit {
         self.createdAt = .now
         self.updatedAt = .now
         self.isArchived = false
+        self.userId = nil
     }
 }
 
@@ -121,14 +124,17 @@ final class HabitEntry {
     var skipReason: String?
     var updatedAt: Date
     var habit: Habit?
+    /// When non-nil, entry belongs to a signed-in user (sync).
+    var userId: String?
     
-    init(date: Date, isCompleted: Bool = true, isSkipped: Bool = false, skipReason: String? = nil) {
+    init(date: Date, isCompleted: Bool = true, isSkipped: Bool = false, skipReason: String? = nil, userId: String? = nil) {
         self.id = UUID()
         self.date = date.startOfDay
         self.isCompleted = isCompleted
         self.isSkipped = isSkipped
         self.skipReason = skipReason
         self.updatedAt = .now
+        self.userId = userId
     }
 }
 
@@ -144,11 +150,14 @@ final class Streak {
     var streakStartDate: Date?
     var updatedAt: Date
     var habit: Habit?
+    /// When non-nil, streak belongs to a signed-in user (sync).
+    var userId: String?
     
-    init(currentStreak: Int = 0, longestStreak: Int = 0) {
+    init(currentStreak: Int = 0, longestStreak: Int = 0, userId: String? = nil) {
         self.id = UUID()
         self.currentStreak = currentStreak
         self.longestStreak = longestStreak
         self.updatedAt = .now
+        self.userId = userId
     }
 }

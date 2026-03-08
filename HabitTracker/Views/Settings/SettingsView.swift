@@ -1,11 +1,14 @@
 import SwiftUI
 import SwiftData
 import UniformTypeIdentifiers
+import WidgetKit
 
+@available(iOS 17.0, macOS 14.0, *)
 struct SettingsView: View {
     @Query private var habits: [Habit]
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("appearanceMode") private var appearanceMode = AppearanceMode.system
+    @ObservedObject private var authService = AuthService.shared
 
     var onRequestReset: (() -> Void)? = nil
 
@@ -13,6 +16,18 @@ struct SettingsView: View {
     @State private var showingShareSheet = false
     @State private var exportURL: URL?
     @State private var isExporting = false
+    @State private var authError: String?
+    @State private var showingAuthErrorAlert = false
+    @State private var isSigningIn = false
+    @State private var showingRestoreConfirmation = false
+    @State private var restoreURL: URL?
+    @State private var isImporting = false
+    @State private var importError: String?
+    @State private var showingImportErrorAlert = false
+    @State private var importSuccess = false
+    @State private var showingFileImporter = false
+    @State private var exportError: String?
+    @State private var showingExportErrorAlert = false
     
     var body: some View {
         NavigationStack {
@@ -21,6 +36,43 @@ struct SettingsView: View {
                     .padding(.bottom, 4)
 
                 List {
+                Section("Account") {
+                    if authService.isSignedIn {
+                        SettingsRow(icon: "person.crop.circle.fill", iconColor: .blue, title: "Signed in with Apple") {
+                            Text("Active").font(.subheadline).foregroundStyle(.secondary)
+                        }
+                        Button {
+                            authService.signOut()
+                        } label: {
+                            SettingsRow(icon: "rectangle.portrait.and.arrow.right", iconColor: .orange, title: "Sign out") {
+                                Image(systemName: "chevron.right")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                    } else {
+                        Button {
+                            signInTapped()
+                        } label: {
+                            SettingsRow(icon: "person.crop.circle.badge.plus", iconColor: .blue, title: "Sign in with Apple") {
+                                if isSigningIn {
+                                    ProgressView().scaleEffect(0.8)
+                                } else {
+                                    Image(systemName: "chevron.right")
+                                        .font(.caption.weight(.semibold))
+                                        .foregroundStyle(.tertiary)
+                                }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(isSigningIn)
+                    }
+                    if let authError {
+                        Text(authError).font(.caption).foregroundStyle(.red)
+                    }
+                }
+
                 Section {
                     SettingsRow(icon: "bell.fill", iconColor: .red, title: "Notifications") {
                         Toggle("", isOn: $notificationsEnabled)
@@ -59,6 +111,22 @@ struct SettingsView: View {
                         }
                     }
                     .buttonStyle(.plain)
+                    
+                    Button {
+                        showingFileImporter = true
+                    } label: {
+                        SettingsRow(icon: "square.and.arrow.down.fill", iconColor: .indigo, title: "Restore from backup") {
+                            if isImporting {
+                                ProgressView().scaleEffect(0.8)
+                            } else {
+                                Image(systemName: "chevron.right")
+                                    .font(.caption.weight(.semibold))
+                                    .foregroundStyle(.tertiary)
+                            }
+                        }
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(isImporting)
                     
                     Button { showingResetAlert = true } label: {
                         SettingsRow(icon: "trash.fill", iconColor: .red, title: "Reset All Data") {
@@ -137,6 +205,103 @@ struct SettingsView: View {
             } message: {
                 Text("This will delete all habits and entries. This cannot be undone.")
             }
+            .alert("Sign in", isPresented: $showingAuthErrorAlert) {
+                Button("OK") { authError = nil }
+            } message: {
+                if let authError { Text(authError) }
+            }
+            .fileImporter(
+                isPresented: $showingFileImporter,
+                allowedContentTypes: [.json],
+                allowsMultipleSelection: false
+            ) { result in
+                switch result {
+                case .success(let urls):
+                    guard let url = urls.first else { return }
+                    restoreURL = url
+                    showingRestoreConfirmation = true
+                case .failure:
+                    importError = "Could not open file."
+                }
+            }
+            .alert("Restore from backup?", isPresented: $showingRestoreConfirmation) {
+                Button("Cancel", role: .cancel) { restoreURL = nil }
+                Button("Restore", role: .destructive) {
+                    performRestore()
+                }
+            } message: {
+                Text("This will replace all current habits and entries with the backup. This cannot be undone.")
+            }
+            .alert("Restore failed", isPresented: $showingImportErrorAlert) {
+                Button("Retry") { retryImport() }
+                Button("OK") { importError = nil }
+            } message: {
+                if let importError { Text(importError) }
+            }
+            .alert("Export failed", isPresented: $showingExportErrorAlert) {
+                Button("OK") { exportError = nil }
+            } message: {
+                if let exportError { Text(exportError) }
+            }
+            .alert("Restore complete", isPresented: $importSuccess) {
+                Button("OK") { importSuccess = false }
+            } message: {
+                Text("Your habits have been restored from the backup.")
+            }
+        }
+    }
+    
+    private func performRestore() {
+        guard let url = restoreURL else { return }
+        restoreURL = nil
+        isImporting = true
+        importError = nil
+        Task {
+            do {
+                let data: Data
+                if url.startAccessingSecurityScopedResource() {
+                    defer { url.stopAccessingSecurityScopedResource() }
+                    data = try Data(contentsOf: url)
+                } else {
+                    data = try Data(contentsOf: url)
+                }
+                let exportData = try ImportService.parseExportData(data)
+                await MainActor.run {
+                    do {
+                        try ImportService.replaceAllAndRestore(from: exportData, context: HabitStore.shared.modelContext)
+                        HabitStore.shared.writeWidgetData()
+                        WidgetKit.WidgetCenter.shared.reloadAllTimelines()
+                        importSuccess = true
+                    } catch {
+                        importError = error.localizedDescription
+                        showingImportErrorAlert = true
+                    }
+                    isImporting = false
+                }
+            } catch {
+                await MainActor.run {
+                    importError = error.localizedDescription
+                    showingImportErrorAlert = true
+                    isImporting = false
+                }
+            }
+        }
+    }
+    
+    private func signInTapped() {
+        isSigningIn = true
+        authError = nil
+        Task {
+            do {
+                try await authService.signIn()
+                isSigningIn = false
+            } catch {
+                await MainActor.run {
+                    isSigningIn = false
+                    authError = error.localizedDescription
+                    showingAuthErrorAlert = true
+                }
+            }
         }
     }
     
@@ -168,6 +333,8 @@ struct SettingsView: View {
 
         guard let data else {
             isExporting = false
+            exportError = "Could not prepare export data."
+            showingExportErrorAlert = true
             return
         }
 
@@ -182,10 +349,19 @@ struct SettingsView: View {
                     showingShareSheet = true
                 }
             } catch {
-                await MainActor.run { isExporting = false }
-                print("Export failed: \(error)")
+                await MainActor.run {
+                    isExporting = false
+                    exportError = "Export failed: \(error.localizedDescription)"
+                    showingExportErrorAlert = true
+                }
             }
         }
+    }
+    
+    private func retryImport() {
+        showingImportErrorAlert = false
+        importError = nil
+        showingFileImporter = true
     }
 }
 

@@ -235,6 +235,10 @@ struct StatCard: View {
         .padding()
         .background(Color.systemGray6)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(title)
+        .accessibilityValue(value)
+        .accessibilityHint("Double tap to view details")
     }
 }
 

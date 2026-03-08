@@ -7,6 +7,7 @@ struct MonthlyView: View {
     @State private var selectedDate = Date.now
     @State private var habitForDetailsSheet: Habit?
     @State private var editingHabit: Habit?
+    @State private var skipReasonTarget: (habit: Habit, date: Date)?
     
     private let calendar = Calendar.current
     private let columns = Array(repeating: GridItem(.flexible()), count: 7)
@@ -63,7 +64,10 @@ struct MonthlyView: View {
                                 date: selectedDate,
                                 onViewDescription: { habitForDetailsSheet = habit },
                                 onEdit: { editingHabit = habit },
-                                onDelete: { HabitStore.shared.deleteHabit(habit) }
+                                onDelete: { HabitStore.shared.deleteHabit(habit) },
+                                onSkip: { HabitStore.shared.skipDay(for: habit, on: selectedDate) },
+                                onUnskip: { HabitStore.shared.unskipDay(for: habit, on: selectedDate) },
+                                onSkipWithReason: { skipReasonTarget = (habit, selectedDate) }
                             )
                         }
                     }
@@ -76,6 +80,16 @@ struct MonthlyView: View {
             Spacer()
         }
         .habitSheets(details: $habitForDetailsSheet, editing: $editingHabit)
+        .sheet(item: monthlySkipReasonBinding) { pair in
+            SkipReasonSheetView(habit: pair.habit, date: pair.date) { skipReasonTarget = nil }
+        }
+    }
+    
+    private var monthlySkipReasonBinding: Binding<SkipReasonSheetItem?> {
+        Binding(
+            get: { skipReasonTarget.map { SkipReasonSheetItem(habit: $0.habit, date: $0.date) } },
+            set: { skipReasonTarget = $0.map { ($0.habit, $0.date) } }
+        )
     }
     
     private var daysInMonth: [Date] {
@@ -137,8 +151,12 @@ struct MonthlyHabitRow: View {
     var onViewDescription: (() -> Void)? = nil
     var onEdit: (() -> Void)? = nil
     var onDelete: (() -> Void)? = nil
+    var onSkip: (() -> Void)? = nil
+    var onUnskip: (() -> Void)? = nil
+    var onSkipWithReason: (() -> Void)? = nil
     
     private var isCompleted: Bool { habit.isCompleted(on: date) }
+    private var isSkipped: Bool { habit.isSkipped(on: date) }
     
     var body: some View {
         HStack(alignment: .top) {
@@ -152,6 +170,9 @@ struct MonthlyHabitRow: View {
                         Circle().fill(habit.color.color).frame(width: 12, height: 12)
                     }
                     Text(habit.name)
+                    if isSkipped {
+                        Text("Skipped").font(.caption).foregroundStyle(.orange)
+                    }
                     Spacer(minLength: 0)
                 }
                 .contentShape(Rectangle())
@@ -162,8 +183,8 @@ struct MonthlyHabitRow: View {
                     HabitStore.shared.toggleCompletion(for: habit, on: date)
                 }
             } label: {
-                Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
-                    .foregroundStyle(isCompleted ? habit.color.color : .secondary)
+                Image(systemName: statusIcon)
+                    .foregroundStyle(statusColor)
                     .contentTransition(.symbolEffect(.replace))
             }
             .buttonStyle(.plain)
@@ -178,9 +199,24 @@ struct MonthlyHabitRow: View {
             HabitRowActions(
                 onViewDetails: { onViewDescription?() },
                 onEdit: { onEdit?() },
-                onDelete: { onDelete?() }
+                onDelete: { onDelete?() },
+                showSkipUnskip: true,
+                isSkippedOnDate: isSkipped,
+                onSkip: onSkip,
+                onUnskip: onUnskip,
+                onSkipWithReason: onSkipWithReason
             )
         }
+    }
+    
+    private var statusIcon: String {
+        if isSkipped { return "pause.circle.fill" }
+        return isCompleted ? "checkmark.circle.fill" : "circle"
+    }
+    
+    private var statusColor: Color {
+        if isSkipped { return .orange }
+        return isCompleted ? habit.color.color : .secondary
     }
 }
 

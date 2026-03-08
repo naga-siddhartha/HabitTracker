@@ -57,6 +57,9 @@ struct ProgressRing: View {
             }
         }
         .frame(width: size, height: size)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Today's progress")
+        .accessibilityValue("\(count) of \(total) habits completed")
     }
 }
 
@@ -207,18 +210,80 @@ struct CalendarEmptyState: View {
     }
 }
 
+// MARK: - Skip reason sheet (shared)
+
+struct SkipReasonSheetItem: Identifiable {
+    let habit: Habit
+    let date: Date
+    var id: String { "\(habit.id.uuidString)-\(date.timeIntervalSince1970)" }
+}
+
+struct SkipReasonSheetView: View {
+    let habit: Habit
+    let date: Date
+    var onDismiss: () -> Void
+    @State private var reasonText = ""
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationStack {
+            Form {
+                TextField("Reason (optional)", text: $reasonText)
+            }
+            .navigationTitle("Skip day")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { dismiss(); onDismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Skip") {
+                        HabitStore.shared.skipDay(for: habit, on: date, reason: reasonText.isEmpty ? nil : reasonText)
+                        dismiss()
+                        onDismiss()
+                    }
+                }
+            }
+        }
+    }
+}
+
 // MARK: - Habit Row Actions (shared Menu / contextMenu content)
 
 struct HabitRowActions: View {
-    var onViewDetails: () -> Void
-    var onEdit: () -> Void
-    var onDelete: () -> Void
+    var onViewDetails: (() -> Void)? = nil
+    var onEdit: (() -> Void)? = nil
+    var onDelete: (() -> Void)? = nil
+    /// When true, show Skip / Unskip based on isSkippedOnDate.
+    var showSkipUnskip: Bool = false
+    var isSkippedOnDate: Bool = false
+    var onSkip: (() -> Void)? = nil
+    var onUnskip: (() -> Void)? = nil
+    var onSkipWithReason: (() -> Void)? = nil
 
     var body: some View {
-        Button(action: onViewDetails) { Label("View details", systemImage: "doc.text") }
-        Divider()
-        Button(action: onEdit) { Label("Edit", systemImage: "pencil") }
-        Divider()
-        Button(role: .destructive, action: onDelete) { Label("Delete", systemImage: "trash") }
+        if onViewDetails != nil {
+            Button(action: { onViewDetails?() }) { Label("View details", systemImage: "doc.text") }
+            Divider()
+        }
+        if showSkipUnskip {
+            if isSkippedOnDate {
+                Button(action: { onUnskip?() }) { Label("Unskip day", systemImage: "arrow.uturn.backward") }
+                Divider()
+            } else {
+                Button(action: { onSkip?() }) { Label("Skip day", systemImage: "pause.circle") }
+                if onSkipWithReason != nil {
+                    Button(action: { onSkipWithReason?() }) { Label("Skip day with reason", systemImage: "pause.circle.badge.questionmark") }
+                }
+                Divider()
+            }
+        }
+        if onEdit != nil {
+            Button(action: { onEdit?() }) { Label("Edit", systemImage: "pencil") }
+            Divider()
+        }
+        if onDelete != nil {
+            Button(role: .destructive, action: { onDelete?() }) { Label("Delete", systemImage: "trash") }
+        }
     }
 }

@@ -101,8 +101,12 @@ struct ChecklistRow: View {
     var onEdit: () -> Void
     var onDelete: () -> Void
     var onViewDescription: (() -> Void)? = nil
+    var onSkip: (() -> Void)? = nil
+    var onUnskip: (() -> Void)? = nil
+    var onSkipWithReason: (() -> Void)? = nil
 
     private var isCompleted: Bool { habit.isCompleted(on: date) }
+    private var isSkipped: Bool { habit.isSkipped(on: date) }
 
     private var timeLabel: String {
         habit.reminderTimes.isEmpty ? "All day" : habit.reminderTimes.first!.formatted(date: .omitted, time: .shortened)
@@ -134,7 +138,12 @@ struct ChecklistRow: View {
                 HabitRowActions(
                     onViewDetails: { onViewDescription?() },
                     onEdit: onEdit,
-                    onDelete: onDelete
+                    onDelete: onDelete,
+                    showSkipUnskip: true,
+                    isSkippedOnDate: isSkipped,
+                    onSkip: onSkip,
+                    onUnskip: onUnskip,
+                    onSkipWithReason: onSkipWithReason
                 )
             } label: {
                 Image(systemName: "ellipsis.circle")
@@ -145,28 +154,46 @@ struct ChecklistRow: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 16)
         .contentShape(Rectangle())
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(habit.name), \(isSkipped ? "Skipped" : (isCompleted ? "Completed" : "Not completed"))")
+        .accessibilityHint(isCompleted ? "Double tap to uncheck" : "Double tap to mark complete")
         .contextMenu {
             HabitRowActions(
                 onViewDetails: { onViewDescription?() },
                 onEdit: onEdit,
-                onDelete: onDelete
+                onDelete: onDelete,
+                showSkipUnskip: true,
+                isSkippedOnDate: isSkipped,
+                onSkip: onSkip,
+                onUnskip: onUnskip,
+                onSkipWithReason: onSkipWithReason
             )
         }
     }
 
     private var checkBox: some View {
         ZStack {
-            Circle()
-                .stroke(isCompleted ? habit.color.color : Color.systemGray4, lineWidth: 2)
-                .frame(width: 34, height: 34)
-            if isCompleted {
-                Circle().fill(habit.color.color).frame(width: 34, height: 34)
-                Image(systemName: "checkmark").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+            if isSkipped {
+                Circle()
+                    .stroke(Color.orange, lineWidth: 2)
+                    .frame(width: 34, height: 34)
+                Image(systemName: "pause.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(.orange)
+            } else {
+                Circle()
+                    .stroke(isCompleted ? habit.color.color : Color.systemGray4, lineWidth: 2)
+                    .frame(width: 34, height: 34)
+                if isCompleted {
+                    Circle().fill(habit.color.color).frame(width: 34, height: 34)
+                    Image(systemName: "checkmark").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                }
             }
         }
         .frame(width: 34, height: 34)
         .contentShape(Rectangle())
         .animation(.spring(duration: 0.25), value: isCompleted)
+        .animation(.spring(duration: 0.25), value: isSkipped)
     }
 
     private var habitIcon: some View {
@@ -186,11 +213,11 @@ struct ChecklistRow: View {
         VStack(alignment: .leading, spacing: 2) {
             Text(habit.name)
                 .font(.system(size: 18, weight: .semibold))
-                .foregroundStyle(isCompleted ? .secondary : .primary)
+                .foregroundStyle(isCompleted || isSkipped ? .secondary : .primary)
                 .strikethrough(isCompleted)
-            Text(timeLabel)
+            Text(isSkipped ? "Skipped" : timeLabel)
                 .font(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(isSkipped ? .orange : .secondary)
             if isCompleted, let streak = habit.streak, streak.currentStreak > 0 {
                 HStack(spacing: 4) {
                     Image(systemName: "flame.fill").font(.system(size: 10))

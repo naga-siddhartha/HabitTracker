@@ -10,6 +10,7 @@ struct HomeView: View {
     @State private var showingAddMenuPopover = false
     @State private var editingHabit: Habit?
     @State private var habitForDetailsSheet: Habit?
+    @State private var skipReasonTarget: (habit: Habit, date: Date)?
 
     private let config = LayoutConfig.current
     private let calendar = Calendar.current
@@ -110,7 +111,17 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showingAddHabit) { AddEditHabitView() }
             .habitSheets(details: $habitForDetailsSheet, editing: $editingHabit)
+            .sheet(item: homeSkipReasonBinding) { pair in
+                SkipReasonSheetView(habit: pair.habit, date: pair.date) { skipReasonTarget = nil }
+            }
         }
+    }
+    
+    private var homeSkipReasonBinding: Binding<SkipReasonSheetItem?> {
+        Binding(
+            get: { skipReasonTarget.map { SkipReasonSheetItem(habit: $0.habit, date: $0.date) } },
+            set: { skipReasonTarget = $0.map { ($0.habit, $0.date) } }
+        )
     }
 
     /// Same blue as iOS so the add button stands out on all platforms.
@@ -160,6 +171,8 @@ struct HomeView: View {
         } label: {
             floatingAddButtonLabel
         }
+        .accessibilityLabel("Add habit")
+        .accessibilityHint("Double tap to add a new habit or choose from template")
         #endif
     }
 
@@ -270,7 +283,10 @@ struct HomeView: View {
                             date: today,
                             onEdit: { editingHabit = habit },
                             onDelete: { deleteHabit(habit) },
-                            onViewDescription: { habitForDetailsSheet = habit }
+                            onViewDescription: { habitForDetailsSheet = habit },
+                            onSkip: { HabitStore.shared.skipDay(for: habit, on: today) },
+                            onUnskip: { HabitStore.shared.unskipDay(for: habit, on: today) },
+                            onSkipWithReason: { skipReasonTarget = (habit, today) }
                         )
                             .padding(.horizontal, 20)
                             .padding(.vertical, 10)
@@ -350,14 +366,17 @@ struct HomeView: View {
             .padding(.top, sectionHeaderPadding.top)
             .padding(.bottom, sectionHeaderPadding.bottom)
             VStack(spacing: 0) {
-                ForEach(Array(habitsCompletedToday.enumerated()), id: \.element.id) { index, habit in
-                    ChecklistRow(
-                        habit: habit,
-                        date: today,
-                        onEdit: { editingHabit = habit },
-                        onDelete: { deleteHabit(habit) },
-                        onViewDescription: { habitForDetailsSheet = habit }
-                    )
+                    ForEach(Array(habitsCompletedToday.enumerated()), id: \.element.id) { index, habit in
+                        ChecklistRow(
+                            habit: habit,
+                            date: today,
+                            onEdit: { editingHabit = habit },
+                            onDelete: { deleteHabit(habit) },
+                            onViewDescription: { habitForDetailsSheet = habit },
+                            onSkip: { HabitStore.shared.skipDay(for: habit, on: today) },
+                            onUnskip: { HabitStore.shared.unskipDay(for: habit, on: today) },
+                            onSkipWithReason: { skipReasonTarget = (habit, today) }
+                        )
                         .padding(.horizontal, 20)
                         .padding(.vertical, 10)
                     if index < habitsCompletedToday.count - 1 {

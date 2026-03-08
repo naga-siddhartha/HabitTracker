@@ -6,6 +6,7 @@ struct WeeklyView: View {
     @State private var currentWeekStart = Date.now.startOfWeek ?? Date.now
     @State private var habitForDetailsSheet: Habit?
     @State private var editingHabit: Habit?
+    @State private var skipReasonTarget: (habit: Habit, date: Date)?
     
     private let calendar = Calendar.current
     private var weekDates: [Date] {
@@ -63,7 +64,8 @@ struct WeeklyView: View {
                                         dayColumnWidth: dayColumnWidth,
                                         onViewDescription: { habitForDetailsSheet = habit },
                                         onEdit: { editingHabit = habit },
-                                        onDelete: { HabitStore.shared.deleteHabit(habit) }
+                                        onDelete: { HabitStore.shared.deleteHabit(habit) },
+                                        onSkipWithReason: { date in skipReasonTarget = (habit, date) }
                                     )
                                     .frame(width: contentWidth)
                                 }
@@ -77,6 +79,16 @@ struct WeeklyView: View {
             }
         }
         .habitSheets(details: $habitForDetailsSheet, editing: $editingHabit)
+        .sheet(item: weeklySkipReasonBinding) { pair in
+            SkipReasonSheetView(habit: pair.habit, date: pair.date) { skipReasonTarget = nil }
+        }
+    }
+    
+    private var weeklySkipReasonBinding: Binding<SkipReasonSheetItem?> {
+        Binding(
+            get: { skipReasonTarget.map { SkipReasonSheetItem(habit: $0.habit, date: $0.date) } },
+            set: { skipReasonTarget = $0.map { ($0.habit, $0.date) } }
+        )
     }
     
     private var weekRangeText: String {
@@ -98,13 +110,20 @@ struct WeeklyHabitRow: View {
     var onViewDescription: (() -> Void)? = nil
     var onEdit: (() -> Void)? = nil
     var onDelete: (() -> Void)? = nil
+    var onSkipWithReason: ((Date) -> Void)? = nil
     
     var body: some View {
         VStack(spacing: 0) {
             HStack(spacing: 0) {
                 ForEach(dates, id: \.self) { date in
-                    DayDot(habit: habit, date: date)
-                        .frame(width: dayColumnWidth)
+                    DayDot(
+                        habit: habit,
+                        date: date,
+                        onSkip: { HabitStore.shared.skipDay(for: habit, on: date) },
+                        onUnskip: { HabitStore.shared.unskipDay(for: habit, on: date) },
+                        onSkipWithReason: { onSkipWithReason?(date) }
+                    )
+                    .frame(width: dayColumnWidth)
                 }
             }
             .padding(.top, 12)
@@ -150,6 +169,9 @@ struct WeeklyHabitRow: View {
 private struct DayDot: View {
     @Bindable var habit: Habit
     let date: Date
+    var onSkip: (() -> Void)? = nil
+    var onUnskip: (() -> Void)? = nil
+    var onSkipWithReason: (() -> Void)? = nil
     
     private var isCompleted: Bool { habit.isCompleted(on: date) }
     private var isSkipped: Bool { habit.isSkipped(on: date) }
@@ -169,7 +191,7 @@ private struct DayDot: View {
                         .font(.system(size: 26))
                         .foregroundStyle(habit.color.color)
                 } else if isSkipped {
-                    Image(systemName: "minus.circle.fill")
+                    Image(systemName: "pause.circle.fill")
                         .font(.system(size: 26))
                         .foregroundStyle(.orange)
                 } else {
@@ -181,10 +203,22 @@ private struct DayDot: View {
             .frame(minWidth: 44, minHeight: 44)
             .contentShape(Rectangle())
             .animation(.spring(duration: 0.2), value: isCompleted)
+            .animation(.spring(duration: 0.2), value: isSkipped)
         }
         .buttonStyle(.plain)
         .hapticFeedback(.success, trigger: isCompleted)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .contextMenu {
+            if isActive {
+                HabitRowActions(
+                    showSkipUnskip: true,
+                    isSkippedOnDate: isSkipped,
+                    onSkip: onSkip,
+                    onUnskip: onUnskip,
+                    onSkipWithReason: onSkipWithReason
+                )
+            }
+        }
     }
 }
 

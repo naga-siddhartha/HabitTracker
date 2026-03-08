@@ -84,6 +84,9 @@ struct ContributionGraphView: View {
         }
         .onAppear { computeLevels() }
         .onChange(of: habits.count) { computeLevels() }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Activity graph, past \(weeks) weeks")
+        .accessibilityHint("Each cell is a day; darker green means more habits completed")
     }
     
     private func computeLevels() {
@@ -193,6 +196,8 @@ struct ContributionCell: View {
                 .padding(8)
                 .presentationCompactAdaptation(.popover)
             }
+            .accessibilityLabel(date.formatted(date: .abbreviated, time: .omitted))
+            .accessibilityValue(level >= 0 ? levelDescription : "Future")
     }
     
     private var colorForLevel: Color {
