@@ -78,6 +78,12 @@ final class AuthService: NSObject, ObservableObject {
         userDisplayName = nil
         isSignedIn = false
     }
+
+    /// Removes account data from this device (Keychain + in-memory). Required for App Store Guideline 5.1.1(v).
+    /// When we add a backend/CloudKit, this should also delete or disassociate data there.
+    func deleteAccount() {
+        signOut()
+    }
 }
 
 // MARK: - ASAuthorizationControllerDelegate

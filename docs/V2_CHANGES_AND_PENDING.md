@@ -57,8 +57,19 @@ Track of what is done on the v2 branch and what remains before merging to main a
 - [x] Organized code with MARK sections (AuthService, KeychainHelper, ImportService).
 - [x] Used `ImportError.invalidData` for empty backup data in `parseExportData`.
 
+### Apple policy compliance (Phase 1)
+- [x] **Account deletion (Guideline 5.1.1(v))** – "Delete account" in Account profile with confirmation; removes sign-in and Keychain data; alert explains revoking in Settings → Apple ID.
+- [x] **Internal privacy policy** – `docs/privacy.html` is the canonical v2 policy (Sign in with Apple, account data, optional iCloud/CloudKit, transmission, deletion). When ready to publish, copy to the public repo (e.g. `Habit-Tracker-App-push/index.html` or `privacy-page-public/index.html`). See **Privacy policy (internal vs public)** below.
+
 ### Not done on this branch (by design)
-- [ ] **Privacy policy** – Left unchanged. To be updated when merging v2 to main (account data, Sign in with Apple, optional iCloud/CloudKit sync).
+- [ ] **Public privacy policy URL** – Point app’s Privacy Policy URL (Info.plist / public site) at the updated policy once you copy `docs/privacy.html` to the public repo and deploy.
+
+---
+
+## Privacy policy (internal vs public)
+
+- **Internal canonical copy:** `docs/privacy.html` in this repo. This is the v2 policy with Sign in with Apple, account data, optional iCloud sync, and account/habit deletion. Last updated: March 2026.
+- **When ready to publish:** Copy `docs/privacy.html` to wherever your public-facing policy lives (e.g. the `Habit-Tracker-App-push` or `privacy-page-public` repo’s `index.html`), then deploy so the URL in Info.plist / App Store points to the updated page.
 
 ---
 
@@ -95,11 +106,7 @@ If you don’t want to use Sign in with Apple yet (e.g. no Apple ID in Xcode), y
 ## Pending Before Merge to Main & Release
 
 ### Before merge
-1. **Privacy policy** – Update `Habit-Tracker-App-push/index.html` (or app’s policy URL) for:
-   - Sign in with Apple (user identifier, optional name/email).
-   - Optional iCloud/CloudKit sync and backup.
-   - Section 5: transmission of habit data when signed in (iCloud only).
-   - “Last updated” date.
+1. **Privacy policy (public)** – Copy `docs/privacy.html` from this repo to your public policy repo (e.g. `Habit-Tracker-App-push/index.html` or `privacy-page-public/index.html`) and deploy so the app’s Privacy Policy URL serves the v2 policy. Content is already in `docs/privacy.html`.
 
 ### Before release (optional / as needed)
 2. **CloudKit (optional)** – If shipping sync: enable iCloud + CloudKit in Xcode; add container to entitlements; consider wiring `createModelContainer(useCloudKit: true)` when signed in (and container lifecycle).

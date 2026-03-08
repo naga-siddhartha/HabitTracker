@@ -1,10 +1,11 @@
 import SwiftUI
 
-/// Account profile when signed in with Apple: display info, sign out, manage Apple ID.
+/// Account profile when signed in with Apple: display info, sign out, delete account (Guideline 5.1.1(v)).
 struct AccountProfileView: View {
     @ObservedObject private var authService = AuthService.shared
     @Environment(\.dismiss) private var dismiss
-    
+    @State private var showingDeleteAccountConfirmation = false
+
     var body: some View {
         NavigationStack {
             List {
@@ -30,13 +31,21 @@ struct AccountProfileView: View {
                     }
                     .padding(.vertical, 8)
                 }
-                
+
                 Section {
-                    Button(role: .destructive) {
+                    Button {
                         authService.signOut()
                         dismiss()
                     } label: {
                         Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right")
+                    }
+                }
+
+                Section {
+                    Button(role: .destructive) {
+                        showingDeleteAccountConfirmation = true
+                    } label: {
+                        Label("Delete account", systemImage: "trash")
                     }
                 }
             }
@@ -46,6 +55,15 @@ struct AccountProfileView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
                 }
+            }
+            .alert("Delete account?", isPresented: $showingDeleteAccountConfirmation) {
+                Button("Cancel", role: .cancel) {}
+                Button("Delete", role: .destructive) {
+                    authService.deleteAccount()
+                    dismiss()
+                }
+            } message: {
+                Text("Sign-in and account data will be removed from this device. Your habits and data will remain on this device unless you use Reset All Data. To revoke this app’s access to your Apple ID, go to Settings → Apple ID → Password & Security → Apps Using Your Apple ID.")
             }
         }
     }

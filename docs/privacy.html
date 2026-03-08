@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Privacy Policy — Habits</title>
+  <title>Privacy Policy — Ritual Log</title>
+  <!-- Internal canonical copy for Ritual Log v2. When ready, copy this file to the public policy repo (e.g. Habit-Tracker-App-push or privacy-page-public). -->
   <style>
     :root {
       --bg: #fafafa;
@@ -40,10 +41,10 @@
   </style>
 </head>
 <body>
-  <h1>Privacy Policy — Habits</h1>
-  <p class="updated">Last updated: March 2025</p>
+  <h1>Privacy Policy — Ritual Log</h1>
+  <p class="updated">Last updated: March 2026</p>
 
-  <p>Habits (“the app”) is a habit-tracking app for Apple platforms. This privacy policy describes what data the app collects, how it is used, and your choices. It is provided to comply with App Store Review Guidelines (including Guideline 5.1.1) and to give you clear, accurate information.</p>
+  <p>Ritual Log ("the app") is a habit-tracking app for Apple platforms. This privacy policy describes what data the app collects, how it is used, and your choices. It is provided to comply with App Store Review Guidelines (including Guideline 5.1.1) and to give you clear, accurate information.</p>
 
   <h2>1. Data we collect, how we collect it, and how we use it</h2>
 
@@ -55,27 +56,36 @@
     <li><strong>Streaks:</strong> Current and longest streak per habit. This is derived from your completion history and used only to show streak information in the app.</li>
     <li><strong>App preferences:</strong> For example, appearance (light/dark/system) and whether notifications are enabled. We collect this when you change settings. It is used only to apply your preferences in the app.</li>
   </ul>
-  <p>This data is stored locally using Apple’s SwiftData framework. No account or login is required. The app does not collect your name, email, or other personally identifying information for habit functionality.</p>
+
+  <p><strong>Account data (when you sign in with Apple):</strong></p>
+  <ul>
+    <li>If you choose to sign in with Apple, we store an <strong>anonymous user identifier</strong> provided by Apple, and optionally your <strong>name or email</strong> (only if Apple provides it on first sign-in). This data is stored on your device (in the system Keychain) and is used to show your account status in the app and, when we enable it, to associate your habits with your account for backup or sync. We do not sell this data. We do not receive or store account data on our own servers.</li>
+  </ul>
+
+  <p>Habit data and preferences are stored locally using Apple's SwiftData framework. Account data is stored in the Keychain on your device. You can use the app without signing in; signing in is optional and is used for future backup and sync across your devices.</p>
 
   <h2>2. Advertising (third-party)</h2>
-  <p>The app may display ads provided by Google (Google Mobile Ads / AdMob). Google may collect and use data (such as device identifiers and ad interaction data) to serve and measure ads, in accordance with <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google’s Privacy Policy</a>. Any user data shared with or processed by this advertising network is subject to the same or equal protection of user data as described in this privacy policy and required by applicable guidelines. You can control ad personalization and other settings via your device and <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener">Google’s ad settings</a>.</p>
+  <p>The app may display ads provided by Google (Google Mobile Ads / AdMob). Google may collect and use data (such as device identifiers and ad interaction data) to serve and measure ads, in accordance with <a href="https://policies.google.com/privacy" target="_blank" rel="noopener">Google's Privacy Policy</a>. Any user data shared with or processed by this advertising network is subject to the same or equal protection of user data as described in this privacy policy and required by applicable guidelines. You can control ad personalization and other settings via your device and <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener">Google's ad settings</a>.</p>
 
   <h2>3. Data retention and deletion</h2>
   <ul>
     <li><strong>Data on your device:</strong> Habit data, history, and preferences remain on your device until you delete them or remove the app.</li>
-    <li><strong>How to revoke consent and request deletion:</strong> You can delete all habit-related data at any time by using <strong>“Reset All Data”</strong> in the app’s Settings. Uninstalling the app removes all of its stored data from your device. We do not retain copies of your habit data on our servers because we do not receive or store it.</li>
+    <li><strong>Account data:</strong> You can remove your sign-in and account data from this device at any time by using <strong>"Delete account"</strong> in the app (Settings → Account → Account → Delete account). This removes the Apple user identifier and any stored name/email from the app. Your habit data on the device is not deleted unless you also use "Reset All Data." You can also revoke the app's access to your Apple ID in <strong>Settings → Apple ID → Password &amp; Security → Apps Using Your Apple ID</strong>.</li>
+    <li><strong>Habit data:</strong> You can delete all habit-related data at any time by using <strong>"Reset All Data"</strong> in the app's Settings. Uninstalling the app removes all of its stored data from your device. We do not retain copies of your habit data on our servers because we do not receive or store it.</li>
   </ul>
 
   <h2>4. Third parties and data protection</h2>
-  <p>Aside from the advertising provider noted above (Google), we do not share your habit data with third parties. Any third party that receives or processes data in connection with the app (such as the advertising network) is required to provide the same or equal protection of user data as stated in this privacy policy and as required by the Apple Developer Program and App Store Review Guidelines.</p>
+  <p>Aside from the advertising provider noted above (Google), we do not share your habit data or account data with third parties. Any third party that receives or processes data in connection with the app (such as the advertising network) is required to provide the same or equal protection of user data as stated in this privacy policy and as required by the Apple Developer Program and App Store Review Guidelines.</p>
 
-  <h2>5. No transmission of your habit data</h2>
-  <p>Your habit names, completion history, reminders, and preferences are never sent to our servers or to the internet. The app does not make network requests for your habit data. Only the advertising SDK may communicate with its own servers for ad serving, as described in the Advertising section above.</p>
+  <h2>5. Transmission of your data</h2>
+  <p>Your habit names, completion history, reminders, and preferences are not sent to our servers. The app does not make network requests for your habit data to us.</p>
+  <p>If we enable <strong>iCloud / CloudKit</strong> sync in a future update, then when you are signed in, habit data may be transmitted to and stored in your iCloud account so it can sync across your devices. That data would be subject to <a href="https://www.apple.com/legal/privacy/" target="_blank" rel="noopener">Apple's Privacy Policy</a> and your iCloud settings. Until we enable that feature, no habit data is transmitted off your device except as described in the Advertising section above.</p>
+  <p>The advertising SDK may communicate with its own servers for ad serving, as described in section 2.</p>
 
   <h2>6. Changes to this policy</h2>
-  <p>We may update this privacy policy from time to time. The “Last updated” date at the top will be revised when we do. Continued use of the app after changes means you accept the updated policy.</p>
+  <p>We may update this privacy policy from time to time. The "Last updated" date at the top will be revised when we do. Continued use of the app after changes means you accept the updated policy.</p>
 
   <h2>7. Contact</h2>
-  <p>For questions about this privacy policy or the app, use the <strong>“Contact & Support”</strong> link in the app’s Settings (which opens your email client), or the support information listed on the App Store page for Habits.</p>
+  <p>For questions about this privacy policy or the app, use the <strong>"Contact &amp; Support"</strong> link in the app's Settings (which opens your email client), or the support information listed on the App Store page for Ritual Log.</p>
 </body>
 </html>
