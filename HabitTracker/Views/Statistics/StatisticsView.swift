@@ -112,7 +112,7 @@ struct StatisticsView: View {
     private func computeStats() {
         let range = dateRange
         let completions = habits.reduce(0) { total, habit in
-            total + habit.entries.filter {
+            total + habit.entriesOrEmpty.filter {
                 $0.isCompleted && $0.date >= range.start && $0.date <= range.end
             }.count
         }
@@ -126,11 +126,11 @@ struct StatisticsView: View {
         let range = dateRange
         return habits
             .filter { habit in
-                habit.entries.contains { $0.isCompleted && $0.date >= range.start && $0.date <= range.end }
+                habit.entriesOrEmpty.contains { $0.isCompleted && $0.date >= range.start && $0.date <= range.end }
             }
             .sorted { a, b in
-                a.entries.lazy.filter { $0.isCompleted && $0.date >= range.start && $0.date <= range.end }.count >
-                b.entries.lazy.filter { $0.isCompleted && $0.date >= range.start && $0.date <= range.end }.count
+                a.entriesOrEmpty.lazy.filter { $0.isCompleted && $0.date >= range.start && $0.date <= range.end }.count >
+                b.entriesOrEmpty.lazy.filter { $0.isCompleted && $0.date >= range.start && $0.date <= range.end }.count
             }
     }
     
@@ -148,7 +148,7 @@ struct CompletionsDetailView: View {
     var body: some View {
         NavigationStack {
             List(habits) { habit in
-                let count = habit.entries.filter { $0.isCompleted && $0.date >= dateRange.start && $0.date <= dateRange.end }.count
+                let count = habit.entriesOrEmpty.filter { $0.isCompleted && $0.date >= dateRange.start && $0.date <= dateRange.end }.count
                 LabeledContent {
                     Text("\(count) completions").foregroundStyle(.secondary)
                 } label: {
@@ -247,7 +247,7 @@ struct HabitStatRow: View {
     let dateRange: (start: Date, end: Date)
     
     private var count: Int {
-        habit.entries.filter { $0.isCompleted && $0.date >= dateRange.start && $0.date <= dateRange.end }.count
+        habit.entriesOrEmpty.filter { $0.isCompleted && $0.date >= dateRange.start && $0.date <= dateRange.end }.count
     }
     
     var body: some View {

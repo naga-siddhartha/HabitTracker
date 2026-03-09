@@ -50,7 +50,7 @@ struct ExportService {
                 isArchived: habit.isArchived,
                 currentStreak: habit.streak?.currentStreak ?? 0,
                 longestStreak: habit.streak?.longestStreak ?? 0,
-                entries: habit.entries.map { entry in
+                entries: (habit.entries ?? []).map { entry in
                     ExportEntry(
                         date: entry.date,
                         isCompleted: entry.isCompleted,
@@ -80,7 +80,7 @@ struct ExportService {
         var csv = "Habit Name,Date,Status,Skip Reason,Streak at Time\n"
         
         for habit in habits {
-            let sortedEntries = habit.entries.sorted { $0.date < $1.date }
+            let sortedEntries = (habit.entries ?? []).sorted { $0.date < $1.date }
             
             for entry in sortedEntries {
                 let status: String
@@ -105,8 +105,8 @@ struct ExportService {
         var csv = "Habit Name,Color,Frequency,Created,Current Streak,Longest Streak,Total Completions,Total Skips,Archived\n"
         
         for habit in habits {
-            let completions = habit.entries.filter { $0.isCompleted }.count
-            let skips = habit.entries.filter { $0.isSkipped }.count
+            let completions = (habit.entries ?? []).filter { $0.isCompleted }.count
+            let skips = (habit.entries ?? []).filter { $0.isSkipped }.count
             let created = habit.createdAt.formatted(date: .numeric, time: .omitted)
             
             csv += "\"\(habit.name)\",\(habit.colorName),\(habit.frequencyRaw),\(created),"

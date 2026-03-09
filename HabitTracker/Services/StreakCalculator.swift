@@ -9,7 +9,7 @@ struct StreakCalculator {
     func calculate(for habit: Habit) -> (current: Int, longest: Int, lastCompleted: Date?, streakStart: Date?) {
         let today = Date.now.startOfDay
         
-        let completedEntries = habit.entries
+        let completedEntries = habit.entriesOrEmpty
             .filter { $0.isCompleted && $0.date <= today }
             .sorted { $0.date > $1.date }
         

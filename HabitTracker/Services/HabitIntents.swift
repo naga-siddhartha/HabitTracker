@@ -37,12 +37,12 @@ struct ToggleHabitIntent: AppIntent {
         
         let today = Date.now.startOfDay
         
-        if let entry = habit.entries.first(where: { $0.date == today }) {
+        if let entry = habit.entriesOrEmpty.first(where: { $0.date == today }) {
             entry.isCompleted.toggle()
             entry.updatedAt = Date.now
         } else {
             let entry = HabitEntry(date: today)
-            habit.entries.append(entry)
+            habit.entries = (habit.entries ?? []) + [entry]
         }
         
         habit.updatedAt = Date.now

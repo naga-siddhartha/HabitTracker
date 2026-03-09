@@ -8,7 +8,6 @@ struct SettingsView: View {
     @Query private var habits: [Habit]
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("appearanceMode") private var appearanceMode = AppearanceMode.system
-    @ObservedObject private var authService = AuthService.shared
 
     var onRequestReset: (() -> Void)? = nil
 
@@ -16,9 +15,7 @@ struct SettingsView: View {
     @State private var showingShareSheet = false
     @State private var exportURL: URL?
     @State private var isExporting = false
-    @State private var authError: String?
-    @State private var showingAuthErrorAlert = false
-    @State private var isSigningIn = false
+    @State private var showingAccountSettings = false
     @State private var showingRestoreConfirmation = false
     @State private var restoreURL: URL?
     @State private var isImporting = false
@@ -28,13 +25,15 @@ struct SettingsView: View {
     @State private var showingFileImporter = false
     @State private var exportError: String?
     @State private var showingExportErrorAlert = false
-    @State private var showingAccountProfile = false
     
     var body: some View {
         NavigationStack {
             mainContent
                 .navigationTitle("")
                 .inlineNavigationTitle()
+                .sheet(isPresented: $showingAccountSettings) {
+                    AccountSettingsView()
+                }
                 .sheet(isPresented: $showingShareSheet) {
                     if let url = exportURL {
                         ShareSheet(url: url)
@@ -49,14 +48,6 @@ struct SettingsView: View {
                     }
                 } message: {
                     Text("This will delete all habits and entries. This cannot be undone.")
-                }
-                .sheet(isPresented: $showingAccountProfile) {
-                    AccountProfileView()
-                }
-                .alert("Sign in", isPresented: $showingAuthErrorAlert) {
-                    Button("OK") { authError = nil }
-                } message: {
-                    if let authError { Text(authError) }
                 }
                 .fileImporter(
                     isPresented: $showingFileImporter,
@@ -126,58 +117,17 @@ struct SettingsView: View {
 
     @ViewBuilder
     private var accountSection: some View {
-        Section(header: Text("Account"), footer: accountSectionFooter, content: { accountSectionContent })
-    }
-
-    @ViewBuilder
-    private var accountSectionFooter: some View {
-        if !authService.isSignedIn {
-            Text("Sign in to back up your habits and sync across your devices.")
-        }
-    }
-
-    @ViewBuilder
-    private var accountSectionContent: some View {
-        if authService.isSignedIn {
+        Section {
             Button {
-                showingAccountProfile = true
+                showingAccountSettings = true
             } label: {
-                SettingsRow(
-                    icon: "person.crop.circle.fill",
-                    iconColor: .blue,
-                    title: authService.userDisplayName ?? "Signed in with Apple"
-                ) {
+                SettingsRow(icon: "person.crop.circle.fill", iconColor: .blue, title: "Account settings") {
                     Image(systemName: "chevron.right")
                         .font(.caption.weight(.semibold))
                         .foregroundStyle(.tertiary)
                 }
             }
             .buttonStyle(.plain)
-            Button {
-                authService.signOut()
-            } label: {
-                SettingsRow(icon: "rectangle.portrait.and.arrow.right", iconColor: .orange, title: "Sign out") {
-                    chevronAccessory
-                }
-            }
-            .buttonStyle(.plain)
-        } else {
-            Button {
-                signInTapped()
-            } label: {
-                SettingsRow(icon: "person.crop.circle.badge.plus", iconColor: .blue, title: "Sign in with Apple") {
-                    if isSigningIn {
-                        ProgressView().scaleEffect(0.8)
-                    } else {
-                        chevronAccessory
-                    }
-                }
-            }
-            .buttonStyle(.plain)
-            .disabled(isSigningIn)
-        }
-        if let authError {
-            Text(authError).font(.caption).foregroundStyle(.red)
         }
     }
 
@@ -294,7 +244,7 @@ struct SettingsView: View {
     }
 
     private var totalEntriesCount: Int {
-        habits.reduce(0) { $0 + $1.entries.count }
+        habits.reduce(0) { $0 + ($1.entries ?? []).count }
     }
 
     @ViewBuilder
@@ -340,23 +290,6 @@ struct SettingsView: View {
                     importError = error.localizedDescription
                     showingImportErrorAlert = true
                     isImporting = false
-                }
-            }
-        }
-    }
-    
-    private func signInTapped() {
-        isSigningIn = true
-        authError = nil
-        Task {
-            do {
-                try await authService.signIn()
-                isSigningIn = false
-            } catch {
-                await MainActor.run {
-                    isSigningIn = false
-                    authError = error.localizedDescription
-                    showingAuthErrorAlert = true
                 }
             }
         }

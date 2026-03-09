@@ -8,27 +8,19 @@ import WidgetKit
 @MainActor
 final class HabitStore {
     static let shared = HabitStore()
-    
-    let modelContainer: ModelContainer
-    let modelContext: ModelContext
-    
-    private lazy var repository = HabitRepository(modelContext: modelContext)
-    private let streakCalculator = StreakCalculator()
-    
-    private init() {
-        var container: ModelContainer?
-        let queue = DispatchQueue.global(qos: .userInitiated)
-        queue.sync {
-            do {
-                container = try AppConfig.createModelContainer()
-            } catch {
-                container = try? ModelContainer(for: AppConfig.schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true))
-            }
-        }
-        modelContainer = container ?? (try! ModelContainer(for: AppConfig.schema, configurations: ModelConfiguration(isStoredInMemoryOnly: true)))
-        modelContext = modelContainer.mainContext
-        modelContext.autosaveEnabled = true
+
+    private let provider = ModelContainerProvider.shared
+    var modelContainer: ModelContainer { provider.currentContainer }
+    var modelContext: ModelContext {
+        let ctx = provider.currentContainer.mainContext
+        ctx.autosaveEnabled = true
+        return ctx
     }
+
+    private var repository: HabitRepository { HabitRepository(modelContext: modelContext) }
+    private let streakCalculator = StreakCalculator()
+
+    private init() {}
     
     // MARK: - Habits
     
@@ -72,7 +64,7 @@ final class HabitStore {
             }
             entry.updatedAt = .now
         } else {
-            habit.entries.append(HabitEntry(date: date))
+            habit.entries = (habit.entries ?? []) + [HabitEntry(date: date)]
         }
         
         habit.updatedAt = .now
@@ -88,7 +80,7 @@ final class HabitStore {
             entry.skipReason = reason
             entry.updatedAt = .now
         } else {
-            habit.entries.append(HabitEntry(date: date, isCompleted: false, isSkipped: true, skipReason: reason))
+            habit.entries = (habit.entries ?? []) + [HabitEntry(date: date, isCompleted: false, isSkipped: true, skipReason: reason)]
         }
         
         habit.updatedAt = .now
