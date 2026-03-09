@@ -10,6 +10,7 @@ struct MainTabView: View {
     @State private var selectedTab = 0
     @State private var isPresentingTemplates = false
     @State private var isResetting = false
+    @StateObject private var accountMenuState = AccountMenuState()
     
     private var showOnboarding: Binding<Bool> {
         Binding(
@@ -51,13 +52,17 @@ struct MainTabView: View {
                 }
             .accessibilityHint("Notifications, appearance, and data")
         }
+        .environmentObject(accountMenuState)
+        #if os(macOS)
+        .withAccountToolbar(accountMenuState: accountMenuState)
+        #endif
         .preferredColorScheme(appearanceMode.preferredColorScheme)
         .modifier(ResettingOverlayModifier(isPresented: $isResetting))
-        .fullScreenCover(isPresented: showOnboarding) {
+        .modifier(OnboardingOverlayModifier(showOnboarding: showOnboarding) {
             OnboardingView(onGetStarted: {
                 isPresentingTemplates = true
             })
-        }
+        })
     }
 
     private func performReset() {
@@ -68,6 +73,27 @@ struct MainTabView: View {
             selectedTab = 0
             isResetting = false
         }
+    }
+}
+
+// MARK: - Onboarding overlay (fullScreenCover on iOS, sheet on macOS)
+
+private struct OnboardingOverlayModifier<OverlayContent: View>: ViewModifier {
+    @Binding var showOnboarding: Bool
+    @ViewBuilder let overlayContent: () -> OverlayContent
+
+    func body(content: Content) -> some View {
+        #if os(iOS)
+        content
+            .fullScreenCover(isPresented: $showOnboarding) {
+                overlayContent()
+            }
+        #else
+        content
+            .sheet(isPresented: $showOnboarding) {
+                overlayContent()
+            }
+        #endif
     }
 }
 

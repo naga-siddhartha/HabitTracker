@@ -23,6 +23,8 @@ final class AuthService: NSObject, ObservableObject {
 
     /// Cached so nonisolated presentationAnchor can return it without touching MainActor.
     private static nonisolated(unsafe) var cachedPresentationAnchor: ASPresentationAnchor?
+    /// Set in init so nonisolated delegate can obtain the instance without touching MainActor-isolated `shared`.
+    private static nonisolated(unsafe) var _sharedRef: AuthService?
     private var authContinuation: CheckedContinuation<Void, Error>?
     /// Exposed so nonisolated delegate can resume immediately (no Task delay).
     private static nonisolated(unsafe) var sharedContinuation: CheckedContinuation<Void, Error>?
@@ -31,6 +33,7 @@ final class AuthService: NSObject, ObservableObject {
 
     private override init() {
         super.init()
+        Self._sharedRef = self
         currentUserId = KeychainHelper.loadUserId()
         userDisplayName = KeychainHelper.loadUserDisplayName()
         isSignedIn = currentUserId != nil
@@ -95,15 +98,21 @@ extension AuthService: ASAuthorizationControllerDelegate {
         let displayName = Self.formatDisplayName(from: credential)
         let cont = AuthService.sharedContinuation
         AuthService.sharedContinuation = nil
-        if KeychainHelper.save(userId: userId, displayName: displayName) {
-            cont?.resume()
-            Task { @MainActor in
-                currentUserId = userId
-                userDisplayName = KeychainHelper.loadUserDisplayName()
-                isSignedIn = true
+        // Keychain I/O off the delegate (often Default QoS); resume continuation on main to avoid priority inversion.
+        guard let service = Self._sharedRef else { return }
+        DispatchQueue.global(qos: .userInitiated).async {
+            let success = KeychainHelper.save(userId: userId, displayName: displayName)
+            DispatchQueue.main.async {
+                if success {
+                    cont?.resume()
+                    service.currentUserId = userId
+                    service.userDisplayName = KeychainHelper.loadUserDisplayName()
+                    service.isSignedIn = true
+                    NotificationCenter.default.post(name: .userDidSignIn, object: nil)
+                } else {
+                    cont?.resume(throwing: AuthError.keychainSaveFailed)
+                }
             }
-        } else {
-            cont?.resume(throwing: AuthError.keychainSaveFailed)
         }
     }
     
@@ -122,10 +131,9 @@ extension AuthService: ASAuthorizationControllerDelegate {
         let cont = AuthService.sharedContinuation
         AuthService.sharedContinuation = nil
         let authError = error as? ASAuthorizationError
-        if authError?.code == .canceled {
-            cont?.resume(throwing: AuthError.canceled)
-        } else {
-            cont?.resume(throwing: error)
+        let toThrow = authError?.code == .canceled ? AuthError.canceled : error
+        DispatchQueue.main.async {
+            cont?.resume(throwing: toThrow)
         }
     }
 }
