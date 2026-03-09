@@ -64,17 +64,20 @@ Track of what is done on the v2 branch and what remains before merging to main a
 ### Research-first v2 items (implemented with sensible defaults)
 - [x] **Color/emoji picker in Add/Edit habit** – New “Appearance” section in `AddEditHabitView`: color grid (all `HabitColor` options), emoji picker with “Suggested” + horizontal list (`HabitEmoji.pickerEmojis`). User can choose color and emoji when creating or editing a habit.
 - [x] **“Skip doesn’t break streak” messaging** – Skip sheet: Section footer “Skipping doesn’t break your streak. Your progress is preserved.” Onboarding: added “Skip a day when you need to—your streak stays intact.” plus “Start with a template or create your first habit.”
-- [x] **Dedicated “all habits” list** – New **Habits** tab in `MainTabView`; `AllHabitsListView` shows all habits in a list (sorted by creation date), tap for details sheet, toolbar Add/From template, context menu View details / Edit / Delete. Empty state uses `HomeEmptyState`-style CTA.
+- [x] **Dedicated “all habits” list** – Implemented then **removed for v2:** Habits tab and `AllHabitsListView` were removed; tabs are Home, Calendar, Stats, Settings. List view file was deleted as dead code.
 
 ### Add/Edit habit – custom emoji
 - [x] **Custom emoji field** – In Add/Edit habit Appearance section: “Or type / paste your own emoji” TextField; first character used as habit emoji. Suggested and grid choices clear custom; custom input overrides suggested on save.
 
 ### CloudKit / iCloud sync
-- [x] **Entitlements** – `HabitTracker.entitlements` now includes `com.apple.developer.icloud-container-identifiers` (container `iCloud.com.nagasiddharthadonepudi.HabitTracker`) and `com.apple.developer.icloud-services` (CloudKit). Both iOS and Mac targets use this file. HabitStore already uses CloudKit when `KeychainHelper.loadUserId() != nil`; ensure iCloud capability is enabled in Xcode for both targets (see Pending Before Release).
+- [x] **Entitlements** – `HabitTracker.entitlements` includes iCloud + CloudKit (container `iCloud.com.nagasiddharthadonepudi.HabitTracker`). Both iOS and Mac targets use this file.
+- [x] **ModelContainerProvider** – Single store URL (`AppConfig.habitStoreURL()`); container created at launch with or without CloudKit based on sign-in. On sign-in, container is recreated with CloudKit (switch to in-memory first to avoid duplicate CloudKit handler).
+- [x] **Sync** – "Sync now" only saves and reloads widgets; it does not recreate the container. CloudKit sync is automatic with the single container. **Info.plist:** `UIBackgroundModes` includes `remote-notification` for CloudKit push.
+- [x] **Schema** – Habit/HabitEntry/Streak: optional attributes with defaults; `entries` relationship optional for CloudKit compatibility; `entriesOrEmpty` used in code.
 
-### Account UI – single place in Settings
-- [x] **Toolbar profile icon removed** – Removed `.withAccountToolbar()` from HomeView, CalendarContainerView, StatisticsView, and SettingsView. Removed `AccountMenuState` and `.environmentObject(accountMenuState)` from MainTabView. Account and sign-in are only in **Settings → Account** (no duplicate profile icon in top-right).
-- [x] **“Sync now” in Settings** – When signed in, Settings → Account shows a “Sync now” row (green icon); tap runs `HabitStore.shared.save()` and `WidgetKit.WidgetCenter.shared.reloadAllTimelines()`. `AccountMenuView.swift` (toolbar modifier) is unused but left in codebase.
+### Account UI
+- [x] **Account entry points** – **iOS:** Account icon in Home header (inline with day title). **Mac:** Account icon in window toolbar (top right) via `.withAccountToolbar(accountMenuState:)`. **Settings:** "Account settings" row opens `AccountSettingsView` (sign in, profile, Sync now, sign out).
+- [x] **AccountMenuView** – Used for toolbar (Mac) and menu (Account, Sync now, Sign out / Sign in); takes `accountMenuState` to avoid environment-object crash in sheet.
 
 ### AuthService & AccountMenuView fixes (Swift 6 / macOS / hang risk)
 - [x] **AuthService** – Swift 6: nonisolated delegate uses `Self._sharedRef` instead of MainActor-isolated `shared`; `_sharedRef` set in init. Priority inversion: Keychain save and continuation resume moved to `DispatchQueue.global(qos: .userInitiated)`. Explicit capture in MainActor Task: use `service` (from `_sharedRef`) for state updates.
@@ -131,8 +134,8 @@ If you don’t want to use Sign in with Apple yet (e.g. no Apple ID in Xcode), y
 2. **CloudKit sync (enabled)** – Sync is wired so habits can appear on both iPhone and Mac:
    - **Entitlements:** `HabitTracker.entitlements` includes iCloud + CloudKit with container `iCloud.com.nagasiddharthadonepudi.HabitTracker`. Both iOS and Mac targets use this file.
    - **In Xcode:** Ensure the **iCloud** capability is enabled for both HabitTracker and HabitTracker Mac: check **CloudKit** and add/select the container `iCloud.com.nagasiddharthadonepudi.HabitTracker`. If the capability was never added, use **Signing & Capabilities → + Capability → iCloud** and enable CloudKit with that container.
-   - **Background Modes (iOS):** For faster sync, enable **Background Modes → Remote notifications** on the iOS target so the app can receive CloudKit change notifications.
-   - **Usage:** Sign in with Apple on **both** iPhone and Mac. Each device uses CloudKit when `KeychainHelper.loadUserId() != nil`. Both devices must be signed into the **same iCloud account** (Settings → Apple ID). Sync is automatic; "Sync now" saves locally and refreshes widgets; CloudKit pushes/pulls in the background. If habits still don’t appear, force-quit and reopen the Mac app so it recreates the container with CloudKit (container is created once at launch).
+   - **Background Modes (iOS):** `Info.plist` includes `UIBackgroundModes` → `remote-notification`. In Xcode, enable **Background Modes → Remote notifications** for the iOS target.
+   - **Usage:** Sign in with Apple on both devices; same iCloud account. Container is created at launch (or recreated on sign-in via `ModelContainerProvider`). "Sync now" does not recreate the container; sync is automatic. If habits don’t appear on Mac after sign-in, wait a few seconds for the delayed container switch, or restart the app.
 3. **App Store** – Metadata for “Sign in with Apple” and “iCloud” if applicable.
 4. **QA** – Run through Phase 1 QA scenarios (account, import, skip, onboarding, accessibility, regressions).
 
@@ -145,7 +148,7 @@ The three items below were **implemented with sensible defaults** (see “Resear
 | Item | Status | Notes |
 |------|--------|--------|
 | **Color/emoji picker in Add/Edit habit** | Done | Appearance section: color grid, emoji “Suggested” + picker list, custom “type/paste your own” field. |
-| **Dedicated “all habits” list** | Done | Habits tab; list of all habits; tap for details, context menu Edit/Delete. Reorder not yet implemented. |
+| **Dedicated “all habits” list** | Removed | Habits tab and AllHabitsListView removed for v2; tabs are Home, Calendar, Stats, Settings. |
 | **“Skip doesn’t break streak” messaging** | Done | Skip sheet footer + onboarding line. |
 
 **Process for future research-first items:** Complete user research first, document findings and chosen pattern, then add to the implementation backlog and build accordingly.
