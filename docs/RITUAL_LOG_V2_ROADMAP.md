@@ -219,6 +219,14 @@ These are design and UX considerations for v2 alongside feature work. They apply
 - **Goals (optional):**
   - “Complete at least X times per week” or “per month” with progress (e.g. 3/5 this week).
 
+### 5.4.1 Research-First v2 Items (User Research Before Implementation)
+
+The following are in v2 scope. **Do research on how users want these to be shown** (surveys, usability testing, competitor patterns, or beta feedback) before designing and implementing. See **V2_CHANGES_AND_PENDING.md → Pending (Research-First)** for the same list and process.
+
+1. **Color/emoji picker in Add/Edit habit** – Expose color and emoji/icon selection in the habit form (currently only auto-suggest; no visible picker). Research: placement in form, number of options, emoji vs SF Symbol vs both, defaults, dark mode contrast.
+2. **Dedicated “all habits” list** – One screen to view, reorder, and manage all habits. Research: tab vs section, reorder UX, archive vs delete, grouping (e.g. by frequency).
+3. **“Skip doesn’t break streak” messaging** – In-app copy reassuring users that skipping does not break their streak. Research: where to show (onboarding, first skip, skip sheet, tooltip), tone, length.
+
 ### 5.5 Platform & System
 - **Widgets:**
   - **Lock screen** (iOS 16+).

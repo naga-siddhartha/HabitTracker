@@ -228,10 +228,17 @@ struct SkipReasonSheetView: View {
     var body: some View {
         NavigationStack {
             Form {
-                TextField("Reason (optional)", text: $reasonText)
+                Section {
+                    TextField("Reason (optional)", text: $reasonText)
+                } footer: {
+                    Text("Skipping doesn’t break your streak. Your progress is preserved.")
+                        .font(.footnote)
+                }
             }
             .navigationTitle("Skip day")
+            #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
+            #endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss(); onDismiss() }

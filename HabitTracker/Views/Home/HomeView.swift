@@ -5,6 +5,7 @@ struct HomeView: View {
     var onPresentTemplates: (() -> Void)?
 
     @Environment(\.colorScheme) private var colorScheme
+    @EnvironmentObject private var accountMenuState: AccountMenuState
     @Query(sort: \Habit.createdAt, order: .reverse) private var allHabits: [Habit]
     @State private var showingAddHabit = false
     @State private var showingAddMenuPopover = false
@@ -64,7 +65,7 @@ struct HomeView: View {
         NavigationStack {
             Group {
                 if isEmptyState {
-                    VStack(spacing: 0) {
+                    VStack(alignment: .leading, spacing: 0) {
                         headerSection
                         Spacer(minLength: 0).frame(maxHeight: 48)
                         homeContent
@@ -81,7 +82,7 @@ struct HomeView: View {
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     ScrollView {
-                        VStack(spacing: 24) {
+                        VStack(alignment: .leading, spacing: 24) {
                             headerSection
                             homeContent
                             #if os(iOS)
@@ -90,6 +91,7 @@ struct HomeView: View {
                                 .padding(.horizontal, config.horizontalPadding)
                             #endif
                         }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.bottom, 32)
                     }
                 }
@@ -98,6 +100,17 @@ struct HomeView: View {
             .background(Color.appGroupedBackground)
             .navigationTitle("")
             .inlineNavigationTitle()
+            .sheet(isPresented: $accountMenuState.showingAccountProfile) {
+                AccountProfileView()
+            }
+            .alert("Sign in", isPresented: Binding(
+                get: { accountMenuState.authError != nil },
+                set: { if !$0 { accountMenuState.authError = nil } }
+            )) {
+                Button("OK") { accountMenuState.authError = nil }
+            } message: {
+                if let error = accountMenuState.authError { Text(error) }
+            }
             .overlay(alignment: .bottomTrailing) {
                 if showFloatingAddButton {
                     floatingAddButton
@@ -199,17 +212,30 @@ struct HomeView: View {
 
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 0) {
-            PageHeading(
-                title: today.formatted(.dateTime.weekday(.wide)),
-                subtitle: today.formatted(.dateTime.month(.wide).day())
-            )
-            Text(headerTagline)
-                .font(.subheadline)
+            HStack(alignment: .center, spacing: 0) {
+                Text(today.formatted(.dateTime.weekday(.wide)))
+                    .font(AppTheme.pageTitleFont)
+                    .foregroundStyle(.primary)
+                #if os(iOS)
+                Spacer(minLength: 0)
+                AccountMenuButton(accountMenuState: accountMenuState)
+                #endif
+            }
+            .padding(.horizontal, config.horizontalPadding)
+            .padding(.top, AppTheme.headingTopPadding)
+            .padding(.bottom, AppTheme.headingSpacing)
+            Text(today.formatted(.dateTime.month(.wide).day()))
+                .font(AppTheme.pageSubtitleFont)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, config.horizontalPadding)
-                .padding(.top, -4)
+            Text(headerTagline)
+                .font(.subheadline)
+                .foregroundStyle(.tertiary)
+                .padding(.horizontal, config.horizontalPadding)
+                .padding(.top, 8)
                 .padding(.bottom, 6)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     /// Line below the date only. Kept separate from the active card so we don’t repeat "X of Y done".
@@ -427,6 +453,8 @@ struct HomeView: View {
 // MARK: - Home empty state (compact, modern)
 
 #Preview {
-    HomeView().modelContainer(for: Habit.self, inMemory: true)
+    HomeView()
+        .environmentObject(AccountMenuState())
+        .modelContainer(for: Habit.self, inMemory: true)
 }
 

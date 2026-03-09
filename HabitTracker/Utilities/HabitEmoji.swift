@@ -81,6 +81,13 @@ enum HabitEmoji {
     /// Default emojis when no keyword matches (picked by hash for consistency).
     static let defaults = ["✨", "⭐", "🔥", "💡", "🎯", "🌱", "✅", "📌"]
 
+    /// Emojis shown in the Add/Edit habit picker (defaults + common habit emojis).
+    static let pickerEmojis = [
+        "✨", "⭐", "🔥", "💡", "🎯", "🌱", "✅", "📌",
+        "🏃", "🚶", "💪", "🧘", "📖", "📝", "💧", "😴",
+        "❤️", "🎵", "🍳", "💰", "📱", "🏠", "💼", "🧠",
+    ]
+
     /// Returns an emoji for the given habit name (and optional description). Uses keyword match first, then a stable default.
     static func suggest(for name: String, description: String? = nil) -> String {
         let combined = "\(name) \(description ?? "")".lowercased()

@@ -10,6 +10,7 @@ import GoogleMobileAds
 
 @main
 struct HabitTrackerApp: App {
+    @StateObject private var containerProvider = ModelContainerProvider.shared
     let store = HabitStore.shared
 
     init() {
@@ -45,7 +46,7 @@ struct HabitTrackerApp: App {
             MainTabView()
             #endif
         }
-        .modelContainer(store.modelContainer)
+        .modelContainer(containerProvider.currentContainer)
         
         #if os(macOS)
         Settings {

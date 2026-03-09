@@ -20,11 +20,16 @@ struct AddEditHabitView: View {
     @State private var name = ""
     @State private var description = ""
     @State private var selectedColor: HabitColor = .blue
+    @State private var selectedEmoji: String? = nil
+    @State private var customEmojiInput: String = ""
+    @State private var showingCustomEmojiSheet = false
+    @State private var customEmojiPasteBuffer = ""
     @State private var frequency: HabitFrequency = .daily
     @State private var selectedDays: Set<Weekday> = []
     @State private var reminders: [Reminder] = []
     
     private var isEditing: Bool { habit != nil }
+    private var suggestedEmoji: String { HabitEmoji.suggest(for: name, description: description.isEmpty ? nil : description) }
     
     var body: some View {
         AdaptiveForm(
@@ -47,6 +52,27 @@ struct AddEditHabitView: View {
             TextField("Habit Name", text: $name)
             TextField("Description (Optional)", text: $description, axis: .vertical)
                 .lineLimit(2...4)
+        }
+        
+        // Appearance (color + emoji) – dropdowns
+        Section("Appearance") {
+            Picker("Color", selection: $selectedColor) {
+                ForEach(Array(HabitColor.allCases), id: \.rawValue) { color in
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(color.color)
+                            .frame(width: 20, height: 20)
+                        Text(color.rawValue.capitalized)
+                    }
+                    .tag(color)
+                }
+            }
+            .pickerStyle(.menu)
+
+            emojiPickerRow
+        }
+        .sheet(isPresented: $showingCustomEmojiSheet) {
+            customEmojiSheet
         }
         
         // Frequency
@@ -86,6 +112,83 @@ struct AddEditHabitView: View {
             }
         }
     }
+
+    @ViewBuilder
+    private var emojiPickerRow: some View {
+        Menu {
+            Button {
+                selectedEmoji = nil
+                customEmojiInput = ""
+            } label: {
+                Label("Suggested: \(suggestedEmoji)", systemImage: "sparkles")
+            }
+            Divider()
+            ForEach(Array(HabitEmoji.pickerEmojis), id: \.self) { emoji in
+                Button {
+                    selectedEmoji = emoji
+                    customEmojiInput = ""
+                } label: {
+                    Text(emoji)
+                }
+            }
+            Divider()
+            Button {
+                customEmojiPasteBuffer = customEmojiInput.isEmpty ? "" : customEmojiInput
+                showingCustomEmojiSheet = true
+            } label: {
+                Label("Custom…", systemImage: "character.cursor.ibeam")
+            }
+        } label: {
+            HStack {
+                Text("Emoji")
+                Spacer()
+                Text(resolvedEmoji)
+                    .font(.title2)
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var customEmojiSheet: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                TextField("Paste or type an emoji", text: $customEmojiPasteBuffer)
+                    .textFieldStyle(.roundedBorder)
+                    .font(.title)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal)
+                Text("Paste from another app or type one emoji, then tap Use.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding()
+            .navigationTitle("Custom Emoji")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            .presentationDetents([.medium])
+            #endif
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { showingCustomEmojiSheet = false }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Use") {
+                        let trimmed = customEmojiPasteBuffer.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if trimmed.isEmpty {
+                            selectedEmoji = nil
+                            customEmojiInput = ""
+                        } else {
+                            let first = trimmed.first.map(String.init) ?? trimmed
+                            selectedEmoji = first
+                            customEmojiInput = first
+                        }
+                        showingCustomEmojiSheet = false
+                    }
+                    .disabled(customEmojiPasteBuffer.isEmpty)
+                }
+            }
+        }
+    }
     
     // MARK: - Data Operations
     
@@ -94,6 +197,14 @@ struct AddEditHabitView: View {
             name = habit.name
             description = habit.habitDescription ?? ""
             selectedColor = habit.color
+            let suggested = HabitEmoji.suggest(for: habit.name, description: habit.habitDescription)
+            if habit.emoji == suggested {
+                selectedEmoji = nil
+                customEmojiInput = ""
+            } else {
+                selectedEmoji = habit.emoji
+                customEmojiInput = habit.emoji ?? ""
+            }
             frequency = habit.frequency
             // Weekly with no days = show all days selected so the habit stays visible until user picks days
             selectedDays = habit.frequency == .weekly && habit.activeDays.isEmpty
@@ -106,14 +217,21 @@ struct AddEditHabitView: View {
             name = template.name
             description = template.description ?? ""
             selectedColor = template.color
+            selectedEmoji = nil
+            customEmojiInput = ""
         }
+    }
+    
+    private var resolvedEmoji: String {
+        if let emoji = selectedEmoji, !emoji.isEmpty { return emoji }
+        return suggestedEmoji
     }
     
     private func saveHabit() {
         if let habit {
             habit.name = name
             habit.habitDescription = description.isEmpty ? nil : description
-            habit.emoji = HabitEmoji.suggest(for: name, description: description.isEmpty ? nil : description)
+            habit.emoji = resolvedEmoji
             habit.color = selectedColor
             habit.frequency = frequency
             // Weekly with no days selected = show every day so the habit doesn’t disappear from Home
@@ -129,7 +247,7 @@ struct AddEditHabitView: View {
                 name: name,
                 description: description.isEmpty ? nil : description,
                 iconName: template?.iconName,
-                emoji: HabitEmoji.suggest(for: name, description: description.isEmpty ? nil : description),
+                emoji: resolvedEmoji,
                 color: selectedColor,
                 frequency: frequency,
                 reminderTimes: reminders.map(\.time),
