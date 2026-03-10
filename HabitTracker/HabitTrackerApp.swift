@@ -18,15 +18,12 @@ struct HabitTrackerApp: App {
         store.writeWidgetData()
         #if os(iOS)
         configureTabBarAppearance()
-        // Set test device ID immediately so first ad request uses it (banner can load before async below runs).
         MobileAds.shared.requestConfiguration.testDeviceIdentifiers = [
             "7898b85d170daffccea1430f55291c02",
             "eca025c65f76a343b5651fde452346bd", // Mac (simulator/Catalyst)
         ]
-        // Defer AdMob start off the launch path to avoid "Launch Background Task for Coalescing" expiration warning.
-        DispatchQueue.main.async {
-            MobileAds.shared.start(completionHandler: { (_: InitializationStatus) in })
-        }
+        // Start SDK as early as possible so banner can load after a short delay (see AdMobBannerView).
+        MobileAds.shared.start(completionHandler: { (_: InitializationStatus) in })
         #endif
     }
 

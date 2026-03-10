@@ -76,7 +76,7 @@ struct MainTabView: View {
     }
 }
 
-// MARK: - Onboarding overlay (fullScreenCover on iOS, sheet on macOS)
+// MARK: - Onboarding overlay (translucent over Home on iOS, sheet on macOS)
 
 private struct OnboardingOverlayModifier<OverlayContent: View>: ViewModifier {
     @Binding var showOnboarding: Bool
@@ -85,9 +85,13 @@ private struct OnboardingOverlayModifier<OverlayContent: View>: ViewModifier {
     func body(content: Content) -> some View {
         #if os(iOS)
         content
-            .fullScreenCover(isPresented: $showOnboarding) {
-                overlayContent()
+            .overlay {
+                if showOnboarding {
+                    overlayContent()
+                        .transition(.opacity)
+                }
             }
+            .animation(.easeInOut(duration: 0.25), value: showOnboarding)
         #else
         content
             .sheet(isPresented: $showOnboarding) {

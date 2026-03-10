@@ -224,17 +224,63 @@ struct SkipReasonSheetView: View {
     var onDismiss: () -> Void
     @State private var reasonText = ""
     @Environment(\.dismiss) private var dismiss
-    
+    @FocusState private var reasonFocused: Bool
+
+    private var dateLabel: String {
+        if Calendar.current.isDateInToday(date) { return "Today" }
+        if Calendar.current.isDateInYesterday(date) { return "Yesterday" }
+        return date.formatted(date: .abbreviated, time: .omitted)
+    }
+
     var body: some View {
         NavigationStack {
-            Form {
-                Section {
-                    TextField("Reason (optional)", text: $reasonText)
-                } footer: {
-                    Text("Skipping doesn’t break your streak. Your progress is preserved.")
-                        .font(.footnote)
+            VStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 20) {
+                    HStack(spacing: 12) {
+                        if let emoji = habit.emoji, !emoji.isEmpty {
+                            Text(emoji).font(.system(size: 36))
+                        } else {
+                            Image(systemName: habit.iconName ?? "circle.fill")
+                                .font(.system(size: 32))
+                                .foregroundStyle(habit.color.color)
+                        }
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(habit.name)
+                                .font(.title2.weight(.semibold))
+                            Text(dateLabel)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer(minLength: 0)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+
+                    TextField("Why are you skipping? (optional)", text: $reasonText)
+                        .textFieldStyle(.plain)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 14)
+                        .background(Color.secondarySystemGroupedBackground)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .focused($reasonFocused)
+                        .padding(.horizontal, 20)
+
+                    HStack(spacing: 8) {
+                        Image(systemName: "flame.fill")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                        Text("Skipping doesn’t break your streak. Your progress is preserved.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(.horizontal, 20)
                 }
+                .padding(.bottom, 24)
+
+                Spacer(minLength: 0)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.appGroupedBackground)
             .navigationTitle("Skip day")
             #if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
@@ -245,10 +291,11 @@ struct SkipReasonSheetView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Skip") {
-                        HabitStore.shared.skipDay(for: habit, on: date, reason: reasonText.isEmpty ? nil : reasonText)
+                        HabitStore.shared.skipDay(for: habit, on: date, reason: reasonText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : reasonText.trimmingCharacters(in: .whitespacesAndNewlines))
                         dismiss()
                         onDismiss()
                     }
+                    .fontWeight(.semibold)
                 }
             }
         }
@@ -261,11 +308,11 @@ struct HabitRowActions: View {
     var onViewDetails: (() -> Void)? = nil
     var onEdit: (() -> Void)? = nil
     var onDelete: (() -> Void)? = nil
-    /// When true, show Skip / Unskip based on isSkippedOnDate.
+    /// When true, show Skip / Unskip based on isSkippedOnDate. "Skip day" opens the reason sheet (reason optional).
     var showSkipUnskip: Bool = false
     var isSkippedOnDate: Bool = false
-    var onSkip: (() -> Void)? = nil
     var onUnskip: (() -> Void)? = nil
+    /// Opening the skip-day sheet; user can add an optional reason there.
     var onSkipWithReason: (() -> Void)? = nil
 
     var body: some View {
@@ -277,11 +324,8 @@ struct HabitRowActions: View {
             if isSkippedOnDate {
                 Button(action: { onUnskip?() }) { Label("Unskip day", systemImage: "arrow.uturn.backward") }
                 Divider()
-            } else {
-                Button(action: { onSkip?() }) { Label("Skip day", systemImage: "pause.circle") }
-                if onSkipWithReason != nil {
-                    Button(action: { onSkipWithReason?() }) { Label("Skip day with reason", systemImage: "pause.circle.badge.questionmark") }
-                }
+            } else if onSkipWithReason != nil {
+                Button(action: { onSkipWithReason?() }) { Label("Skip day", systemImage: "pause.circle") }
                 Divider()
             }
         }

@@ -41,7 +41,6 @@ struct DailyView: View {
                             onViewDescription: { habitForDetailsSheet = habit },
                             onEdit: { editingHabit = habit },
                             onDelete: { HabitStore.shared.deleteHabit(habit) },
-                            onSkip: { HabitStore.shared.skipDay(for: habit, on: selectedDate) },
                             onUnskip: { HabitStore.shared.unskipDay(for: habit, on: selectedDate) },
                             onSkipWithReason: { skipReasonTarget = (habit, selectedDate) }
                         )
@@ -74,12 +73,12 @@ struct DailyHabitRow: View {
     var onViewDescription: (() -> Void)? = nil
     var onEdit: (() -> Void)? = nil
     var onDelete: (() -> Void)? = nil
-    var onSkip: (() -> Void)? = nil
     var onUnskip: (() -> Void)? = nil
     var onSkipWithReason: (() -> Void)? = nil
     
     private var isCompleted: Bool { habit.isCompleted(on: date) }
     private var isSkipped: Bool { habit.isSkipped(on: date) }
+    private var skipReason: String? { habit.entry(for: date)?.skipReason }
     
     private var checkmarkIcon: some View {
         Group {
@@ -96,6 +95,14 @@ struct DailyHabitRow: View {
         .contentTransition(.symbolEffect(.replace))
     }
 
+    private var subtitleText: String {
+        if isSkipped {
+            if let reason = skipReason, !reason.isEmpty { return "Skipped · \(reason)" }
+            return "Skipped"
+        }
+        return habit.reminderTimes.isEmpty ? "All day" : (habit.reminderTimes.first!.formatted(date: .omitted, time: .shortened))
+    }
+
     var body: some View {
         HStack(alignment: .center, spacing: 14) {
             Button {
@@ -109,14 +116,18 @@ struct DailyHabitRow: View {
                     } else {
                         Circle().fill(habit.color.color).frame(width: 28, height: 28)
                     }
-                    Text(habit.name)
-                        .strikethrough(isCompleted)
-                        .font(.body.weight(.medium))
-                        .foregroundStyle(isSkipped ? .secondary : .primary)
-                    if isSkipped {
-                        Text("Skipped").font(.caption).foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(habit.name)
+                            .strikethrough(isCompleted)
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(isSkipped ? .secondary : .primary)
+                        Text(subtitleText)
+                            .font(.caption)
+                            .foregroundStyle(isSkipped ? .orange : .secondary)
+                            .lineLimit(1)
                     }
-                    Spacer(minLength: 0)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
                 .contentShape(Rectangle())
             }
@@ -144,7 +155,6 @@ struct DailyHabitRow: View {
                 onDelete: { onDelete?() },
                 showSkipUnskip: true,
                 isSkippedOnDate: isSkipped,
-                onSkip: onSkip,
                 onUnskip: onUnskip,
                 onSkipWithReason: onSkipWithReason
             )

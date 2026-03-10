@@ -119,7 +119,6 @@ struct WeeklyHabitRow: View {
                     DayDot(
                         habit: habit,
                         date: date,
-                        onSkip: { HabitStore.shared.skipDay(for: habit, on: date) },
                         onUnskip: { HabitStore.shared.unskipDay(for: habit, on: date) },
                         onSkipWithReason: { onSkipWithReason?(date) }
                     )
@@ -169,7 +168,6 @@ struct WeeklyHabitRow: View {
 private struct DayDot: View {
     @Bindable var habit: Habit
     let date: Date
-    var onSkip: (() -> Void)? = nil
     var onUnskip: (() -> Void)? = nil
     var onSkipWithReason: (() -> Void)? = nil
     
@@ -213,7 +211,6 @@ private struct DayDot: View {
                 HabitRowActions(
                     showSkipUnskip: true,
                     isSkippedOnDate: isSkipped,
-                    onSkip: onSkip,
                     onUnskip: onUnskip,
                     onSkipWithReason: onSkipWithReason
                 )

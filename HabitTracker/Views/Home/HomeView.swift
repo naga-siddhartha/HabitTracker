@@ -310,7 +310,6 @@ struct HomeView: View {
                             onEdit: { editingHabit = habit },
                             onDelete: { deleteHabit(habit) },
                             onViewDescription: { habitForDetailsSheet = habit },
-                            onSkip: { HabitStore.shared.skipDay(for: habit, on: today) },
                             onUnskip: { HabitStore.shared.unskipDay(for: habit, on: today) },
                             onSkipWithReason: { skipReasonTarget = (habit, today) }
                         )
@@ -399,7 +398,6 @@ struct HomeView: View {
                             onEdit: { editingHabit = habit },
                             onDelete: { deleteHabit(habit) },
                             onViewDescription: { habitForDetailsSheet = habit },
-                            onSkip: { HabitStore.shared.skipDay(for: habit, on: today) },
                             onUnskip: { HabitStore.shared.unskipDay(for: habit, on: today) },
                             onSkipWithReason: { skipReasonTarget = (habit, today) }
                         )

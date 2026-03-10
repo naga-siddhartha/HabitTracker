@@ -65,7 +65,6 @@ struct MonthlyView: View {
                                 onViewDescription: { habitForDetailsSheet = habit },
                                 onEdit: { editingHabit = habit },
                                 onDelete: { HabitStore.shared.deleteHabit(habit) },
-                                onSkip: { HabitStore.shared.skipDay(for: habit, on: selectedDate) },
                                 onUnskip: { HabitStore.shared.unskipDay(for: habit, on: selectedDate) },
                                 onSkipWithReason: { skipReasonTarget = (habit, selectedDate) }
                             )
@@ -151,29 +150,42 @@ struct MonthlyHabitRow: View {
     var onViewDescription: (() -> Void)? = nil
     var onEdit: (() -> Void)? = nil
     var onDelete: (() -> Void)? = nil
-    var onSkip: (() -> Void)? = nil
     var onUnskip: (() -> Void)? = nil
     var onSkipWithReason: (() -> Void)? = nil
     
     private var isCompleted: Bool { habit.isCompleted(on: date) }
     private var isSkipped: Bool { habit.isSkipped(on: date) }
+    private var skipReason: String? { habit.entry(for: date)?.skipReason }
     
+    private var skippedSubtitle: String {
+        guard isSkipped else { return "" }
+        if let reason = skipReason, !reason.isEmpty { return "Skipped · \(reason)" }
+        return "Skipped"
+    }
+
     var body: some View {
-        HStack(alignment: .top) {
+        HStack(alignment: .top, spacing: 8) {
             Button {
                 onViewDescription?()
             } label: {
-                HStack(alignment: .top) {
+                HStack(alignment: .top, spacing: 6) {
                     if let emoji = habit.emoji, !emoji.isEmpty {
                         Text(emoji).font(.subheadline)
                     } else {
                         Circle().fill(habit.color.color).frame(width: 12, height: 12)
                     }
-                    Text(habit.name)
-                    if isSkipped {
-                        Text("Skipped").font(.caption).foregroundStyle(.orange)
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(habit.name)
+                            .font(.subheadline.weight(.medium))
+                        if isSkipped {
+                            Text(skippedSubtitle)
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                                .lineLimit(1)
+                        }
                     }
-                    Spacer(minLength: 0)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
                 }
                 .contentShape(Rectangle())
             }
@@ -202,7 +214,6 @@ struct MonthlyHabitRow: View {
                 onDelete: { onDelete?() },
                 showSkipUnskip: true,
                 isSkippedOnDate: isSkipped,
-                onSkip: onSkip,
                 onUnskip: onUnskip,
                 onSkipWithReason: onSkipWithReason
             )

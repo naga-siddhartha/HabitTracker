@@ -101,12 +101,12 @@ struct ChecklistRow: View {
     var onEdit: () -> Void
     var onDelete: () -> Void
     var onViewDescription: (() -> Void)? = nil
-    var onSkip: (() -> Void)? = nil
     var onUnskip: (() -> Void)? = nil
     var onSkipWithReason: (() -> Void)? = nil
 
     private var isCompleted: Bool { habit.isCompleted(on: date) }
     private var isSkipped: Bool { habit.isSkipped(on: date) }
+    private var skipReason: String? { habit.entry(for: date)?.skipReason }
 
     private var timeLabel: String {
         habit.reminderTimes.isEmpty ? "All day" : habit.reminderTimes.first!.formatted(date: .omitted, time: .shortened)
@@ -141,7 +141,6 @@ struct ChecklistRow: View {
                     onDelete: onDelete,
                     showSkipUnskip: true,
                     isSkippedOnDate: isSkipped,
-                    onSkip: onSkip,
                     onUnskip: onUnskip,
                     onSkipWithReason: onSkipWithReason
                 )
@@ -164,7 +163,6 @@ struct ChecklistRow: View {
                 onDelete: onDelete,
                 showSkipUnskip: true,
                 isSkippedOnDate: isSkipped,
-                onSkip: onSkip,
                 onUnskip: onUnskip,
                 onSkipWithReason: onSkipWithReason
             )
@@ -215,9 +213,10 @@ struct ChecklistRow: View {
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(isCompleted || isSkipped ? .secondary : .primary)
                 .strikethrough(isCompleted)
-            Text(isSkipped ? "Skipped" : timeLabel)
+            Text(isSkipped ? (skipReason.flatMap { $0.isEmpty ? nil : "Skipped · \($0)" } ?? "Skipped") : timeLabel)
                 .font(.footnote)
                 .foregroundStyle(isSkipped ? .orange : .secondary)
+                .lineLimit(isSkipped ? 2 : 1)
             if isCompleted, let streak = habit.streak, streak.currentStreak > 0 {
                 HStack(spacing: 4) {
                     Image(systemName: "flame.fill").font(.system(size: 10))
