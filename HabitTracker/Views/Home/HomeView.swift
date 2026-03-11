@@ -12,13 +12,12 @@ struct HomeView: View {
     @State private var editingHabit: Habit?
     @State private var habitForDetailsSheet: Habit?
     @State private var skipReasonTarget: (habit: Habit, date: Date)?
+    @State private var skipReasonAlertMessage: String?
 
     private let config = LayoutConfig.current
     private let calendar = Calendar.current
 
     private var cardShadowColor: Color { colorScheme == .dark ? .white.opacity(0.04) : .black.opacity(0.05) }
-    private var cardShadowRadius: CGFloat { 8 }
-    private var sectionHeaderPadding: (top: CGFloat, bottom: CGFloat) { (16, 12) }
 
     /// Current date/time so Home always reflects "today" when the view is evaluated.
     private var today: Date { Date.now }
@@ -75,14 +74,14 @@ struct HomeView: View {
                         AdCardView()
                             .frame(maxWidth: config.contentMaxWidth)
                             .padding(.horizontal, config.horizontalPadding)
-                            .padding(.top, 24)
+                            .padding(.top, config.spacingXXL)
                         #endif
                         Spacer(minLength: 0)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else {
                     ScrollView {
-                        VStack(alignment: .leading, spacing: 24) {
+                        VStack(alignment: .leading, spacing: config.spacingXXL) {
                             headerSection
                             homeContent
                             #if os(iOS)
@@ -92,7 +91,7 @@ struct HomeView: View {
                             #endif
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(.bottom, 32)
+                        .padding(.bottom, config.spacingXXL + config.spacingS)
                     }
                 }
             }
@@ -114,7 +113,7 @@ struct HomeView: View {
             .overlay(alignment: .bottomTrailing) {
                 if showFloatingAddButton {
                     floatingAddButton
-                    .padding(.horizontal, config.horizontalPadding + 16)
+                    .padding(.horizontal, config.horizontalPadding + config.spacingL)
                     #if os(macOS)
                     .padding(.bottom, 44)
                     #else
@@ -126,6 +125,14 @@ struct HomeView: View {
             .habitSheets(details: $habitForDetailsSheet, editing: $editingHabit)
             .sheet(item: homeSkipReasonBinding) { pair in
                 SkipReasonSheetView(habit: pair.habit, date: pair.date) { skipReasonTarget = nil }
+            }
+            .alert("Skip reason", isPresented: Binding(
+                get: { skipReasonAlertMessage != nil },
+                set: { if !$0 { skipReasonAlertMessage = nil } }
+            )) {
+                Button("OK") { skipReasonAlertMessage = nil }
+            } message: {
+                if let msg = skipReasonAlertMessage { Text(msg) }
             }
         }
     }
@@ -150,12 +157,17 @@ struct HomeView: View {
         }
         .buttonStyle(.plain)
         .popover(isPresented: $showingAddMenuPopover, arrowEdge: .bottom) {
-            VStack(alignment: .leading, spacing: 0) {
+            VStack(alignment: .leading, spacing: config.spacingS) {
                 Button {
                     showingAddMenuPopover = false
                     onPresentTemplates?()
                 } label: {
                     Label("From template", systemImage: "square.grid.2x2")
+                        .font(.body.weight(.medium))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, config.spacingM)
+                        .padding(.horizontal, config.spacingS)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 Button {
@@ -163,11 +175,16 @@ struct HomeView: View {
                     showingAddHabit = true
                 } label: {
                     Label("Add habit", systemImage: "plus.circle")
+                        .font(.body.weight(.medium))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(.vertical, config.spacingM)
+                        .padding(.horizontal, config.spacingS)
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
             }
-            .padding(12)
-            .frame(minWidth: 180)
+            .padding(config.spacingL)
+            .frame(minWidth: 220)
         }
         #else
         Menu {
@@ -192,19 +209,19 @@ struct HomeView: View {
     private var floatingAddButtonLabel: some View {
         #if os(macOS)
         Image(systemName: "plus.circle.fill")
-            .font(.system(size: 22))
+            .font(.system(size: config.iconSizeRow + 2))
             .foregroundStyle(.white)
-            .frame(width: 44, height: 44)
+            .frame(width: config.iconSizeButton, height: config.iconSizeButton)
             .background(Self.floatingButtonBlue, in: Circle())
             .overlay(Circle().strokeBorder(.white.opacity(0.4), lineWidth: 1))
             .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
         #else
         Image(systemName: "plus.circle.fill")
-            .font(.system(size: 28))
+            .font(.system(size: config.iconSizeRow + 4))
             .foregroundStyle(.white)
-            .frame(width: 56, height: 56)
+            .frame(width: config.progressRingSize - 16, height: config.progressRingSize - 16)
             .background(Self.floatingButtonBlue, in: Circle())
-            .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 4)
+            .shadow(color: .black.opacity(0.2), radius: config.cardShadowRadius, x: 0, y: 4)
         #endif
     }
     
@@ -232,8 +249,8 @@ struct HomeView: View {
                 .font(.subheadline)
                 .foregroundStyle(.tertiary)
                 .padding(.horizontal, config.horizontalPadding)
-                .padding(.top, 8)
-                .padding(.bottom, 6)
+                .padding(.top, config.spacingS)
+                .padding(.bottom, config.cardBottomPaddingSmall)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -265,7 +282,7 @@ struct HomeView: View {
                     secondaryButtonAction: { onPresentTemplates?() }
                 )
             } else {
-                VStack(spacing: 16) {
+                VStack(spacing: config.spacingL) {
                     if !todayHabits.isEmpty {
                         activeCard
                     } else if !habitsCompletedToday.isEmpty {
@@ -273,7 +290,7 @@ struct HomeView: View {
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
+                            .padding(.vertical, config.spacingM)
                     }
                     if !scheduledHabits.isEmpty {
                         scheduledCard
@@ -289,18 +306,15 @@ struct HomeView: View {
     private var activeCard: some View {
         VStack(alignment: .leading, spacing: 0) {
             progressHeader
-                .padding(.horizontal, 20)
-                .padding(.top, 22)
-                .padding(.bottom, 16)
-            Divider()
-                .padding(.leading, 112)
-                .padding(.horizontal, 20)
+                .padding(.horizontal, config.cardContentPaddingHorizontal)
+                .padding(.top, config.progressHeaderTop)
+                .padding(.bottom, config.progressHeaderBottom)
             if activeHabits.isEmpty {
                 Text("All done!")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
+                    .padding(.vertical, config.spacingM + 6)
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(activeHabits.enumerated()), id: \.element.id) { index, habit in
@@ -311,43 +325,41 @@ struct HomeView: View {
                             onDelete: { deleteHabit(habit) },
                             onViewDescription: { habitForDetailsSheet = habit },
                             onUnskip: { HabitStore.shared.unskipDay(for: habit, on: today) },
-                            onSkipWithReason: { skipReasonTarget = (habit, today) }
+                            onSkipWithReason: { skipReasonTarget = (habit, today) },
+                            onTapSkipReason: { skipReasonAlertMessage = $0 }
                         )
-                            .padding(.horizontal, 20)
-                            .padding(.vertical, 10)
-                        if index < activeHabits.count - 1 {
-                            Divider()
-                                .padding(.leading, 96)
-                        }
+                            .padding(.horizontal, config.cardContentPaddingHorizontal)
+                            .padding(.vertical, config.cardRowPaddingVertical)
                     }
                 }
             }
         }
+        .padding(.bottom, config.cardBottomPaddingExtra)
         .background(Color.secondarySystemGroupedBackground)
         .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
         .overlay(
             RoundedRectangle(cornerRadius: config.cardCornerRadius)
                 .stroke(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.05), lineWidth: 1)
         )
-        .shadow(color: cardShadowColor, radius: cardShadowRadius, x: 0, y: 3)
+        .shadow(color: cardShadowColor, radius: config.cardShadowRadius, x: 0, y: 3)
         .frame(maxWidth: config.contentMaxWidth)
         .padding(.horizontal, config.horizontalPadding)
     }
 
     private var scheduledCard: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
+            HStack(spacing: config.spacingS) {
                 Image(systemName: "clock.fill")
-                    .font(.system(size: 16))
+                    .font(.system(size: config.spacingL))
                     .foregroundStyle(.orange)
                 Text("Scheduled")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
             }
-            .padding(.horizontal, 20)
-            .padding(.top, sectionHeaderPadding.top)
-            .padding(.bottom, sectionHeaderPadding.bottom)
+            .padding(.horizontal, config.cardContentPaddingHorizontal)
+            .padding(.top, config.sectionHeaderTop)
+            .padding(.bottom, config.sectionHeaderBottom)
             VStack(spacing: 0) {
                 ForEach(Array(scheduledHabits.enumerated()), id: \.element.id) { index, habit in
                     ScheduledRow(
@@ -356,40 +368,37 @@ struct HomeView: View {
                         onDelete: { deleteHabit(habit) },
                         onViewDescription: { habitForDetailsSheet = habit }
                     )
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                    if index < scheduledHabits.count - 1 {
-                        Divider()
-                            .padding(.leading, 96)
-                    }
+                        .padding(.horizontal, config.cardContentPaddingHorizontal)
+                        .padding(.vertical, config.cardRowPaddingVertical)
                 }
             }
         }
+        .padding(.bottom, config.cardBottomPaddingSmall)
         .background(Color.secondarySystemGroupedBackground)
         .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
         .overlay(
             RoundedRectangle(cornerRadius: config.cardCornerRadius)
                 .stroke(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.05), lineWidth: 1)
         )
-        .shadow(color: cardShadowColor, radius: cardShadowRadius, x: 0, y: 3)
+        .shadow(color: cardShadowColor, radius: config.cardShadowRadius, x: 0, y: 3)
         .frame(maxWidth: config.contentMaxWidth)
         .padding(.horizontal, config.horizontalPadding)
     }
 
     private var completedCard: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
+            HStack(spacing: config.spacingS) {
                 Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 16))
+                    .font(.system(size: config.spacingL))
                     .foregroundStyle(.green)
                 Text("Completed")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(.secondary)
                 Spacer()
             }
-            .padding(.horizontal, 20)
-            .padding(.top, sectionHeaderPadding.top)
-            .padding(.bottom, sectionHeaderPadding.bottom)
+            .padding(.horizontal, config.cardContentPaddingHorizontal)
+            .padding(.top, config.sectionHeaderTop)
+            .padding(.bottom, config.sectionHeaderBottom)
             VStack(spacing: 0) {
                     ForEach(Array(habitsCompletedToday.enumerated()), id: \.element.id) { index, habit in
                         ChecklistRow(
@@ -399,32 +408,30 @@ struct HomeView: View {
                             onDelete: { deleteHabit(habit) },
                             onViewDescription: { habitForDetailsSheet = habit },
                             onUnskip: { HabitStore.shared.unskipDay(for: habit, on: today) },
-                            onSkipWithReason: { skipReasonTarget = (habit, today) }
+                            onSkipWithReason: { skipReasonTarget = (habit, today) },
+                            onTapSkipReason: { skipReasonAlertMessage = $0 }
                         )
-                        .padding(.horizontal, 20)
-                        .padding(.vertical, 10)
-                    if index < habitsCompletedToday.count - 1 {
-                        Divider()
-                            .padding(.leading, 96)
-                    }
+                        .padding(.horizontal, config.cardContentPaddingHorizontal)
+                        .padding(.vertical, config.cardRowPaddingVertical)
                 }
             }
         }
+        .padding(.bottom, config.cardBottomPaddingSmall)
         .background(Color.secondarySystemGroupedBackground)
         .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
         .overlay(
             RoundedRectangle(cornerRadius: config.cardCornerRadius)
                 .stroke(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.05), lineWidth: 1)
         )
-        .shadow(color: cardShadowColor, radius: cardShadowRadius, x: 0, y: 3)
+        .shadow(color: cardShadowColor, radius: config.cardShadowRadius, x: 0, y: 3)
         .frame(maxWidth: config.contentMaxWidth)
         .padding(.horizontal, config.horizontalPadding)
     }
 
     private var progressHeader: some View {
-        HStack(spacing: 20) {
-            ProgressRing(progress: progress, count: completedCount, total: todayHabits.count, size: 72)
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: config.spacingXL) {
+            ProgressRing(progress: progress, count: completedCount, total: todayHabits.count, size: config.progressRingSize)
+            VStack(alignment: .leading, spacing: config.spacingXS) {
                 Text("\(completedCount) of \(todayHabits.count) done")
                     .font(.headline.weight(.semibold))
                 Text(motivationalMessage)

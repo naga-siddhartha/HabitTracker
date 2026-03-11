@@ -36,13 +36,13 @@ struct WeeklyView: View {
                     let contentWidth = geo.size.width - (2 * horizontalPadding)
                     let dayColumnWidth = contentWidth / 7
                     
-                    VStack(alignment: .leading, spacing: 8) {
+                    VStack(alignment: .leading, spacing: LayoutConfig.current.spacingL) {
                         Text("Habits this week")
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(.secondary)
                             .padding(.leading, horizontalPadding)
                         
-                        VStack(spacing: 12) {
+                        VStack(spacing: LayoutConfig.current.spacingL) {
                             HStack(spacing: 0) {
                                 ForEach(weekDates, id: \.self) { date in
                                     Text(date, format: .dateTime.weekday(.narrow))
@@ -51,24 +51,27 @@ struct WeeklyView: View {
                                         .frame(width: dayColumnWidth, alignment: .center)
                                 }
                             }
-                            .padding(.vertical, 12)
+                            .padding(.vertical, LayoutConfig.current.spacingM)
                             .frame(width: contentWidth)
                             .background(Color.systemGray6)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .clipShape(RoundedRectangle(cornerRadius: LayoutConfig.current.cornerRadiusSmall))
                             
                             ScrollView {
-                                ForEach(habits) { habit in
-                                    WeeklyHabitRow(
-                                        habit: habit,
-                                        dates: weekDates,
-                                        dayColumnWidth: dayColumnWidth,
-                                        onViewDescription: { habitForDetailsSheet = habit },
-                                        onEdit: { editingHabit = habit },
-                                        onDelete: { HabitStore.shared.deleteHabit(habit) },
-                                        onSkipWithReason: { date in skipReasonTarget = (habit, date) }
-                                    )
-                                    .frame(width: contentWidth)
+                                VStack(alignment: .leading, spacing: LayoutConfig.current.spacingL) {
+                                    ForEach(habits) { habit in
+                                        WeeklyHabitRow(
+                                            habit: habit,
+                                            dates: weekDates,
+                                            dayColumnWidth: dayColumnWidth,
+                                            onViewDescription: { habitForDetailsSheet = habit },
+                                            onEdit: { editingHabit = habit },
+                                            onDelete: { HabitStore.shared.deleteHabit(habit) },
+                                            onSkipWithReason: { date in skipReasonTarget = (habit, date) }
+                                        )
+                                        .frame(width: contentWidth)
+                                    }
                                 }
+                                .padding(.bottom, LayoutConfig.current.spacingL)
                             }
                         }
                         .frame(maxWidth: .infinity)
@@ -125,8 +128,8 @@ struct WeeklyHabitRow: View {
                     .frame(width: dayColumnWidth)
                 }
             }
-            .padding(.top, 12)
-            .padding(.bottom, 10)
+            .padding(.top, LayoutConfig.current.spacingM)
+            .padding(.bottom, LayoutConfig.current.cardRowPaddingVertical)
             
             Button {
                 onViewDescription?()
@@ -137,9 +140,9 @@ struct WeeklyHabitRow: View {
                     } else if let iconName = habit.iconName {
                         Image(systemName: iconName)
                             .font(.subheadline)
-                            .foregroundStyle(habit.color.color)
+                            .foregroundStyle(habit.displayColor)
                     } else {
-                        Circle().fill(habit.color.color).frame(width: 18, height: 18)
+                        Circle().fill(habit.displayColor).frame(width: LayoutConfig.current.spacingM + 6, height: LayoutConfig.current.spacingM + 6)
                     }
                     Text(habit.name)
                         .font(.subheadline.weight(.medium))
@@ -152,8 +155,8 @@ struct WeeklyHabitRow: View {
             .buttonStyle(.plain)
             .padding(.bottom, 12)
         }
-        .background(Color.systemGray6)
-        .clipShape(RoundedRectangle(cornerRadius: 8))
+        .background(habit.displayColor.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: LayoutConfig.current.cardCornerRadius))
         .contentShape(Rectangle())
         .contextMenu {
             HabitRowActions(
@@ -187,7 +190,7 @@ private struct DayDot: View {
                 if isCompleted {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 26))
-                        .foregroundStyle(habit.color.color)
+                        .foregroundStyle(habit.displayColor)
                 } else if isSkipped {
                     Image(systemName: "pause.circle.fill")
                         .font(.system(size: 26))

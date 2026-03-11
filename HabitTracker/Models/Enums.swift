@@ -14,8 +14,8 @@ enum ReminderSound: String, Codable, CaseIterable, Sendable {
 // MARK: - Habit Color
 
 enum HabitColor: String, Codable, CaseIterable, Sendable {
-    case red, orange, yellow, green, blue, purple, pink, indigo, teal
-    
+    case red, orange, yellow, green, blue, purple, pink, indigo, teal, custom
+
     var color: Color {
         switch self {
         case .red: .red
@@ -27,6 +27,7 @@ enum HabitColor: String, Codable, CaseIterable, Sendable {
         case .pink: .pink
         case .indigo: .indigo
         case .teal: .teal
+        case .custom: .blue
         }
     }
 }

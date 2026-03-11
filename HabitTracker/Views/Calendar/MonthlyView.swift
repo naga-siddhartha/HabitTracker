@@ -8,79 +8,93 @@ struct MonthlyView: View {
     @State private var habitForDetailsSheet: Habit?
     @State private var editingHabit: Habit?
     @State private var skipReasonTarget: (habit: Habit, date: Date)?
-    
+    @State private var skipReasonAlertMessage: String?
+
+    private let config = LayoutConfig.current
     private let calendar = Calendar.current
     private let columns = Array(repeating: GridItem(.flexible()), count: 7)
     
     var body: some View {
-        VStack(spacing: 0) {
-            HStack {
-                Button { changeMonth(by: -1) } label: { Image(systemName: "chevron.left") }
-                Spacer()
-                Text(currentMonth, format: .dateTime.month(.wide).year()).font(.headline)
-                Spacer()
-                Button { changeMonth(by: 1) } label: { Image(systemName: "chevron.right") }
-            }
-            .padding()
-            
-            LazyVGrid(columns: columns, spacing: 4) {
-                ForEach(Array(["S", "M", "T", "W", "T", "F", "S"].enumerated()), id: \.offset) { _, day in
-                    Text(day).font(.caption).foregroundStyle(.secondary)
+        let activeHabits = habits.filter { $0.isActive(on: selectedDate) }
+        return VStack(spacing: 0) {
+            // Fixed calendar block — stays at top
+            VStack(spacing: 0) {
+                HStack {
+                    Button { changeMonth(by: -1) } label: { Image(systemName: "chevron.left") }
+                    Spacer()
+                    Text(currentMonth, format: .dateTime.month(.wide).year()).font(.headline)
+                    Spacer()
+                    Button { changeMonth(by: 1) } label: { Image(systemName: "chevron.right") }
                 }
-            }
-            .padding(.horizontal)
-            
-            LazyVGrid(columns: columns, spacing: 4) {
-                ForEach(daysInMonth, id: \.self) { date in
-                    MonthDayCell(date: date, habits: habits, currentMonth: currentMonth, isSelected: calendar.isDate(date, inSameDayAs: selectedDate))
-                        .onTapGesture { selectedDate = date }
-                }
-            }
-            .padding(.horizontal)
-            
-            let activeHabits = habits.filter { $0.isActive(on: selectedDate) }
-            
-            Divider().padding(.vertical, 16)
-            
-            if activeHabits.isEmpty {
-                CalendarEmptyState(
-                    icon: "calendar.badge.clock",
-                    title: "No habits scheduled",
-                    message: "Tap a day above to see habits for that date."
-                )
-            } else {
-                VStack(alignment: .leading, spacing: 0) {
-                    Text("Habits for this day")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal, 20)
-                        .padding(.top, 16)
-                        .padding(.bottom, 12)
-                    
-                    VStack(spacing: 0) {
-                        ForEach(activeHabits) { habit in
-                            MonthlyHabitRow(
-                                habit: habit,
-                                date: selectedDate,
-                                onViewDescription: { habitForDetailsSheet = habit },
-                                onEdit: { editingHabit = habit },
-                                onDelete: { HabitStore.shared.deleteHabit(habit) },
-                                onUnskip: { HabitStore.shared.unskipDay(for: habit, on: selectedDate) },
-                                onSkipWithReason: { skipReasonTarget = (habit, selectedDate) }
-                            )
-                        }
+                .padding()
+                
+                LazyVGrid(columns: columns, spacing: 4) {
+                    ForEach(Array(["S", "M", "T", "W", "T", "F", "S"].enumerated()), id: \.offset) { _, day in
+                        Text(day).font(.caption).foregroundStyle(.secondary)
                     }
-                    .background(Color.systemBackground)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                    .padding(.horizontal, 16)
                 }
+                .padding(.horizontal)
+                
+                LazyVGrid(columns: columns, spacing: 4) {
+                    ForEach(daysInMonth, id: \.self) { date in
+                        MonthDayCell(date: date, habits: habits, currentMonth: currentMonth, isSelected: calendar.isDate(date, inSameDayAs: selectedDate))
+                            .onTapGesture { selectedDate = date }
+                    }
+                }
+                .padding(.horizontal)
+                .padding(.bottom, config.spacingL)
             }
             
-            Spacer()
+            // Only the habits section scrolls
+            ScrollView {
+                VStack(alignment: .leading, spacing: 0) {
+                    if activeHabits.isEmpty {
+                        CalendarEmptyState(
+                            icon: "calendar.badge.clock",
+                            title: "No habits scheduled",
+                            message: "Tap a day above to see habits for that date."
+                        )
+                    } else {
+                        Text("Habits for this day")
+                            .font(.subheadline.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, config.cardContentPaddingHorizontal)
+                            .padding(.top, config.spacingL)
+                            .padding(.bottom, config.sectionHeaderBottom)
+                        
+                        VStack(spacing: config.spacingL) {
+                            ForEach(activeHabits) { habit in
+                                MonthlyHabitRow(
+                                    habit: habit,
+                                    date: selectedDate,
+                                    onViewDescription: { habitForDetailsSheet = habit },
+                                    onEdit: { editingHabit = habit },
+                                    onDelete: { HabitStore.shared.deleteHabit(habit) },
+                                    onUnskip: { HabitStore.shared.unskipDay(for: habit, on: selectedDate) },
+                                    onSkipWithReason: { skipReasonTarget = (habit, selectedDate) },
+                                    onTapSkipReason: { skipReasonAlertMessage = $0 }
+                                )
+                            }
+                        }
+                        .padding(.horizontal, config.spacingL)
+                        .padding(.top, config.spacingS)
+                        .padding(.bottom, config.spacingL)
+                    }
+                }
+            }
+            .frame(maxHeight: .infinity)
         }
         .habitSheets(details: $habitForDetailsSheet, editing: $editingHabit)
         .sheet(item: monthlySkipReasonBinding) { pair in
             SkipReasonSheetView(habit: pair.habit, date: pair.date) { skipReasonTarget = nil }
+        }
+        .alert("Skip reason", isPresented: Binding(
+            get: { skipReasonAlertMessage != nil },
+            set: { if !$0 { skipReasonAlertMessage = nil } }
+        )) {
+            Button("OK") { skipReasonAlertMessage = nil }
+        } message: {
+            if let msg = skipReasonAlertMessage { Text(msg) }
         }
     }
     
@@ -152,7 +166,8 @@ struct MonthlyHabitRow: View {
     var onDelete: (() -> Void)? = nil
     var onUnskip: (() -> Void)? = nil
     var onSkipWithReason: (() -> Void)? = nil
-    
+    var onTapSkipReason: ((String) -> Void)? = nil
+
     private var isCompleted: Bool { habit.isCompleted(on: date) }
     private var isSkipped: Bool { habit.isSkipped(on: date) }
     private var skipReason: String? { habit.entry(for: date)?.skipReason }
@@ -172,16 +187,35 @@ struct MonthlyHabitRow: View {
                     if let emoji = habit.emoji, !emoji.isEmpty {
                         Text(emoji).font(.subheadline)
                     } else {
-                        Circle().fill(habit.color.color).frame(width: 12, height: 12)
+                        Circle().fill(habit.displayColor).frame(width: 12, height: 12)
                     }
                     VStack(alignment: .leading, spacing: 2) {
                         Text(habit.name)
                             .font(.subheadline.weight(.medium))
                         if isSkipped {
-                            Text(skippedSubtitle)
-                                .font(.caption)
-                                .foregroundStyle(.orange)
-                                .lineLimit(1)
+                            Group {
+                                if skipReason != nil, !(skipReason?.isEmpty ?? true) {
+                                    Button {
+                                        onTapSkipReason?(skippedSubtitle)
+                                    } label: {
+                                        Text(skippedSubtitle)
+                                            .font(.caption)
+                                            .foregroundStyle(.orange)
+                                            .lineLimit(2)
+                                            .truncationMode(.tail)
+                                            .multilineTextAlignment(.leading)
+                                            .frame(maxWidth: .infinity, alignment: .leading)
+                                    }
+                                    .buttonStyle(.plain)
+                                    .accessibilityHint("Double tap to show full reason")
+                                } else {
+                                    Text(skippedSubtitle)
+                                        .font(.caption)
+                                        .foregroundStyle(.orange)
+                                        .lineLimit(2)
+                                        .truncationMode(.tail)
+                                }
+                            }
                         }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -206,6 +240,8 @@ struct MonthlyHabitRow: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
+        .background(habit.displayColor.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: LayoutConfig.current.cardCornerRadius))
         .contentShape(Rectangle())
         .contextMenu {
             HabitRowActions(
@@ -227,7 +263,7 @@ struct MonthlyHabitRow: View {
     
     private var statusColor: Color {
         if isSkipped { return .orange }
-        return isCompleted ? habit.color.color : .secondary
+        return isCompleted ? habit.displayColor : .secondary
     }
 }
 

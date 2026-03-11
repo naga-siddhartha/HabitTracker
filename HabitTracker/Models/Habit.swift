@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import SwiftUI
 
 // MARK: - Habit
 
@@ -12,6 +13,7 @@ final class Habit {
     var iconName: String?
     var emoji: String?
     var colorName: String = HabitColor.blue.rawValue
+    var customColorHex: String?
     var frequencyRaw: String = HabitFrequency.daily.rawValue
     var reminderTimes: [Date] = []
     var reminderNames: [String] = []
@@ -71,7 +73,15 @@ extension Habit {
         get { HabitColor(rawValue: colorName) ?? .blue }
         set { colorName = newValue.rawValue }
     }
-    
+
+    /// Resolved color for display: custom hex when color is custom, otherwise the preset color.
+    var displayColor: Color {
+        if colorName == HabitColor.custom.rawValue, let hex = customColorHex, let c = Color(hex: hex) {
+            return c
+        }
+        return color.color
+    }
+
     var frequency: HabitFrequency {
         get { HabitFrequency(rawValue: frequencyRaw) ?? .daily }
         set { frequencyRaw = newValue.rawValue }

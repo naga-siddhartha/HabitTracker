@@ -35,6 +35,52 @@ struct LayoutConfig {
     let iconSize: CGFloat
     let buttonStyle: ButtonStyleType
     
+    // Spacing (used consistently across the app)
+    let spacingXS: CGFloat
+    let spacingS: CGFloat
+    let spacingM: CGFloat
+    let spacingL: CGFloat
+    let spacingXL: CGFloat
+    let spacingXXL: CGFloat
+    
+    // Card and section padding
+    let cardContentPaddingHorizontal: CGFloat
+    let cardRowPaddingVertical: CGFloat
+    let sectionHeaderTop: CGFloat
+    let sectionHeaderBottom: CGFloat
+    let progressHeaderTop: CGFloat
+    let progressHeaderBottom: CGFloat
+    let listRowLeadingInset: CGFloat
+    let progressDividerLeadingInset: CGFloat
+    let cardBottomPaddingExtra: CGFloat
+    let cardBottomPaddingSmall: CGFloat
+    
+    // Corner radii
+    let cornerRadiusSmall: CGFloat
+    let cornerRadiusMedium: CGFloat
+    
+    // Control and icon sizes
+    let checkboxSize: CGFloat
+    let iconSizeRow: CGFloat
+    let iconSizeButton: CGFloat
+    let progressRingSize: CGFloat
+    let cardShadowRadius: CGFloat
+
+    // Form and sheet layout (macOS section spacing, picker sheet sizes)
+    let formSectionSpacing: CGFloat
+    let sheetHeaderPaddingHorizontal: CGFloat
+    let sheetHeaderPaddingTop: CGFloat
+    let sheetHeaderPaddingBottom: CGFloat
+    let emojiPickerMinWidth: CGFloat
+    let emojiPickerMinHeight: CGFloat
+    let colorPickerMinWidth: CGFloat
+    let colorPickerMinHeight: CGFloat
+    let emojiGridColumns: Int
+    let emojiGridSpacing: CGFloat
+    let emojiCellSize: CGFloat
+    let colorGridColumns: Int
+    let colorChipSize: CGFloat
+
     enum ButtonStyleType {
         case custom, system
     }
@@ -51,7 +97,43 @@ struct LayoutConfig {
                 sheetHeight: nil,
                 iconGridColumns: 7,
                 iconSize: 36,
-                buttonStyle: .custom
+                buttonStyle: .custom,
+                spacingXS: 4,
+                spacingS: 8,
+                spacingM: 12,
+                spacingL: 16,
+                spacingXL: 20,
+                spacingXXL: 24,
+                cardContentPaddingHorizontal: 20,
+                cardRowPaddingVertical: 10,
+                sectionHeaderTop: 16,
+                sectionHeaderBottom: 12,
+                progressHeaderTop: 22,
+                progressHeaderBottom: 16,
+                listRowLeadingInset: 96,
+                progressDividerLeadingInset: 112,
+                cardBottomPaddingExtra: 12,
+                cardBottomPaddingSmall: 6,
+                cornerRadiusSmall: 8,
+                cornerRadiusMedium: 12,
+                checkboxSize: 34,
+                iconSizeRow: 28,
+                iconSizeButton: 44,
+                progressRingSize: 72,
+                cardShadowRadius: 8,
+                formSectionSpacing: 20,
+                sheetHeaderPaddingHorizontal: 20,
+                sheetHeaderPaddingTop: 16,
+                sheetHeaderPaddingBottom: 12,
+                emojiPickerMinWidth: 400,
+                emojiPickerMinHeight: 420,
+                colorPickerMinWidth: 280,
+                colorPickerMinHeight: 320,
+                emojiGridColumns: 6,
+                emojiGridSpacing: 12,
+                emojiCellSize: 44,
+                colorGridColumns: 5,
+                colorChipSize: 44
             )
         case .macOS:
             return LayoutConfig(
@@ -59,11 +141,47 @@ struct LayoutConfig {
                 horizontalPadding: 20,
                 cardCornerRadius: 12,
                 cardPadding: 12,
-                sheetWidth: 450,
-                sheetHeight: 500,
+                sheetWidth: 420,
+                sheetHeight: 480,
                 iconGridColumns: 7,
                 iconSize: 32,
-                buttonStyle: .system
+                buttonStyle: .system,
+                spacingXS: 4,
+                spacingS: 8,
+                spacingM: 12,
+                spacingL: 16,
+                spacingXL: 20,
+                spacingXXL: 24,
+                cardContentPaddingHorizontal: 20,
+                cardRowPaddingVertical: 10,
+                sectionHeaderTop: 16,
+                sectionHeaderBottom: 12,
+                progressHeaderTop: 22,
+                progressHeaderBottom: 16,
+                listRowLeadingInset: 96,
+                progressDividerLeadingInset: 112,
+                cardBottomPaddingExtra: 12,
+                cardBottomPaddingSmall: 6,
+                cornerRadiusSmall: 8,
+                cornerRadiusMedium: 12,
+                checkboxSize: 34,
+                iconSizeRow: 28,
+                iconSizeButton: 44,
+                progressRingSize: 72,
+                cardShadowRadius: 8,
+                formSectionSpacing: 10,
+                sheetHeaderPaddingHorizontal: 20,
+                sheetHeaderPaddingTop: 12,
+                sheetHeaderPaddingBottom: 10,
+                emojiPickerMinWidth: 400,
+                emojiPickerMinHeight: 420,
+                colorPickerMinWidth: 280,
+                colorPickerMinHeight: 320,
+                emojiGridColumns: 6,
+                emojiGridSpacing: 12,
+                emojiCellSize: 44,
+                colorGridColumns: 5,
+                colorChipSize: 44
             )
         case .visionOS:
             return LayoutConfig(
@@ -75,7 +193,43 @@ struct LayoutConfig {
                 sheetHeight: 600,
                 iconGridColumns: 8,
                 iconSize: 44,
-                buttonStyle: .system
+                buttonStyle: .system,
+                spacingXS: 4,
+                spacingS: 8,
+                spacingM: 12,
+                spacingL: 16,
+                spacingXL: 20,
+                spacingXXL: 24,
+                cardContentPaddingHorizontal: 24,
+                cardRowPaddingVertical: 10,
+                sectionHeaderTop: 16,
+                sectionHeaderBottom: 12,
+                progressHeaderTop: 22,
+                progressHeaderBottom: 16,
+                listRowLeadingInset: 96,
+                progressDividerLeadingInset: 112,
+                cardBottomPaddingExtra: 12,
+                cardBottomPaddingSmall: 6,
+                cornerRadiusSmall: 8,
+                cornerRadiusMedium: 12,
+                checkboxSize: 34,
+                iconSizeRow: 28,
+                iconSizeButton: 44,
+                progressRingSize: 72,
+                cardShadowRadius: 8,
+                formSectionSpacing: 20,
+                sheetHeaderPaddingHorizontal: 24,
+                sheetHeaderPaddingTop: 16,
+                sheetHeaderPaddingBottom: 12,
+                emojiPickerMinWidth: 440,
+                emojiPickerMinHeight: 460,
+                colorPickerMinWidth: 300,
+                colorPickerMinHeight: 360,
+                emojiGridColumns: 6,
+                emojiGridSpacing: 12,
+                emojiCellSize: 44,
+                colorGridColumns: 5,
+                colorChipSize: 44
             )
         }
     }
@@ -150,7 +304,8 @@ struct AdaptiveForm<Content: View>: View {
     
     #if os(macOS)
     private var macOSForm: some View {
-        VStack(spacing: 0) {
+        let config = LayoutConfig.current
+        return VStack(spacing: 0) {
             HStack {
                 Button("Cancel", action: onCancel)
                     .keyboardShortcut(.cancelAction)
@@ -161,17 +316,20 @@ struct AdaptiveForm<Content: View>: View {
                     .keyboardShortcut(.defaultAction)
                     .disabled(saveDisabled)
             }
-            .padding()
+            .padding(.horizontal, config.sheetHeaderPaddingHorizontal)
+            .padding(.vertical, 10)
             
             Divider()
             
             ScrollView {
                 content()
-                    .padding(20)
+                    .padding(.horizontal, config.sheetHeaderPaddingHorizontal)
+                    .padding(.top, 12)
+                    .padding(.bottom, 16)
             }
         }
-        .frame(width: LayoutConfig.current.sheetWidth ?? 450,
-               height: LayoutConfig.current.sheetHeight ?? 500)
+        .frame(width: config.sheetWidth ?? 420,
+               height: config.sheetHeight ?? 480)
     }
     #endif
     
@@ -207,7 +365,7 @@ struct IconGrid: View {
     var body: some View {
         let config = LayoutConfig.current
         
-        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: config.iconGridColumns), spacing: 8) {
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: config.iconGridColumns), spacing: config.spacingS) {
             ForEach(icons, id: \.self) { icon in
                 Button { selected = icon } label: {
                     Image(systemName: icon)
@@ -215,7 +373,7 @@ struct IconGrid: View {
                         .frame(width: config.iconSize, height: config.iconSize)
                         .background(selected == icon ? accentColor.opacity(0.2) : Color.systemGray6)
                         .foregroundStyle(selected == icon ? accentColor : .primary)
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                        .clipShape(RoundedRectangle(cornerRadius: config.cornerRadiusSmall))
                 }
                 .buttonStyle(.plain)
             }

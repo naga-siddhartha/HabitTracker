@@ -99,15 +99,15 @@ struct DayCell: View {
             }
         }
         .frame(width: 32, height: 32)
-        .overlay { if isToday { Circle().stroke(habit.color.color, lineWidth: 2) } }
-        .background(isSelected ? habit.color.color.opacity(0.2) : .clear)
+        .overlay { if isToday { Circle().stroke(habit.displayColor, lineWidth: 2) } }
+        .background(isSelected ? habit.displayColor.opacity(0.2) : .clear)
         .clipShape(Circle())
         .scaleEffect(isCompleted ? 1.1 : 1.0)
         .animation(.spring(duration: 0.2), value: isCompleted)
     }
     
     private var fillColor: Color {
-        if isCompleted { return habit.color.color }
+        if isCompleted { return habit.displayColor }
         if isSkipped { return .orange }
         return Color.systemGray4
     }

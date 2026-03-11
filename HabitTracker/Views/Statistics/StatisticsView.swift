@@ -152,7 +152,7 @@ struct CompletionsDetailView: View {
                 LabeledContent {
                     Text("\(count) completions").foregroundStyle(.secondary)
                 } label: {
-                    Label(habit.name, systemImage: "circle.fill").foregroundStyle(habit.color.color)
+                    Label(habit.name, systemImage: "circle.fill").foregroundStyle(habit.displayColor)
                 }
             }
             .navigationTitle("Completions")
@@ -171,7 +171,7 @@ struct StreaksDetailView: View {
             List(habits.sorted { ($0.streak?.currentStreak ?? 0) > ($1.streak?.currentStreak ?? 0) }) { habit in
                 if let streak = habit.streak {
                     VStack(alignment: .leading, spacing: 8) {
-                        Label(habit.name, systemImage: "circle.fill").foregroundStyle(habit.color.color).font(.headline)
+                        Label(habit.name, systemImage: "circle.fill").foregroundStyle(habit.displayColor).font(.headline)
                         HStack {
                             Label("\(streak.currentStreak) current", systemImage: "flame.fill").foregroundStyle(.orange)
                             Spacer()
@@ -201,9 +201,9 @@ struct HabitsDetailView: View {
                             Text(emoji).font(.headline)
                         } else {
                             Image(systemName: habit.iconName ?? "circle.fill")
-                                .foregroundStyle(habit.color.color)
+                                .foregroundStyle(habit.displayColor)
                         }
-                        Text(habit.name).font(.headline).foregroundStyle(habit.color.color)
+                        Text(habit.name).font(.headline).foregroundStyle(habit.displayColor)
                     }
                     Text("Frequency: \(habit.frequency.rawValue.capitalized)").font(.caption).foregroundStyle(.secondary)
                     if let streak = habit.streak {
@@ -255,7 +255,7 @@ struct HabitStatRow: View {
             if let emoji = habit.emoji, !emoji.isEmpty {
                 Text(emoji).font(.subheadline)
             } else {
-                Circle().fill(habit.color.color).frame(width: 12, height: 12)
+                Circle().fill(habit.displayColor).frame(width: 12, height: 12)
             }
             Text(habit.name).font(.subheadline)
             Spacer()
@@ -273,7 +273,7 @@ struct StreakRow: View {
             if let emoji = habit.emoji, !emoji.isEmpty {
                 Text(emoji).font(.subheadline)
             } else {
-                Circle().fill(habit.color.color).frame(width: 12, height: 12)
+                Circle().fill(habit.displayColor).frame(width: 12, height: 12)
             }
             Text(habit.name).font(.subheadline)
             Spacer()

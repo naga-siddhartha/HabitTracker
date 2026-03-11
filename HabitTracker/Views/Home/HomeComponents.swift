@@ -19,6 +19,8 @@ struct HomeEmptyState: View {
     let secondaryButtonTitle: String
     let secondaryButtonAction: () -> Void
 
+    private let config = LayoutConfig.current
+
     private var secondaryButtonBackground: Color {
         #if os(iOS)
         Color(uiColor: .quaternarySystemFill)
@@ -36,9 +38,9 @@ struct HomeEmptyState: View {
     var body: some View {
         VStack(spacing: 0) {
             // Message block: icon + copy grouped together
-            VStack(alignment: .center, spacing: 18) {
+            VStack(alignment: .center, spacing: config.spacingM + 6) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 28)
+                    RoundedRectangle(cornerRadius: config.cardCornerRadius + 12)
                         .fill(iconColor.opacity(0.12))
                         .frame(width: 96, height: 96)
                     Image(systemName: icon)
@@ -46,7 +48,7 @@ struct HomeEmptyState: View {
                         .foregroundStyle(iconColor)
                 }
 
-                VStack(alignment: .center, spacing: 8) {
+                VStack(alignment: .center, spacing: config.spacingS) {
                     Text(title)
                         .font(.title2.weight(.bold))
                         .multilineTextAlignment(.center)
@@ -57,22 +59,22 @@ struct HomeEmptyState: View {
                 }
             }
             .frame(maxWidth: .infinity)
-            .padding(.top, 28)
-            .padding(.horizontal, 24)
-            .padding(.bottom, 24)
+            .padding(.top, config.spacingXXL + 4)
+            .padding(.horizontal, config.spacingXXL)
+            .padding(.bottom, config.spacingXXL)
 
             // Separator so the button reads as the card’s action, not another line of text
             Divider()
-                .padding(.horizontal, 24)
+                .padding(.horizontal, config.spacingXXL)
 
-            VStack(spacing: 12) {
+            VStack(spacing: config.spacingM) {
                 Button(action: primaryButtonAction) {
                     Label(primaryButtonTitle, systemImage: "plus.circle")
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(.primary)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(primaryButtonBackground, in: RoundedRectangle(cornerRadius: 14))
+                        .padding(.vertical, config.spacingL)
+                        .background(primaryButtonBackground, in: RoundedRectangle(cornerRadius: config.cornerRadiusMedium + 2))
                 }
                 .buttonStyle(.plain)
                 Button(action: secondaryButtonAction) {
@@ -80,16 +82,16 @@ struct HomeEmptyState: View {
                         .font(.system(size: 17, weight: .semibold))
                         .foregroundStyle(.primary)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(secondaryButtonBackground, in: RoundedRectangle(cornerRadius: 14))
+                        .padding(.vertical, config.spacingL)
+                        .background(secondaryButtonBackground, in: RoundedRectangle(cornerRadius: config.cornerRadiusMedium + 2))
                 }
                 .buttonStyle(.plain)
             }
-            .padding(20)
+            .padding(config.spacingXL)
         }
         .background(Color.secondarySystemGroupedBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 18))
-        .padding(.horizontal, 20)
+        .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius + 2))
+        .padding(.horizontal, config.spacingXL)
     }
 }
 
@@ -98,11 +100,13 @@ struct HomeEmptyState: View {
 struct ChecklistRow: View {
     @Bindable var habit: Habit
     let date: Date
+    private let config = LayoutConfig.current
     var onEdit: () -> Void
     var onDelete: () -> Void
     var onViewDescription: (() -> Void)? = nil
     var onUnskip: (() -> Void)? = nil
     var onSkipWithReason: (() -> Void)? = nil
+    var onTapSkipReason: ((String) -> Void)? = nil
 
     private var isCompleted: Bool { habit.isCompleted(on: date) }
     private var isSkipped: Bool { habit.isSkipped(on: date) }
@@ -113,7 +117,7 @@ struct ChecklistRow: View {
     }
 
     var body: some View {
-        HStack(spacing: 18) {
+        HStack(spacing: config.spacingM + 6) {
             Button {
                 withAnimation(.spring(duration: 0.25)) {
                     HabitStore.shared.toggleCompletion(for: habit, on: date)
@@ -126,7 +130,7 @@ struct ChecklistRow: View {
             Button {
                 onViewDescription?()
             } label: {
-                HStack(spacing: 18) {
+                HStack(spacing: config.spacingM + 6) {
                     habitIcon
                     habitInfo
                     Spacer(minLength: 0)
@@ -146,12 +150,14 @@ struct ChecklistRow: View {
                 )
             } label: {
                 Image(systemName: "ellipsis.circle")
-                    .font(.system(size: 22))
+                    .font(.system(size: config.iconSizeRow + 2))
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 16)
+        .padding(.horizontal, config.spacingL)
+        .padding(.vertical, config.spacingL)
+        .background(habit.displayColor.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(habit.name), \(isSkipped ? "Skipped" : (isCompleted ? "Completed" : "Not completed"))")
@@ -174,21 +180,21 @@ struct ChecklistRow: View {
             if isSkipped {
                 Circle()
                     .stroke(Color.orange, lineWidth: 2)
-                    .frame(width: 34, height: 34)
+                    .frame(width: config.checkboxSize, height: config.checkboxSize)
                 Image(systemName: "pause.fill")
-                    .font(.system(size: 14))
+                    .font(.system(size: config.cornerRadiusMedium + 2))
                     .foregroundStyle(.orange)
             } else {
                 Circle()
-                    .stroke(isCompleted ? habit.color.color : Color.systemGray4, lineWidth: 2)
-                    .frame(width: 34, height: 34)
+                    .stroke(isCompleted ? habit.displayColor : Color.systemGray4, lineWidth: 2)
+                    .frame(width: config.checkboxSize, height: config.checkboxSize)
                 if isCompleted {
-                    Circle().fill(habit.color.color).frame(width: 34, height: 34)
-                    Image(systemName: "checkmark").font(.system(size: 16, weight: .bold)).foregroundStyle(.white)
+                    Circle().fill(habit.displayColor).frame(width: config.checkboxSize, height: config.checkboxSize)
+                    Image(systemName: "checkmark").font(.system(size: config.spacingL, weight: .bold)).foregroundStyle(.white)
                 }
             }
         }
-        .frame(width: 34, height: 34)
+        .frame(width: config.checkboxSize, height: config.checkboxSize)
         .contentShape(Rectangle())
         .animation(.spring(duration: 0.25), value: isCompleted)
         .animation(.spring(duration: 0.25), value: isSkipped)
@@ -197,26 +203,50 @@ struct ChecklistRow: View {
     private var habitIcon: some View {
         Group {
             if let emoji = habit.emoji, !emoji.isEmpty {
-                Text(emoji).font(.system(size: 22))
+                Text(emoji).font(.system(size: config.iconSizeRow + 2))
             } else {
                 Image(systemName: habit.iconName ?? "circle.fill")
-                    .font(.system(size: 22))
-                    .foregroundStyle(habit.color.color)
+                    .font(.system(size: config.iconSizeRow + 2))
+                    .foregroundStyle(habit.displayColor)
             }
         }
-        .frame(width: 28)
+        .frame(width: config.iconSizeRow)
+    }
+
+    private var skipReasonDisplayText: String {
+        guard isSkipped else { return timeLabel }
+        return skipReason.flatMap { $0.isEmpty ? nil : "Skipped · \($0)" } ?? "Skipped"
     }
 
     private var habitInfo: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(habit.name)
-                .font(.system(size: 18, weight: .semibold))
+                .font(.system(size: config.spacingM + 6, weight: .semibold))
                 .foregroundStyle(isCompleted || isSkipped ? .secondary : .primary)
                 .strikethrough(isCompleted)
-            Text(isSkipped ? (skipReason.flatMap { $0.isEmpty ? nil : "Skipped · \($0)" } ?? "Skipped") : timeLabel)
-                .font(.footnote)
-                .foregroundStyle(isSkipped ? .orange : .secondary)
-                .lineLimit(isSkipped ? 2 : 1)
+            Group {
+                if isSkipped, skipReason != nil, !(skipReason?.isEmpty ?? true) {
+                    Button {
+                        onTapSkipReason?(skipReasonDisplayText)
+                    } label: {
+                        Text(skipReasonDisplayText)
+                            .font(.footnote)
+                            .foregroundStyle(.orange)
+                            .lineLimit(2)
+                            .truncationMode(.tail)
+                            .multilineTextAlignment(.leading)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityHint("Double tap to show full reason")
+                } else {
+                    Text(skipReasonDisplayText)
+                        .font(.footnote)
+                        .foregroundStyle(isSkipped ? .orange : .secondary)
+                        .lineLimit(isSkipped ? 2 : 1)
+                        .truncationMode(.tail)
+                }
+            }
             if isCompleted, let streak = habit.streak, streak.currentStreak > 0 {
                 HStack(spacing: 4) {
                     Image(systemName: "flame.fill").font(.system(size: 10))
@@ -265,30 +295,31 @@ struct ScheduledRow: View {
     var onEdit: () -> Void
     var onDelete: () -> Void
     var onViewDescription: (() -> Void)? = nil
+    private let config = LayoutConfig.current
 
     private var timeLabel: String {
         habit.reminderTimes.isEmpty ? "—" : habit.reminderTimes.first!.formatted(date: .omitted, time: .shortened)
     }
 
     var body: some View {
-        HStack(spacing: 18) {
+        HStack(spacing: config.spacingM + 6) {
             Button {
                 onViewDescription?()
             } label: {
-                HStack(spacing: 18) {
+                HStack(spacing: config.spacingM + 6) {
                     Group {
                         if let emoji = habit.emoji, !emoji.isEmpty {
-                            Text(emoji).font(.system(size: 22))
+                            Text(emoji).font(.system(size: config.iconSizeRow + 2))
                         } else {
                             Image(systemName: habit.iconName ?? "circle.fill")
-                                .font(.system(size: 22))
-                                .foregroundStyle(habit.color.color)
+                                .font(.system(size: config.iconSizeRow + 2))
+                                .foregroundStyle(habit.displayColor)
                         }
                     }
-                    .frame(width: 28)
+                    .frame(width: config.iconSizeRow)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(habit.name)
-                            .font(.system(size: 18, weight: .semibold))
+                            .font(.system(size: config.spacingM + 6, weight: .semibold))
                         Text(timeLabel)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
@@ -306,10 +337,14 @@ struct ScheduledRow: View {
                 )
             } label: {
                 Image(systemName: "ellipsis.circle")
-                    .font(.system(size: 22))
+                    .font(.system(size: config.iconSizeRow + 2))
                     .foregroundStyle(.secondary)
             }
         }
+        .padding(.horizontal, config.spacingL)
+        .padding(.vertical, config.spacingM)
+        .background(habit.displayColor.opacity(0.08))
+        .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
         .contentShape(Rectangle())
         .contextMenu {
             HabitRowActions(

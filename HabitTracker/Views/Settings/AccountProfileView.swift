@@ -45,6 +45,8 @@ struct AccountProfileView: View {
                         Spacer()
                     }
                     .listRowInsets(EdgeInsets(top: 12, leading: 16, bottom: 12, trailing: 16))
+                    .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+                    .alignmentGuide(.listRowSeparatorTrailing) { d in d[.trailing] }
                 }
                 Section {
                     Button {
@@ -53,11 +55,15 @@ struct AccountProfileView: View {
                     } label: {
                         Label("Sign out", systemImage: "rectangle.portrait.and.arrow.right")
                     }
+                    .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+                    .alignmentGuide(.listRowSeparatorTrailing) { d in d[.trailing] }
                     Button(role: .destructive) {
                         showingDeleteAccountConfirmation = true
                     } label: {
                         Label("Delete account", systemImage: "trash")
                     }
+                    .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+                    .alignmentGuide(.listRowSeparatorTrailing) { d in d[.trailing] }
                 }
             }
             #if os(iOS)
@@ -124,7 +130,6 @@ struct AccountProfileView: View {
                     .padding(.vertical, 10)
 
                     Divider()
-                        .padding(.leading, 20)
 
                     Button(role: .destructive) {
                         showingDeleteAccountConfirmation = true

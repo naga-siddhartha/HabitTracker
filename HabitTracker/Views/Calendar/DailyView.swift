@@ -7,7 +7,9 @@ struct DailyView: View {
     @State private var habitForDetailsSheet: Habit?
     @State private var editingHabit: Habit?
     @State private var skipReasonTarget: (habit: Habit, date: Date)?
-    
+    @State private var skipReasonAlertMessage: String?
+    private let config = LayoutConfig.current
+
     private var activeHabits: [Habit] { habits.filter { $0.isActive(on: selectedDate) } }
 
     var body: some View {
@@ -31,9 +33,9 @@ struct DailyView: View {
                     Text("Habits for this day")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(.secondary)
-                        .padding(.horizontal, 20)
-                        .padding(.top, 12)
-                        .padding(.bottom, 8)
+                        .padding(.horizontal, config.cardContentPaddingHorizontal)
+                        .padding(.top, config.spacingL)
+                        .padding(.bottom, config.spacingS)
                     List(activeHabits) { habit in
                         DailyHabitRow(
                             habit: habit,
@@ -42,20 +44,30 @@ struct DailyView: View {
                             onEdit: { editingHabit = habit },
                             onDelete: { HabitStore.shared.deleteHabit(habit) },
                             onUnskip: { HabitStore.shared.unskipDay(for: habit, on: selectedDate) },
-                            onSkipWithReason: { skipReasonTarget = (habit, selectedDate) }
+                            onSkipWithReason: { skipReasonTarget = (habit, selectedDate) },
+                            onTapSkipReason: { skipReasonAlertMessage = $0 }
                         )
-                        .listRowInsets(EdgeInsets(top: 6, leading: 20, bottom: 6, trailing: 20))
+                        .listRowInsets(EdgeInsets(top: config.spacingL / 2, leading: config.cardContentPaddingHorizontal, bottom: config.spacingL / 2, trailing: config.cardContentPaddingHorizontal))
                         .listRowSeparator(.hidden)
                         .listRowBackground(Color.clear)
                     }
                     .listStyle(.plain)
                     .scrollContentBackground(.hidden)
+                    .padding(.bottom, config.spacingL)
                 }
             }
         }
         .habitSheets(details: $habitForDetailsSheet, editing: $editingHabit)
         .sheet(item: skipReasonBinding) { pair in
             SkipReasonSheetView(habit: pair.habit, date: pair.date) { skipReasonTarget = nil }
+        }
+        .alert("Skip reason", isPresented: Binding(
+            get: { skipReasonAlertMessage != nil },
+            set: { if !$0 { skipReasonAlertMessage = nil } }
+        )) {
+            Button("OK") { skipReasonAlertMessage = nil }
+        } message: {
+            if let msg = skipReasonAlertMessage { Text(msg) }
         }
     }
     
@@ -75,7 +87,8 @@ struct DailyHabitRow: View {
     var onDelete: (() -> Void)? = nil
     var onUnskip: (() -> Void)? = nil
     var onSkipWithReason: (() -> Void)? = nil
-    
+    var onTapSkipReason: ((String) -> Void)? = nil
+
     private var isCompleted: Bool { habit.isCompleted(on: date) }
     private var isSkipped: Bool { habit.isSkipped(on: date) }
     private var skipReason: String? { habit.entry(for: date)?.skipReason }
@@ -89,7 +102,7 @@ struct DailyHabitRow: View {
             } else {
                 Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
                     .font(.title2)
-                    .foregroundStyle(isCompleted ? habit.color.color : .secondary)
+                    .foregroundStyle(isCompleted ? habit.displayColor : .secondary)
             }
         }
         .contentTransition(.symbolEffect(.replace))
@@ -104,27 +117,46 @@ struct DailyHabitRow: View {
     }
 
     var body: some View {
-        HStack(alignment: .center, spacing: 14) {
+        HStack(alignment: .center, spacing: LayoutConfig.current.spacingL - 2) {
             Button {
                 onViewDescription?()
             } label: {
-                HStack(alignment: .center, spacing: 14) {
+                HStack(alignment: .center, spacing: LayoutConfig.current.spacingL - 2) {
                     if let emoji = habit.emoji, !emoji.isEmpty {
                         Text(emoji).font(.title2)
                     } else if let iconName = habit.iconName {
-                        Image(systemName: iconName).foregroundStyle(habit.color.color).font(.title2)
+                        Image(systemName: iconName).foregroundStyle(habit.displayColor).font(.title2)
                     } else {
-                        Circle().fill(habit.color.color).frame(width: 28, height: 28)
+                        Circle().fill(habit.displayColor).frame(width: LayoutConfig.current.iconSizeRow, height: LayoutConfig.current.iconSizeRow)
                     }
                     VStack(alignment: .leading, spacing: 2) {
                         Text(habit.name)
                             .strikethrough(isCompleted)
                             .font(.body.weight(.medium))
                             .foregroundStyle(isSkipped ? .secondary : .primary)
-                        Text(subtitleText)
-                            .font(.caption)
-                            .foregroundStyle(isSkipped ? .orange : .secondary)
-                            .lineLimit(1)
+                        Group {
+                            if isSkipped, let reason = skipReason, !reason.isEmpty {
+                                Button {
+                                    onTapSkipReason?(subtitleText)
+                                } label: {
+                                    Text(subtitleText)
+                                        .font(.caption)
+                                        .foregroundStyle(.orange)
+                                        .lineLimit(2)
+                                        .truncationMode(.tail)
+                                        .multilineTextAlignment(.leading)
+                                        .frame(maxWidth: .infinity, alignment: .leading)
+                                }
+                                .buttonStyle(.plain)
+                                .accessibilityHint("Double tap to show full reason")
+                            } else {
+                                Text(subtitleText)
+                                    .font(.caption)
+                                    .foregroundStyle(isSkipped ? .orange : .secondary)
+                                    .lineLimit(isSkipped ? 2 : 1)
+                                    .truncationMode(.tail)
+                            }
+                        }
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
@@ -138,15 +170,15 @@ struct DailyHabitRow: View {
                 }
             } label: { checkmarkIcon }
             .buttonStyle(.plain)
-            .frame(minWidth: 44, minHeight: 44)
+            .frame(minWidth: LayoutConfig.current.iconSizeButton, minHeight: LayoutConfig.current.iconSizeButton)
             .contentShape(Rectangle())
             .hapticFeedback(.success, trigger: isCompleted)
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 14)
-        .frame(minHeight: 56)
+        .padding(.horizontal, LayoutConfig.current.spacingL)
+        .padding(.vertical, LayoutConfig.current.cornerRadiusMedium + 2)
+        .frame(minHeight: LayoutConfig.current.progressRingSize - 16)
         .background(backgroundColor)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .clipShape(RoundedRectangle(cornerRadius: LayoutConfig.current.cardCornerRadius))
         .contentShape(Rectangle())
         .contextMenu {
             HabitRowActions(
@@ -163,7 +195,7 @@ struct DailyHabitRow: View {
     
     private var backgroundColor: Color {
         if isSkipped { return Color.orange.opacity(0.08) }
-        return isCompleted ? habit.color.color.opacity(0.1) : Color.systemGray6
+        return isCompleted ? habit.displayColor.opacity(0.14) : habit.displayColor.opacity(0.08)
     }
 }
 

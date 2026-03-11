@@ -69,11 +69,12 @@ struct ProgressRing: View {
 struct HabitDetailsSheetView: View {
     @Bindable var habit: Habit
     var onDismiss: () -> Void = {}
+    private let config = LayoutConfig.current
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
+                VStack(alignment: .leading, spacing: config.spacingXL) {
                     headerCard
                     if habit.habitDescription.flatMap({ !$0.isEmpty }) == true {
                         sectionCard(title: "Description", systemImage: "text.alignleft") {
@@ -84,7 +85,7 @@ struct HabitDetailsSheetView: View {
                         }
                     }
                     sectionCard(title: "Schedule", systemImage: "calendar") {
-                        VStack(alignment: .leading, spacing: 8) {
+                        VStack(alignment: .leading, spacing: config.spacingS) {
                             Text(habit.frequency == .daily ? "Daily" : "Weekly")
                                 .font(.body.weight(.medium))
                             if habit.frequency == .weekly && !habit.activeDays.isEmpty {
@@ -97,7 +98,7 @@ struct HabitDetailsSheetView: View {
                     }
                     if !habit.reminderTimes.isEmpty {
                         sectionCard(title: "Reminders", systemImage: "bell") {
-                            VStack(alignment: .leading, spacing: 8) {
+                            VStack(alignment: .leading, spacing: config.spacingS) {
                                 ForEach(Array(habit.reminderTimes.enumerated()), id: \.offset) { index, time in
                                     HStack {
                                         Text((index < habit.reminderNames.count && !habit.reminderNames[index].isEmpty) ? habit.reminderNames[index] : "Reminder")
@@ -112,7 +113,7 @@ struct HabitDetailsSheetView: View {
                         }
                     }
                 }
-                .padding(20)
+                .padding(config.spacingXL)
             }
             .background(Color.appGroupedBackground)
             .navigationTitle(habit.name)
@@ -126,20 +127,20 @@ struct HabitDetailsSheetView: View {
     }
 
     private var headerCard: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: config.cornerRadiusMedium + 2) {
             if let emoji = habit.emoji, !emoji.isEmpty {
-                Text(emoji).font(.system(size: 44))
+                Text(emoji).font(.system(size: config.iconSizeButton + 4))
             } else {
                 Circle()
-                    .fill(habit.color.color.opacity(0.2))
-                    .frame(width: 52, height: 52)
+                    .fill(habit.displayColor.opacity(0.2))
+                    .frame(width: config.iconSizeButton + 8, height: config.iconSizeButton + 8)
                     .overlay(
                         Image(systemName: habit.iconName ?? "circle.fill")
                             .font(.title2)
-                            .foregroundStyle(habit.color.color)
+                            .foregroundStyle(habit.displayColor)
                     )
             }
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: config.spacingXS) {
                 Text(habit.name)
                     .font(.title2.weight(.semibold))
                 Text(habit.color.rawValue.capitalized)
@@ -148,22 +149,22 @@ struct HabitDetailsSheetView: View {
             }
             Spacer()
         }
-        .padding(16)
+        .padding(config.spacingL)
         .background(Color.secondarySystemGroupedBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: config.cornerRadiusMedium))
     }
 
     private func sectionCard<Content: View>(title: String, systemImage: String, @ViewBuilder content: () -> Content) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
+        VStack(alignment: .leading, spacing: config.spacingM) {
             Label(title, systemImage: systemImage)
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
             content()
         }
-        .padding(16)
+        .padding(config.spacingL)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.secondarySystemGroupedBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .clipShape(RoundedRectangle(cornerRadius: config.cornerRadiusMedium))
     }
 }
 
@@ -192,9 +193,9 @@ struct CalendarEmptyState: View {
     private let config = LayoutConfig.current
 
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: config.cardRowPaddingVertical) {
             Image(systemName: icon)
-                .font(.system(size: 36))
+                .font(.system(size: config.iconSizeButton - 4))
                 .foregroundStyle(.secondary.opacity(0.7))
             Text(title)
                 .font(.headline)
@@ -205,7 +206,7 @@ struct CalendarEmptyState: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .padding(.vertical, 28)
+        .padding(.vertical, config.spacingXXL + 4)
         .padding(.horizontal, config.horizontalPadding)
     }
 }
@@ -242,7 +243,7 @@ struct SkipReasonSheetView: View {
                         } else {
                             Image(systemName: habit.iconName ?? "circle.fill")
                                 .font(.system(size: 32))
-                                .foregroundStyle(habit.color.color)
+                                .foregroundStyle(habit.displayColor)
                         }
                         VStack(alignment: .leading, spacing: 2) {
                             Text(habit.name)

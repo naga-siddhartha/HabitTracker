@@ -30,7 +30,7 @@ struct HabitDetailView: View {
     
     private var headerSection: some View {
         HStack {
-            IconCircle(iconName: habit.iconName, emoji: habit.emoji, color: habit.color.color, size: 60)
+            IconCircle(iconName: habit.iconName, emoji: habit.emoji, color: habit.displayColor, size: 60)
             VStack(alignment: .leading) {
                 Text(habit.name).font(.largeTitle).bold()
             }
@@ -84,8 +84,8 @@ struct HabitDetailView: View {
                 }
                 .padding()
                 .frame(height: 56)
-                .background(completed ? habit.color.color.opacity(0.2) : Color.systemGray6)
-                .foregroundStyle(completed ? habit.color.color : .primary)
+                .background(completed ? habit.displayColor.opacity(0.2) : Color.systemGray6)
+                .foregroundStyle(completed ? habit.displayColor : .primary)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
             .hapticFeedback(.success, trigger: completed)

@@ -164,6 +164,8 @@ struct SettingsView: View {
                 }
             }
             .pickerStyle(.segmented)
+            .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+            .alignmentGuide(.listRowSeparatorTrailing) { d in d[.trailing] }
         }
     }
 
@@ -409,6 +411,8 @@ struct SettingsRow<Accessory: View>: View {
             Spacer()
             accessory()
         }
+        .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
+        .alignmentGuide(.listRowSeparatorTrailing) { d in d[.trailing] }
     }
 }
 
