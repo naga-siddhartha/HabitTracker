@@ -57,7 +57,7 @@ struct HabitTrackerApp: App {
 #if os(watchOS)
 struct WatchMainView: View {
     var body: some View {
-        Text("Habits")
+        Text("Ritual Log")
     }
 }
 #endif
