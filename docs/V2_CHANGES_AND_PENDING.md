@@ -59,7 +59,7 @@ Track of what is done on the v2 branch and what remains before merging to main a
 
 ### Apple policy compliance (Phase 1)
 - [x] **Account deletion (Guideline 5.1.1(v))** – "Delete account" in Account profile with confirmation; removes sign-in and Keychain data; alert explains revoking in Settings → Apple ID.
-- [x] **Internal privacy policy** – `docs/privacy.html` is the canonical v2 policy (Sign in with Apple, account data, optional iCloud/CloudKit, transmission, deletion). When ready to publish, copy to the public repo (e.g. `Habit-Tracker-App-push/index.html` or `privacy-page-public/index.html`). See **Privacy policy (internal vs public)** below.
+- [x] **Internal privacy policy** – `docs/privacy.html` is the single source of truth (Sign in with Apple, account data, optional iCloud/CloudKit, transmission, deletion). Copy to the RitualLog repo as `privacy.html` when updating the public site. See **Privacy policy** below.
 
 ### Research-first v2 items (implemented with sensible defaults)
 - [x] **Color/emoji picker in Add/Edit habit** – New “Appearance” section in `AddEditHabitView`: color grid (all `HabitColor` options), emoji picker with “Suggested” + horizontal list (`HabitEmoji.pickerEmojis`). User can choose color and emoji when creating or editing a habit.
@@ -84,14 +84,14 @@ Track of what is done on the v2 branch and what remains before merging to main a
 - [x] **AccountMenuView** – Added `import Combine` for ObservableObject/@Published. macOS: toolbar placement uses `.primaryAction` when not iOS (`.topBarTrailing` unavailable on macOS).
 
 ### Not done on this branch (by design)
-- [ ] **Public privacy policy URL** – Point app’s Privacy Policy URL (Info.plist / public site) at the updated policy once you copy `docs/privacy.html` to the public repo and deploy.
+- [ ] **Public privacy policy URL** – Point app’s Privacy Policy URL (Info.plist / public site) at the updated policy once you copy `docs/privacy.html` to the RitualLog repo and deploy.
 
 ---
 
-## Privacy policy (internal vs public)
+## Privacy policy
 
-- **Internal canonical copy:** `docs/privacy.html` in this repo. This is the v2 policy with Sign in with Apple, account data, optional iCloud sync, and account/habit deletion. Last updated: March 2026.
-- **When ready to publish:** Copy `docs/privacy.html` to wherever your public-facing policy lives (e.g. the `Habit-Tracker-App-push` or `privacy-page-public` repo’s `index.html`), then deploy so the URL in Info.plist / App Store points to the updated page.
+- **Source of truth:** `docs/privacy.html` in this repo. This is the v2 policy with Sign in with Apple, account data, optional iCloud sync, and account/habit deletion. Last updated: March 2026.
+- **Public site:** Copy `docs/privacy.html` to the **RitualLog** repo as `privacy.html`, then deploy. The app’s Privacy Policy URL (Info.plist / App Store) points to that site.
 
 ---
 
@@ -128,7 +128,7 @@ If you don’t want to use Sign in with Apple yet (e.g. no Apple ID in Xcode), y
 ## Pending Before Merge to Main & Release
 
 ### Before merge
-1. **Privacy policy (public)** – Copy `docs/privacy.html` from this repo to your public policy repo (e.g. `Habit-Tracker-App-push/index.html` or `privacy-page-public/index.html`) and deploy so the app’s Privacy Policy URL serves the v2 policy. Content is already in `docs/privacy.html`.
+1. **Privacy policy (public)** – Copy `docs/privacy.html` from this repo to the RitualLog repo as `privacy.html` and deploy so the app’s Privacy Policy URL serves the v2 policy.
 
 ### Before release (optional / as needed)
 2. **CloudKit sync (enabled)** – Sync is wired so habits can appear on both iPhone and Mac:
