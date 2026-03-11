@@ -42,6 +42,22 @@ extension View {
     }
 }
 
+// MARK: - Card border (visible on macOS)
+
+extension View {
+    /// Adds a subtle border so cards are visible on macOS where systemGray6/controlBackground can blend with the window.
+    func cardBorder(cornerRadius: CGFloat = 12) -> some View {
+        #if os(macOS)
+        self.overlay(
+            RoundedRectangle(cornerRadius: cornerRadius)
+                .strokeBorder(Color.primary.opacity(0.18), lineWidth: 1)
+        )
+        #else
+        self
+        #endif
+    }
+}
+
 // MARK: - Cross-Platform Navigation
 
 extension View {

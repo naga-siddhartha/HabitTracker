@@ -49,14 +49,26 @@ struct StatisticsView: View {
                     .padding(.horizontal)
                     
                     VStack(spacing: 16) {
-                        StatCard(title: "Total Habits", value: "\(habits.count)", icon: "list.bullet", color: .blue)
-                            .onTapGesture { showingHabitsDetail = true }
+                        Button {
+                            showingHabitsDetail = true
+                        } label: {
+                            StatCard(title: "Total Habits", value: "\(uniqueHabitNamesCount)", icon: "list.bullet", color: .blue)
+                        }
+                        .buttonStyle(.plain)
                         
-                        StatCard(title: "Total Completions", value: "\(cachedCompletions)", icon: "checkmark.circle.fill", color: .green)
-                            .onTapGesture { showingCompletionsDetail = true }
+                        Button {
+                            showingCompletionsDetail = true
+                        } label: {
+                            StatCard(title: "Total Completions", value: "\(cachedCompletions)", icon: "checkmark.circle.fill", color: .green)
+                        }
+                        .buttonStyle(.plain)
                         
-                        StatCard(title: "Current Streaks", value: "\(cachedActiveStreaks)", icon: "flame.fill", color: .orange)
-                            .onTapGesture { showingStreaksDetail = true }
+                        Button {
+                            showingStreaksDetail = true
+                        } label: {
+                            StatCard(title: "Current Streaks", value: "\(cachedActiveStreaks)", icon: "flame.fill", color: .orange)
+                        }
+                        .buttonStyle(.plain)
                     }
                     .padding(.horizontal)
                     
@@ -67,8 +79,8 @@ struct StatisticsView: View {
                         iconColor: .green,
                         isEmpty: topHabitsWithCompletions.isEmpty
                     ) {
-                        ForEach(topHabitsWithCompletions.prefix(5)) { habit in
-                            HabitStatRow(habit: habit, dateRange: dateRange)
+                        ForEach(topHabitsWithCompletions.prefix(5), id: \.habit.id) { item in
+                            HabitStatRow(habit: item.habit, dateRange: dateRange, displayCount: item.count)
                         }
                     } emptyContent: {
                         StatsEmptyState(
@@ -109,6 +121,10 @@ struct StatisticsView: View {
         }
     }
     
+    private var uniqueHabitNamesCount: Int {
+        Set(habits.map(\.name)).count
+    }
+    
     private func computeStats() {
         let range = dateRange
         let completions = habits.reduce(0) { total, habit in
@@ -116,27 +132,31 @@ struct StatisticsView: View {
                 $0.isCompleted && $0.date >= range.start && $0.date <= range.end
             }.count
         }
-        let streaks = habits.filter { ($0.streak?.currentStreak ?? 0) > 0 }.count
-        
+        let namesWithStreak = Set(habits.filter { ($0.streak?.currentStreak ?? 0) > 0 }.map(\.name))
         cachedCompletions = completions
-        cachedActiveStreaks = streaks
+        cachedActiveStreaks = namesWithStreak.count
     }
     
-    private var topHabitsWithCompletions: [Habit] {
+    /// One per habit name (duplicates merged), sorted by total completions in date range.
+    private var topHabitsWithCompletions: [(habit: Habit, count: Int)] {
         let range = dateRange
-        return habits
-            .filter { habit in
-                habit.entriesOrEmpty.contains { $0.isCompleted && $0.date >= range.start && $0.date <= range.end }
+        let grouped = Dictionary(grouping: habits, by: \.name)
+        return grouped.compactMap { _, group -> (Habit, Int)? in
+            guard let first = group.first else { return nil }
+            let total = group.reduce(0) { sum, h in
+                sum + h.entriesOrEmpty.filter { $0.isCompleted && $0.date >= range.start && $0.date <= range.end }.count
             }
-            .sorted { a, b in
-                a.entriesOrEmpty.lazy.filter { $0.isCompleted && $0.date >= range.start && $0.date <= range.end }.count >
-                b.entriesOrEmpty.lazy.filter { $0.isCompleted && $0.date >= range.start && $0.date <= range.end }.count
-            }
+            guard total > 0 else { return nil }
+            return (first, total)
+        }.sorted { $0.count > $1.count }
     }
     
+    /// One per habit name (duplicates merged), sorted by longest streak.
     private var habitsWithStreaks: [Habit] {
-        habits.filter { ($0.streak?.longestStreak ?? 0) > 0 }
-            .sorted { ($0.streak?.longestStreak ?? 0) > ($1.streak?.longestStreak ?? 0) }
+        let grouped = Dictionary(grouping: habits.filter { ($0.streak?.longestStreak ?? 0) > 0 }, by: \.name)
+        return grouped.compactMap { _, group in
+            group.max(by: { ($0.streak?.longestStreak ?? 0) < ($1.streak?.longestStreak ?? 0) })
+        }.sorted { ($0.streak?.longestStreak ?? 0) > ($1.streak?.longestStreak ?? 0) }
     }
 }
 
@@ -145,19 +165,33 @@ struct CompletionsDetailView: View {
     let habits: [Habit]
     let dateRange: (start: Date, end: Date)
     
+    /// One row per habit name; duplicates (e.g. same habit added again) are merged with summed completions.
+    private var habitsByName: [(habit: Habit, totalCompletions: Int)] {
+        let grouped = Dictionary(grouping: habits, by: \.name)
+        return grouped.compactMap { name, group in
+            guard let first = group.first else { return nil }
+            let total = group.reduce(0) { sum, h in
+                sum + h.entriesOrEmpty.filter { $0.isCompleted && $0.date >= dateRange.start && $0.date <= dateRange.end }.count
+            }
+            return (first, total)
+        }.sorted { $0.totalCompletions > $1.totalCompletions }
+    }
+    
     var body: some View {
         NavigationStack {
-            List(habits) { habit in
-                let count = habit.entriesOrEmpty.filter { $0.isCompleted && $0.date >= dateRange.start && $0.date <= dateRange.end }.count
+            List(habitsByName, id: \.habit.id) { item in
                 LabeledContent {
-                    Text("\(count) completions").foregroundStyle(.secondary)
+                    Text("\(item.totalCompletions) completions").foregroundStyle(.secondary)
                 } label: {
-                    Label(habit.name, systemImage: "circle.fill").foregroundStyle(habit.displayColor)
+                    Label(item.habit.name, systemImage: "circle.fill").foregroundStyle(item.habit.displayColor)
                 }
             }
             .navigationTitle("Completions")
             .inlineNavigationTitle()
             .toolbar { Button("Done") { dismiss() } }
+            #if os(macOS)
+            .frame(minWidth: 320, minHeight: 300)
+            #endif
         }
     }
 }
@@ -166,24 +200,37 @@ struct StreaksDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let habits: [Habit]
     
+    /// One row per habit name; duplicates merged, showing the best streak among same-named habits.
+    private var habitsByBestStreak: [(habit: Habit, current: Int, longest: Int)] {
+        let grouped = Dictionary(grouping: habits, by: \.name)
+        return grouped.compactMap { name, group in
+            guard let best = group.max(by: { ($0.streak?.longestStreak ?? 0) < ($1.streak?.longestStreak ?? 0) }),
+                  let streak = best.streak, streak.longestStreak > 0 else { return nil }
+            let bestCurrent = group.map { $0.streak?.currentStreak ?? 0 }.max() ?? 0
+            let bestLongest = group.map { $0.streak?.longestStreak ?? 0 }.max() ?? 0
+            return (best, bestCurrent, bestLongest)
+        }.sorted { $0.longest > $1.longest }
+    }
+    
     var body: some View {
         NavigationStack {
-            List(habits.sorted { ($0.streak?.currentStreak ?? 0) > ($1.streak?.currentStreak ?? 0) }) { habit in
-                if let streak = habit.streak {
-                    VStack(alignment: .leading, spacing: 8) {
-                        Label(habit.name, systemImage: "circle.fill").foregroundStyle(habit.displayColor).font(.headline)
-                        HStack {
-                            Label("\(streak.currentStreak) current", systemImage: "flame.fill").foregroundStyle(.orange)
-                            Spacer()
-                            Label("\(streak.longestStreak) longest", systemImage: "trophy.fill").foregroundStyle(.yellow)
-                        }
-                        .font(.caption)
+            List(habitsByBestStreak, id: \.habit.id) { item in
+                VStack(alignment: .leading, spacing: 8) {
+                    Label(item.habit.name, systemImage: "circle.fill").foregroundStyle(item.habit.displayColor).font(.headline)
+                    HStack {
+                        Label("\(item.current) current", systemImage: "flame.fill").foregroundStyle(.orange)
+                        Spacer()
+                        Label("\(item.longest) longest", systemImage: "trophy.fill").foregroundStyle(.yellow)
                     }
+                    .font(.caption)
                 }
             }
             .navigationTitle("Streaks")
             .inlineNavigationTitle()
             .toolbar { Button("Done") { dismiss() } }
+            #if os(macOS)
+            .frame(minWidth: 320, minHeight: 300)
+            #endif
         }
     }
 }
@@ -192,9 +239,15 @@ struct HabitsDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let habits: [Habit]
     
+    /// One row per habit name; duplicates merged, using first habit for display.
+    private var habitsByName: [Habit] {
+        let grouped = Dictionary(grouping: habits, by: \.name)
+        return grouped.compactMap { _, group in group.first }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+    
     var body: some View {
         NavigationStack {
-            List(habits) { habit in
+            List(habitsByName) { habit in
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 8) {
                         if let emoji = habit.emoji, !emoji.isEmpty {
@@ -215,6 +268,9 @@ struct HabitsDetailView: View {
             .navigationTitle("Habits")
             .inlineNavigationTitle()
             .toolbar { Button("Done") { dismiss() } }
+            #if os(macOS)
+            .frame(minWidth: 320, minHeight: 300)
+            #endif
         }
     }
 }
@@ -233,8 +289,11 @@ struct StatCard: View {
             Image(systemName: "chevron.right").foregroundStyle(.secondary).font(.caption)
         }
         .padding()
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .contentShape(Rectangle())
         .background(Color.systemGray6)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .cardBorder(cornerRadius: 12)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(title)
         .accessibilityValue(value)
@@ -245,11 +304,13 @@ struct StatCard: View {
 struct HabitStatRow: View {
     let habit: Habit
     let dateRange: (start: Date, end: Date)
-    
+    /// When set (e.g. when merging duplicate habit names), this count is shown instead of computing from habit + dateRange.
+    var displayCount: Int? = nil
+
     private var count: Int {
-        habit.entriesOrEmpty.filter { $0.isCompleted && $0.date >= dateRange.start && $0.date <= dateRange.end }.count
+        displayCount ?? habit.entriesOrEmpty.filter { $0.isCompleted && $0.date >= dateRange.start && $0.date <= dateRange.end }.count
     }
-    
+
     var body: some View {
         HStack {
             if let emoji = habit.emoji, !emoji.isEmpty {
@@ -320,6 +381,7 @@ struct StatsSectionCard<Content: View, EmptyContent: View>: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.systemGray6)
         .clipShape(RoundedRectangle(cornerRadius: 16))
+        .cardBorder(cornerRadius: 16)
         .padding(.horizontal)
     }
 }

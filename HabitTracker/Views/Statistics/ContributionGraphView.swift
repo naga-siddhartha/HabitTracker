@@ -6,7 +6,8 @@ struct ContributionGraphView: View {
     let weeks: Int
     
     @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
-    
+    @Environment(\.colorScheme) private var colorScheme
+
     private let calendar = Calendar.current
     private let cellSize: CGFloat = 12
     private let cellSpacing: CGFloat = 3
@@ -156,15 +157,26 @@ struct ContributionGraphView: View {
         let startOfWeek = calendar.date(byAdding: .weekOfYear, value: -(weeks - 1 - week), to: today.startOfWeek ?? today)!
         return calendar.date(byAdding: .day, value: day, to: startOfWeek) ?? today
     }
-    
+
     private func colorForLevel(_ level: Int) -> Color {
+        ContributionGraphView.fillForLevel(level, colorScheme: colorScheme)
+    }
+}
+
+extension ContributionGraphView {
+    static func fillForLevel(_ level: Int, colorScheme: ColorScheme) -> Color {
         switch level {
         case -1: return .clear
-        case 0: return Color.systemGray6
-        case 1: return .green.opacity(0.25)
-        case 2: return .green.opacity(0.5)
-        case 3: return .green.opacity(0.75)
-        default: return .green
+        case 0:
+            return colorScheme == .dark ? Color.systemGray6 : Color(white: 0.88)
+        case 1:
+            return colorScheme == .dark ? .green.opacity(0.25) : .green.opacity(0.42)
+        case 2:
+            return colorScheme == .dark ? .green.opacity(0.5) : .green.opacity(0.6)
+        case 3:
+            return colorScheme == .dark ? .green.opacity(0.75) : .green.opacity(0.82)
+        default:
+            return .green
         }
     }
 }
@@ -174,12 +186,19 @@ struct ContributionCell: View {
     let level: Int
     let size: CGFloat
     
+    @Environment(\.colorScheme) private var colorScheme
     @State private var showTooltip = false
     
     var body: some View {
         RoundedRectangle(cornerRadius: 2)
-            .fill(colorForLevel)
+            .fill(ContributionGraphView.fillForLevel(level, colorScheme: colorScheme))
             .frame(width: size, height: size)
+            #if os(macOS)
+            .overlay(
+                RoundedRectangle(cornerRadius: 2)
+                    .strokeBorder(Color.primary.opacity(colorScheme == .dark ? 0.12 : 0.2), lineWidth: 0.5)
+            )
+            #endif
             .onTapGesture {
                 if level >= 0 {
                     showTooltip = true
@@ -198,17 +217,6 @@ struct ContributionCell: View {
             }
             .accessibilityLabel(date.formatted(date: .abbreviated, time: .omitted))
             .accessibilityValue(level >= 0 ? levelDescription : "Future")
-    }
-    
-    private var colorForLevel: Color {
-        switch level {
-        case -1: return .clear
-        case 0: return Color.systemGray6
-        case 1: return .green.opacity(0.25)
-        case 2: return .green.opacity(0.5)
-        case 3: return .green.opacity(0.75)
-        default: return .green
-        }
     }
     
     private var levelDescription: String {

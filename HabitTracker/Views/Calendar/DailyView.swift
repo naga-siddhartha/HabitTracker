@@ -179,6 +179,7 @@ struct DailyHabitRow: View {
         .frame(minHeight: LayoutConfig.current.progressRingSize - 16)
         .background(backgroundColor)
         .clipShape(RoundedRectangle(cornerRadius: LayoutConfig.current.cardCornerRadius))
+        .cardBorder(cornerRadius: LayoutConfig.current.cardCornerRadius)
         .contentShape(Rectangle())
         .contextMenu {
             HabitRowActions(

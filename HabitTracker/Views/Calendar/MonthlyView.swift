@@ -242,6 +242,7 @@ struct MonthlyHabitRow: View {
         .padding(.vertical, 8)
         .background(habit.displayColor.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: LayoutConfig.current.cardCornerRadius))
+        .cardBorder(cornerRadius: LayoutConfig.current.cardCornerRadius)
         .contentShape(Rectangle())
         .contextMenu {
             HabitRowActions(

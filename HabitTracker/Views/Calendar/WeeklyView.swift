@@ -55,6 +55,7 @@ struct WeeklyView: View {
                             .frame(width: contentWidth)
                             .background(Color.systemGray6)
                             .clipShape(RoundedRectangle(cornerRadius: LayoutConfig.current.cornerRadiusSmall))
+                            .cardBorder(cornerRadius: LayoutConfig.current.cornerRadiusSmall)
                             
                             ScrollView {
                                 VStack(alignment: .leading, spacing: LayoutConfig.current.spacingL) {
@@ -157,6 +158,7 @@ struct WeeklyHabitRow: View {
         }
         .background(habit.displayColor.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: LayoutConfig.current.cardCornerRadius))
+        .cardBorder(cornerRadius: LayoutConfig.current.cardCornerRadius)
         .contentShape(Rectangle())
         .contextMenu {
             HabitRowActions(

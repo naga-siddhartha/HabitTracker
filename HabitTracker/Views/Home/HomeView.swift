@@ -28,8 +28,13 @@ struct HomeView: View {
     private var todayCompleted: [Habit] { todayHabits.filter { $0.isCompleted(on: today) } }
     /// All habits completed today (any habit you checked off today), so Completed card is never empty when you’ve done something.
     private var habitsCompletedToday: [Habit] { habits.filter { $0.isCompleted(on: today) } }
-    private var completedCount: Int { todayCompleted.count }
-    private var progress: Double { todayHabits.isEmpty ? 0 : Double(completedCount) / Double(todayHabits.count) }
+    private var uniqueNamesActiveToday: Set<String> { Set(todayHabits.map(\.name)) }
+    private var uniqueNamesCompletedToday: Set<String> { Set(habitsCompletedToday.map(\.name)) }
+    private var completedCount: Int { uniqueNamesCompletedToday.count }
+    private var progress: Double {
+        let total = uniqueNamesActiveToday.count
+        return total == 0 ? 0 : Double(completedCount) / Double(total)
+    }
 
     /// Due today, not completed, doable now: no reminder time (all day / on command) or scheduled time has arrived.
     private var activeHabits: [Habit] {
@@ -53,11 +58,29 @@ struct HomeView: View {
         }
     }
 
+    /// One row per habit name in Active; exclude names already completed today.
+    private var activeHabitsDisplay: [Habit] {
+        let completedNames = uniqueNamesCompletedToday
+        let grouped = Dictionary(grouping: activeHabits.filter { !completedNames.contains($0.name) }, by: \.name)
+        return grouped.compactMap { _, group in group.first }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+    /// One row per habit name in Scheduled; exclude names completed today.
+    private var scheduledHabitsDisplay: [Habit] {
+        let completedNames = uniqueNamesCompletedToday
+        let grouped = Dictionary(grouping: scheduledHabits.filter { !completedNames.contains($0.name) }, by: \.name)
+        return grouped.compactMap { _, group in group.first }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+    /// One row per habit name in Completed.
+    private var habitsCompletedTodayDisplay: [Habit] {
+        let grouped = Dictionary(grouping: habitsCompletedToday, by: \.name)
+        return grouped.compactMap { _, group in group.first }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
     /// Show floating + only when there’s no Add habit on the page (i.e. when we have habits and we’re not in empty state).
     private var showFloatingAddButton: Bool { !habits.isEmpty && !isEmptyState }
 
     private var isEmptyState: Bool {
-        todayHabits.isEmpty && habitsCompletedToday.isEmpty
+        uniqueNamesActiveToday.isEmpty && uniqueNamesCompletedToday.isEmpty
     }
 
     var body: some View {
@@ -260,7 +283,7 @@ struct HomeView: View {
         if habits.isEmpty {
             return "Your day at a glance"
         }
-        if todayHabits.isEmpty {
+        if uniqueNamesActiveToday.isEmpty {
             return "All set for today"
         }
         return "Your habits for today"
@@ -283,19 +306,19 @@ struct HomeView: View {
                 )
             } else {
                 VStack(spacing: config.spacingL) {
-                    if !todayHabits.isEmpty {
+                    if !uniqueNamesActiveToday.isEmpty {
                         activeCard
-                    } else if !habitsCompletedToday.isEmpty {
+                    } else if !habitsCompletedTodayDisplay.isEmpty {
                         Text("No habits due today")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, config.spacingM)
                     }
-                    if !scheduledHabits.isEmpty {
+                    if !scheduledHabitsDisplay.isEmpty {
                         scheduledCard
                     }
-                    if !habitsCompletedToday.isEmpty {
+                    if !habitsCompletedTodayDisplay.isEmpty {
                         completedCard
                     }
                 }
@@ -309,7 +332,7 @@ struct HomeView: View {
                 .padding(.horizontal, config.cardContentPaddingHorizontal)
                 .padding(.top, config.progressHeaderTop)
                 .padding(.bottom, config.progressHeaderBottom)
-            if activeHabits.isEmpty {
+            if activeHabitsDisplay.isEmpty {
                 Text("All done!")
                     .font(.subheadline.weight(.medium))
                     .foregroundStyle(.secondary)
@@ -317,7 +340,7 @@ struct HomeView: View {
                     .padding(.vertical, config.spacingM + 6)
             } else {
                 VStack(spacing: 0) {
-                    ForEach(Array(activeHabits.enumerated()), id: \.element.id) { index, habit in
+                    ForEach(Array(activeHabitsDisplay.enumerated()), id: \.element.id) { index, habit in
                         ChecklistRow(
                             habit: habit,
                             date: today,
@@ -339,12 +362,18 @@ struct HomeView: View {
         .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
         .overlay(
             RoundedRectangle(cornerRadius: config.cardCornerRadius)
-                .stroke(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.05), lineWidth: 1)
+                .stroke(Color.primary.opacity(cardBorderOpacity), lineWidth: 1)
         )
         .shadow(color: cardShadowColor, radius: config.cardShadowRadius, x: 0, y: 3)
         .frame(maxWidth: config.contentMaxWidth)
         .padding(.horizontal, config.horizontalPadding)
     }
+
+    #if os(macOS)
+    private var cardBorderOpacity: Double { colorScheme == .dark ? 0.14 : 0.2 }
+    #else
+    private var cardBorderOpacity: Double { colorScheme == .dark ? 0.08 : 0.05 }
+    #endif
 
     private var scheduledCard: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -361,7 +390,7 @@ struct HomeView: View {
             .padding(.top, config.sectionHeaderTop)
             .padding(.bottom, config.sectionHeaderBottom)
             VStack(spacing: 0) {
-                ForEach(Array(scheduledHabits.enumerated()), id: \.element.id) { index, habit in
+                ForEach(Array(scheduledHabitsDisplay.enumerated()), id: \.element.id) { index, habit in
                     ScheduledRow(
                         habit: habit,
                         onEdit: { editingHabit = habit },
@@ -378,7 +407,7 @@ struct HomeView: View {
         .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
         .overlay(
             RoundedRectangle(cornerRadius: config.cardCornerRadius)
-                .stroke(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.05), lineWidth: 1)
+                .stroke(Color.primary.opacity(cardBorderOpacity), lineWidth: 1)
         )
         .shadow(color: cardShadowColor, radius: config.cardShadowRadius, x: 0, y: 3)
         .frame(maxWidth: config.contentMaxWidth)
@@ -400,7 +429,7 @@ struct HomeView: View {
             .padding(.top, config.sectionHeaderTop)
             .padding(.bottom, config.sectionHeaderBottom)
             VStack(spacing: 0) {
-                    ForEach(Array(habitsCompletedToday.enumerated()), id: \.element.id) { index, habit in
+                    ForEach(Array(habitsCompletedTodayDisplay.enumerated()), id: \.element.id) { index, habit in
                         ChecklistRow(
                             habit: habit,
                             date: today,
@@ -421,7 +450,7 @@ struct HomeView: View {
         .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
         .overlay(
             RoundedRectangle(cornerRadius: config.cardCornerRadius)
-                .stroke(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.05), lineWidth: 1)
+                .stroke(Color.primary.opacity(cardBorderOpacity), lineWidth: 1)
         )
         .shadow(color: cardShadowColor, radius: config.cardShadowRadius, x: 0, y: 3)
         .frame(maxWidth: config.contentMaxWidth)
@@ -430,9 +459,9 @@ struct HomeView: View {
 
     private var progressHeader: some View {
         HStack(spacing: config.spacingXL) {
-            ProgressRing(progress: progress, count: completedCount, total: todayHabits.count, size: config.progressRingSize)
+            ProgressRing(progress: progress, count: completedCount, total: uniqueNamesActiveToday.count, size: config.progressRingSize)
             VStack(alignment: .leading, spacing: config.spacingXS) {
-                Text("\(completedCount) of \(todayHabits.count) done")
+                Text("\(completedCount) of \(uniqueNamesActiveToday.count) done")
                     .font(.headline.weight(.semibold))
                 Text(motivationalMessage)
                     .font(.subheadline)
@@ -443,9 +472,10 @@ struct HomeView: View {
     }
 
     private var motivationalMessage: String {
-        if completedCount == todayHabits.count && completedCount > 0 { return "All done! 🎉" }
+        let total = uniqueNamesActiveToday.count
+        if completedCount == total && completedCount > 0 { return "All done! 🎉" }
         if progress >= 0.5 { return "Keep going! 💪" }
-        if completedCount > 0 { return "\(todayHabits.count - completedCount) left" }
+        if completedCount > 0 { return "\(total - completedCount) left" }
         return "Let's start! 👋"
     }
     

@@ -46,6 +46,7 @@ struct MonthCalendarView: View {
         .padding()
         .background(Color.systemBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .cardBorder(cornerRadius: 12)
         .padding(.horizontal)
     }
     

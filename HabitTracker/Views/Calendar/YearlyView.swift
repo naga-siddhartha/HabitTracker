@@ -139,6 +139,7 @@ struct YearMonthCell: View {
         .padding(.horizontal, 8)
         .background(Color.systemGray6)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .cardBorder(cornerRadius: 12)
     }
 }
 
