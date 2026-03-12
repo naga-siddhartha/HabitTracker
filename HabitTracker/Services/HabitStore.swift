@@ -126,6 +126,19 @@ final class HabitStore {
     func save() {
         repository.save()
     }
+
+    /// Push local changes and pull latest from iCloud (when signed in). Saves, then reconnects the CloudKit-backed container so remote changes from other devices are merged, then refreshes widgets.
+    func syncNow() {
+        save()
+        if KeychainHelper.loadUserId() != nil {
+            ModelContainerProvider.shared.recreateContainerWithCloudKit { [weak self] in
+                self?.writeWidgetData()
+                WidgetCenter.shared.reloadAllTimelines()
+            }
+        } else {
+            reloadWidgets()
+        }
+    }
     
     private func reloadWidgets() {
         writeWidgetData()

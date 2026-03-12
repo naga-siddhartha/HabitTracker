@@ -490,6 +490,7 @@ struct HomeView: View {
 #Preview {
     HomeView()
         .environmentObject(AccountMenuState())
+        .environmentObject(ModelContainerProvider.shared)
         .modelContainer(for: Habit.self, inMemory: true)
 }
 

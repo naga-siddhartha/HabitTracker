@@ -19,6 +19,7 @@ final class AccountMenuState: ObservableObject {
 struct AccountMenuButton: View {
     @ObservedObject private var authService = AuthService.shared
     @ObservedObject var accountMenuState: AccountMenuState
+    @EnvironmentObject private var containerProvider: ModelContainerProvider
 
     var body: some View {
         Menu {
@@ -31,8 +32,9 @@ struct AccountMenuButton: View {
                 Button {
                     triggerSyncNow()
                 } label: {
-                    Label("Sync now", systemImage: "arrow.triangle.2.circlepath")
+                    Label(containerProvider.isSyncing ? "Syncing…" : "Sync now", systemImage: "arrow.triangle.2.circlepath")
                 }
+                .disabled(containerProvider.isSyncing)
                 Divider()
                 Button(role: .destructive) {
                     authService.signOut()
@@ -79,9 +81,7 @@ struct AccountMenuButton: View {
 
     private func triggerSyncNow() {
         SyncLogger.syncNowTapped()
-        HabitStore.shared.save()
-        WidgetKit.WidgetCenter.shared.reloadAllTimelines()
-        // Sync uses the single container (created at launch or on sign-in); do not recreate here or CloudKit reports duplicate handler.
+        HabitStore.shared.syncNow()
     }
 }
 

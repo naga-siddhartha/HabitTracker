@@ -72,7 +72,7 @@ Track of what is done on the v2 branch and what remains before merging to main a
 ### CloudKit / iCloud sync
 - [x] **Entitlements** – `HabitTracker.entitlements` includes iCloud + CloudKit (container `iCloud.com.nagasiddharthadonepudi.HabitTracker`). Both iOS and Mac targets use this file.
 - [x] **ModelContainerProvider** – Single store URL (`AppConfig.habitStoreURL()`); container created at launch with or without CloudKit based on sign-in. On sign-in, container is recreated with CloudKit (switch to in-memory first to avoid duplicate CloudKit handler).
-- [x] **Sync** – "Sync now" only saves and reloads widgets; it does not recreate the container. CloudKit sync is automatic with the single container. **Info.plist:** `UIBackgroundModes` includes `remote-notification` for CloudKit push.
+- [x] **Sync** – "Sync now" saves, then recreates the CloudKit-backed container so the app pulls and merges remote changes (e.g. habits from Mac). Shows "Syncing…" for ~1.5s while reconnecting. **To sync Mac → iPhone:** tap "Sync now" on the **Mac first** (to push), then on the **iPhone** (to pull). **Info.plist:** `UIBackgroundModes` includes `remote-notification` for CloudKit push.
 - [x] **Schema** – Habit/HabitEntry/Streak: optional attributes with defaults; `entries` relationship optional for CloudKit compatibility; `entriesOrEmpty` used in code.
 
 ### Account UI

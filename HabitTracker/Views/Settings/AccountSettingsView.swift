@@ -1,10 +1,10 @@
 import SwiftUI
-import WidgetKit
 
 /// Dedicated account screen: sign in, profile, Sync now, sign out. Presented from Settings.
 @available(iOS 17.0, macOS 14.0, *)
 struct AccountSettingsView: View {
     @ObservedObject private var authService = AuthService.shared
+    @ObservedObject private var containerProvider = ModelContainerProvider.shared
     @Environment(\.dismiss) private var dismiss
 
     @State private var showingAccountProfile = false
@@ -36,14 +36,14 @@ struct AccountSettingsView: View {
                         }
                         .buttonStyle(.plain)
                         Button {
-                            HabitStore.shared.save()
-                            WidgetKit.WidgetCenter.shared.reloadAllTimelines()
+                            HabitStore.shared.syncNow()
                         } label: {
-                            SettingsRow(icon: "arrow.triangle.2.circlepath", iconColor: .green, title: "Sync now") {
+                            SettingsRow(icon: "arrow.triangle.2.circlepath", iconColor: .green, title: containerProvider.isSyncing ? "Syncing…" : "Sync now") {
                                 chevronAccessory
                             }
                         }
                         .buttonStyle(.plain)
+                        .disabled(containerProvider.isSyncing)
                         Button {
                             authService.signOut()
                         } label: {

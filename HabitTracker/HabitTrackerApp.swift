@@ -41,6 +41,7 @@ struct HabitTrackerApp: App {
             WatchMainView()
             #else
             MainTabView()
+                .environmentObject(containerProvider)
             #endif
         }
         .modelContainer(containerProvider.currentContainer)
