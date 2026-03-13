@@ -11,6 +11,10 @@ struct NotificationHabit {
     let reminderTimes: [Date]
     let reminderNames: [String]
     let reminderSounds: [ReminderSound]
+    /// When greater than zero, schedule a repeating reminder every N minutes instead of fixed times.
+    let reminderIntervalMinutes: Int
+    /// End time for repeating reminders (stop sending after this time). Nil means remind until midnight.
+    let reminderEndTime: Date?
     let activeDays: Set<Weekday>
 }
 
@@ -31,8 +35,10 @@ final class NotificationService {
     
     func scheduleReminders(for habit: NotificationHabit) {
         #if canImport(UserNotifications)
-        guard !habit.reminderTimes.isEmpty else { return }
-        // Respect the app’s Notifications toggle (defaults to true when unset).
+        let hasSpecificTimes = !habit.reminderTimes.isEmpty
+        let hasRepeatingInterval = habit.reminderIntervalMinutes > 0
+        guard hasSpecificTimes || hasRepeatingInterval else { return }
+        // Respect the app's Notifications toggle (defaults to true when unset).
         if UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool == false { return }
         removeReminders(for: habit.id)
 
@@ -61,6 +67,62 @@ final class NotificationService {
 
     private func performScheduleReminders(for habit: NotificationHabit) {
         let calendar = Calendar.current
+
+        // Interval-based reminders (e.g. "every 2 hours from 8 AM to 6 PM")
+        if habit.reminderIntervalMinutes > 0 {
+            let intervalMinutes = habit.reminderIntervalMinutes
+            let reminderName = habit.reminderNames.first ?? "Reminder"
+            let sound = habit.reminderSounds.first ?? .default
+
+            let content = UNMutableNotificationContent()
+            content.title = reminderName
+            content.body = "Time to work on: \(habit.name)"
+            content.sound = notificationSound(for: sound)
+            content.userInfo = ["habitId": habit.id.uuidString]
+
+            if let startTime = habit.reminderTimes.first {
+                let startComponents = calendar.dateComponents([.hour, .minute], from: startTime)
+                let startMinutesOfDay = (startComponents.hour ?? 0) * 60 + (startComponents.minute ?? 0)
+                
+                // Calculate end time in minutes
+                let endMinutesOfDay: Int
+                if let endTime = habit.reminderEndTime {
+                    let endComponents = calendar.dateComponents([.hour, .minute], from: endTime)
+                    endMinutesOfDay = (endComponents.hour ?? 23) * 60 + (endComponents.minute ?? 59)
+                } else {
+                    endMinutesOfDay = 24 * 60 // midnight
+                }
+                
+                let maxTriggersPerDay = 24
+                var slotIndex = 0
+                var minutesOfDay = startMinutesOfDay
+                while slotIndex < maxTriggersPerDay && minutesOfDay <= endMinutesOfDay {
+                    var dateComponents = DateComponents()
+                    dateComponents.hour = minutesOfDay / 60
+                    dateComponents.minute = minutesOfDay % 60
+                    let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+                    let request = UNNotificationRequest(
+                        identifier: "\(habit.id.uuidString)-interval-\(slotIndex)",
+                        content: content,
+                        trigger: trigger
+                    )
+                    UNUserNotificationCenter.current().add(request)
+                    slotIndex += 1
+                    minutesOfDay += intervalMinutes
+                }
+            } else {
+                // No start time: repeat from now (e.g. every 2 hours)
+                let intervalSeconds = max(60, TimeInterval(intervalMinutes * 60))
+                let trigger = UNTimeIntervalNotificationTrigger(timeInterval: intervalSeconds, repeats: true)
+                let request = UNNotificationRequest(
+                    identifier: habit.id.uuidString,
+                    content: content,
+                    trigger: trigger
+                )
+                UNUserNotificationCenter.current().add(request)
+            }
+            return
+        }
 
         for (index, reminderTime) in habit.reminderTimes.enumerated() {
             let timeComponents = calendar.dateComponents([.hour, .minute], from: reminderTime)

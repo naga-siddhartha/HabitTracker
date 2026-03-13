@@ -96,17 +96,38 @@ struct HabitDetailsSheetView: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    if !habit.reminderTimes.isEmpty {
+                    if !habit.reminderTimes.isEmpty || habit.reminderIntervalMinutes > 0 {
                         sectionCard(title: "Reminders", systemImage: "bell") {
-                            VStack(alignment: .leading, spacing: config.spacingS) {
-                                ForEach(Array(habit.reminderTimes.enumerated()), id: \.offset) { index, time in
-                                    HStack {
-                                        Text((index < habit.reminderNames.count && !habit.reminderNames[index].isEmpty) ? habit.reminderNames[index] : "Reminder")
-                                            .font(.subheadline.weight(.medium))
-                                        Spacer()
-                                        Text(time, format: .dateTime.hour().minute())
-                                            .font(.subheadline)
-                                            .foregroundStyle(.secondary)
+                            VStack(alignment: .leading, spacing: config.spacingM) {
+                                if habit.reminderIntervalMinutes > 0 {
+                                    // Repeating reminder with interval
+                                    VStack(alignment: .leading, spacing: config.spacingS) {
+                                        if let schedule = habit.scheduleDescription {
+                                            HStack {
+                                                Image(systemName: "repeat")
+                                                    .font(.subheadline)
+                                                    .foregroundStyle(.secondary)
+                                                Text(schedule)
+                                                    .font(.body.weight(.medium))
+                                            }
+                                        }
+                                        if let firstName = habit.reminderNames.first, !firstName.isEmpty {
+                                            Text(firstName)
+                                                .font(.subheadline)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                } else {
+                                    // Individual reminder times
+                                    ForEach(Array(habit.reminderTimes.enumerated()), id: \.offset) { index, time in
+                                        HStack {
+                                            Text((index < habit.reminderNames.count && !habit.reminderNames[index].isEmpty) ? habit.reminderNames[index] : "Reminder")
+                                                .font(.subheadline.weight(.medium))
+                                            Spacer()
+                                            Text(time, format: .dateTime.hour().minute())
+                                                .font(.subheadline)
+                                                .foregroundStyle(.secondary)
+                                        }
                                     }
                                 }
                             }
@@ -309,16 +330,25 @@ struct HabitRowActions: View {
     var onViewDetails: (() -> Void)? = nil
     var onEdit: (() -> Void)? = nil
     var onDelete: (() -> Void)? = nil
-    /// When true, show Skip / Unskip based on isSkippedOnDate. "Skip day" opens the reason sheet (reason optional).
     var showSkipUnskip: Bool = false
     var isSkippedOnDate: Bool = false
     var onUnskip: (() -> Void)? = nil
-    /// Opening the skip-day sheet; user can add an optional reason there.
     var onSkipWithReason: (() -> Void)? = nil
+    /// For repeating (interval) habits: mark all expected completions done at once.
+    var onMarkAllComplete: (() -> Void)? = nil
+    /// For repeating habits: reset completion count back to zero.
+    var onResetCompletion: (() -> Void)? = nil
 
     var body: some View {
         if onViewDetails != nil {
             Button(action: { onViewDetails?() }) { Label("View details", systemImage: "doc.text") }
+            Divider()
+        }
+        if let markAll = onMarkAllComplete {
+            Button(action: markAll) { Label("Mark all complete", systemImage: "checkmark.circle.fill") }
+        }
+        if let reset = onResetCompletion {
+            Button(action: reset) { Label("Reset progress", systemImage: "arrow.counterclockwise") }
             Divider()
         }
         if showSkipUnskip {

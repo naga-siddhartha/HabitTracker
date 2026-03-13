@@ -2,15 +2,21 @@ import SwiftUI
 import SwiftData
 
 struct WeeklyView: View {
-    @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
+    @Query(sort: \Habit.createdAt, order: .reverse) private var allHabits: [Habit]
     @State private var currentWeekStart = Date.now.startOfWeek ?? Date.now
     @State private var habitForDetailsSheet: Habit?
     @State private var editingHabit: Habit?
     @State private var skipReasonTarget: (habit: Habit, date: Date)?
-    
+
     private let calendar = Calendar.current
     private var weekDates: [Date] {
         (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: currentWeekStart) }
+    }
+    /// One representative habit per unique name, matching HomeView deduplication.
+    private var habits: [Habit] {
+        let grouped = Dictionary(grouping: allHabits, by: \.name)
+        return grouped.compactMap { _, group in group.first }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
     
     var body: some View {
@@ -176,15 +182,22 @@ private struct DayDot: View {
     var onUnskip: (() -> Void)? = nil
     var onSkipWithReason: (() -> Void)? = nil
     
-    private var isCompleted: Bool { habit.isCompleted(on: date) }
+    private var isCompleted: Bool { habit.isDone(on: date) }
     private var isSkipped: Bool { habit.isSkipped(on: date) }
     private var isActive: Bool { habit.isActive(on: date) }
-    
+    private var isRepeating: Bool { habit.reminderIntervalMinutes > 0 }
+    private var count: Int { habit.completionCount(on: date) }
+    private var expected: Int { habit.expectedCompletions(on: date) }
+
     var body: some View {
         Button {
             if isActive {
                 withAnimation(.snappy(duration: 0.3)) {
-                    HabitStore.shared.toggleCompletion(for: habit, on: date)
+                    if isRepeating {
+                        HabitStore.shared.incrementCompletion(for: habit, on: date)
+                    } else {
+                        HabitStore.shared.toggleCompletion(for: habit, on: date)
+                    }
                 }
             }
         } label: {
@@ -193,6 +206,20 @@ private struct DayDot: View {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 26))
                         .foregroundStyle(habit.displayColor)
+                } else if isRepeating && count > 0 {
+                    ZStack {
+                        Circle()
+                            .stroke(habit.displayColor.opacity(0.3), lineWidth: 2.5)
+                            .frame(width: 26, height: 26)
+                        Circle()
+                            .trim(from: 0, to: CGFloat(count) / CGFloat(expected))
+                            .stroke(habit.displayColor, style: StrokeStyle(lineWidth: 2.5, lineCap: .round))
+                            .rotationEffect(.degrees(-90))
+                            .frame(width: 26, height: 26)
+                        Text("\(count)")
+                            .font(.system(size: 9, weight: .bold, design: .rounded))
+                            .foregroundStyle(habit.displayColor)
+                    }
                 } else if isSkipped {
                     Image(systemName: "pause.circle.fill")
                         .font(.system(size: 26))
@@ -217,7 +244,17 @@ private struct DayDot: View {
                     showSkipUnskip: true,
                     isSkippedOnDate: isSkipped,
                     onUnskip: onUnskip,
-                    onSkipWithReason: onSkipWithReason
+                    onSkipWithReason: onSkipWithReason,
+                    onMarkAllComplete: isRepeating && !isCompleted ? {
+                        withAnimation(.snappy(duration: 0.3)) {
+                            HabitStore.shared.markAllComplete(for: habit, on: date)
+                        }
+                    } : nil,
+                    onResetCompletion: isRepeating && count > 0 ? {
+                        withAnimation(.snappy(duration: 0.3)) {
+                            HabitStore.shared.resetCompletion(for: habit, on: date)
+                        }
+                    } : nil
                 )
             }
         }

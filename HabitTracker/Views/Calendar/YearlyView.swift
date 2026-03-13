@@ -2,13 +2,18 @@ import SwiftUI
 import SwiftData
 
 struct YearlyView: View {
-    @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
+    @Query(sort: \Habit.createdAt, order: .reverse) private var allHabits: [Habit]
     @State private var currentYear = Date.now
     @State private var selectedHabit: Habit?
     @State private var habitForDetailsSheet: Habit?
     @State private var editingHabit: Habit?
-    
+
     private let calendar = Calendar.current
+    private var habits: [Habit] {
+        let grouped = Dictionary(grouping: allHabits, by: \.name)
+        return grouped.compactMap { _, group in group.first }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
     
     private var months: [Date] {
         guard let yearStart = currentYear.startOfYear else { return [] }

@@ -35,7 +35,11 @@ struct MonthCalendarView: View {
                             selectedDate = date
                             if habit.isActive(on: date) {
                                 withAnimation(.snappy(duration: 0.3)) {
-                                    HabitStore.shared.toggleCompletion(for: habit, on: date)
+                                    if habit.reminderIntervalMinutes > 0 {
+                                        HabitStore.shared.incrementCompletion(for: habit, on: date)
+                                    } else {
+                                        HabitStore.shared.toggleCompletion(for: habit, on: date)
+                                    }
                                 }
                             }
                         }
@@ -80,36 +84,59 @@ struct DayCell: View {
     let habit: Habit
     let isCurrentMonth: Bool
     let isSelected: Bool
-    
-    private var isCompleted: Bool { habit.isCompleted(on: date) }
+
+    private var isCompleted: Bool { habit.isDone(on: date) }
     private var isSkipped: Bool { habit.isSkipped(on: date) }
     private var isToday: Bool { Calendar.current.isDateInToday(date) }
-    
+    private var isRepeating: Bool { habit.reminderIntervalMinutes > 0 }
+    private var count: Int { habit.completionCount(on: date) }
+    private var expected: Int { habit.expectedCompletions(on: date) }
+    private var isPartial: Bool { isRepeating && count > 0 && count < expected }
+    private var isFullyDone: Bool { isRepeating ? (count >= expected) : isCompleted }
+
     var body: some View {
         ZStack {
+            // Background fill
             Circle()
                 .fill(fillColor)
                 .opacity(isCurrentMonth ? 1 : 0.3)
-            
+
+            // Partial progress arc overlay for repeating habits
+            if isPartial {
+                Circle()
+                    .trim(from: 0, to: CGFloat(count) / CGFloat(expected))
+                    .stroke(habit.displayColor, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .frame(width: 28, height: 28)
+                    .opacity(isCurrentMonth ? 1 : 0.3)
+            }
+
             if isSkipped {
                 Image(systemName: "forward.fill").font(.caption2).foregroundStyle(.white)
+            } else if isPartial {
+                // Show count for partial repeating days
+                Text("\(count)")
+                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                    .foregroundStyle(habit.displayColor)
             } else {
                 Text("\(Calendar.current.component(.day, from: date))")
                     .font(.caption)
-                    .foregroundStyle(isCompleted ? .white : (isCurrentMonth ? .primary : .secondary))
+                    .foregroundStyle(isFullyDone ? .white : (isCurrentMonth ? .primary : .secondary))
             }
         }
         .frame(width: 32, height: 32)
         .overlay { if isToday { Circle().stroke(habit.displayColor, lineWidth: 2) } }
         .background(isSelected ? habit.displayColor.opacity(0.2) : .clear)
         .clipShape(Circle())
-        .scaleEffect(isCompleted ? 1.1 : 1.0)
-        .animation(.spring(duration: 0.2), value: isCompleted)
+        .scaleEffect(isFullyDone ? 1.1 : 1.0)
+        .animation(.spring(duration: 0.2), value: isFullyDone)
+        .animation(.spring(duration: 0.2), value: count)
     }
-    
+
     private var fillColor: Color {
-        if isCompleted { return habit.displayColor }
+        if isFullyDone { return habit.displayColor }
         if isSkipped { return .orange }
+        if isPartial { return habit.displayColor.opacity(0.12) }
         return Color.systemGray4
     }
 }

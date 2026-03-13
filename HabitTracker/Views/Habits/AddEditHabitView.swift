@@ -24,11 +24,17 @@ struct AddEditHabitView: View {
     @State private var selectedEmoji: String? = nil
     @State private var showingEmojiPickerSheet = false
     @State private var showingColorPickerSheet = false
-    @State private var anyEmojiText = ""  // for "use any emoji" field (system keyboard)
+    @State private var anyEmojiText = ""
     @State private var frequency: HabitFrequency = .daily
     @State private var selectedDays: Set<Weekday> = []
     @State private var reminders: [Reminder] = []
-    
+    @State private var reminderIntervalMinutes: Int = 0
+    @State private var reminderEndTime: Date = Calendar.current.date(bySettingHour: 21, minute: 0, second: 0, of: Date()) ?? Date()
+    @State private var useRepeatingReminders: Bool = false
+    // Custom interval state
+    @State private var intervalHours: Int = 2
+    @State private var intervalMinutes: Int = 0
+
     private var isEditing: Bool { habit != nil }
     private var suggestedEmoji: String { HabitEmoji.suggest(for: name, description: description.isEmpty ? nil : description) }
     
@@ -54,7 +60,6 @@ struct AddEditHabitView: View {
     
     @ViewBuilder
     private var formContent: some View {
-        // Basic Info
         Section("Basic Information") {
             TextField("Habit Name", text: $name)
             TextField("Description (Optional)", text: $description, axis: .vertical)
@@ -64,7 +69,6 @@ struct AddEditHabitView: View {
         .padding(.bottom, LayoutConfig.current.formSectionSpacing)
         #endif
 
-        // Appearance (color + emoji)
         Section("Appearance") {
             colorRow
             emojiRow
@@ -74,73 +78,252 @@ struct AddEditHabitView: View {
         #endif
 
         #if os(macOS)
-        // macOS: Frequency and Reminders side by side
         frequencyAndRemindersMac
         #else
-        // iOS: stacked sections
-        Section("Frequency") {
-            frequencyContent
-        }
-        Section("Reminders") {
-            remindersContent
+        Section("Schedule") {
+            scheduleContent
         }
         #endif
     }
 
-    @ViewBuilder
-    private var frequencyContent: some View {
-        Picker("Repeat", selection: $frequency) {
-            Text("Daily").tag(HabitFrequency.daily)
-            Text("Weekly").tag(HabitFrequency.weekly)
-        }
-        if frequency == .weekly {
-            ForEach(Weekday.allCases, id: \.self) { day in
-                Toggle(day.fullName, isOn: Binding(
-                    get: { selectedDays.contains(day) },
-                    set: { if $0 { selectedDays.insert(day) } else { selectedDays.remove(day) } }
-                ))
-            }
-        }
-    }
+    // MARK: - Schedule Section
 
     @ViewBuilder
-    private var remindersContent: some View {
-        ForEach($reminders) { $reminder in
-            VStack(alignment: .leading, spacing: 8) {
-                TextField("Reminder Name", text: $reminder.name)
-                DatePicker("Time", selection: $reminder.time, displayedComponents: [.hourAndMinute])
-                Picker("Sound", selection: $reminder.sound) {
-                    ForEach(ReminderSound.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+    private var scheduleContent: some View {
+        // Frequency pills
+        HStack(spacing: 0) {
+            Text("Repeats")
+                .foregroundStyle(.primary)
+            Spacer()
+            HStack(spacing: 8) {
+                pill("Daily", isOn: frequency == .daily) {
+                    withAnimation(.spring(duration: 0.25)) { frequency = .daily }
+                }
+                pill("Weekly", isOn: frequency == .weekly) {
+                    withAnimation(.spring(duration: 0.25)) { frequency = .weekly }
                 }
             }
         }
-        .onDelete { reminders.remove(atOffsets: $0) }
-        if reminders.isEmpty {
-            Button("Add Reminder") {
-                reminders.append(Reminder(name: "Reminder", time: .now, sound: .default))
+
+        if frequency == .weekly {
+            HStack(spacing: 6) {
+                ForEach(Array(Weekday.allCases), id: \.self) { day in
+                    let isOn = selectedDays.contains(day)
+                    Button {
+                        if isOn { selectedDays.remove(day) } else { selectedDays.insert(day) }
+                    } label: {
+                        Text(String(day.shortName.prefix(1)))
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .frame(width: 36, height: 36)
+                            .background(isOn ? Color.accentColor : Color.secondary.opacity(0.15), in: Circle())
+                            .foregroundStyle(isOn ? .white : .secondary)
+                    }
+                    .buttonStyle(.plain)
+                }
             }
         }
+
+        // Reminder mode pills
+        HStack(spacing: 0) {
+            Text("Remind me")
+                .foregroundStyle(.primary)
+            Spacer()
+            HStack(spacing: 8) {
+                pill("At times", isOn: !useRepeatingReminders) {
+                    withAnimation(.spring(duration: 0.25)) {
+                        useRepeatingReminders = false
+                        reminderIntervalMinutes = 0
+                        if reminders.isEmpty {
+                            reminders.append(Reminder(name: "Reminder", time: Self.defaultStartTime, sound: .default))
+                        }
+                    }
+                }
+                pill("Repeating", isOn: useRepeatingReminders) {
+                    withAnimation(.spring(duration: 0.25)) {
+                        useRepeatingReminders = true
+                        if reminders.isEmpty {
+                            reminders.append(Reminder(name: "Reminder", time: Self.defaultStartTime, sound: .default))
+                        } else {
+                            reminders = [reminders[0]]
+                        }
+                        // Default to 1 hour if no interval was previously set
+                        if intervalHours == 0 && intervalMinutes == 0 {
+                            intervalHours = 1
+                        }
+                        syncIntervalFromState()
+                    }
+                }
+            }
+        }
+
+        if useRepeatingReminders {
+            repeatingReminderRows
+        } else {
+            specificTimesRows
+        }
+    }
+
+    private func pill(_ label: String, isOn: Bool, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Text(label)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(isOn ? Color.accentColor : .secondary)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 7)
+                .background {
+                    Capsule()
+                        .fill(isOn ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.12))
+                        .overlay {
+                            Capsule()
+                                .strokeBorder(
+                                    isOn ? Color.accentColor.opacity(0.5) : Color.clear,
+                                    lineWidth: 1
+                                )
+                        }
+                }
+        }
+        .buttonStyle(.plain)
+        .sensoryFeedback(.selection, trigger: isOn)
+    }
+
+    // MARK: - Repeating Reminders
+
+    @ViewBuilder
+    private var repeatingReminderRows: some View {
+        HStack {
+            Text("Every")
+                .foregroundStyle(.primary)
+            Spacer()
+            Picker("", selection: $intervalHours) {
+                ForEach(0...12, id: \.self) { h in
+                    Text(h == 1 ? "1 hr" : "\(h) hrs").tag(h)
+                }
+            }
+            .labelsHidden()
+            #if os(iOS)
+            .pickerStyle(.wheel)
+            .frame(width: 100, height: 120)
+            .clipped()
+            #else
+            .pickerStyle(.menu)
+            .frame(width: 90)
+            #endif
+            .onChange(of: intervalHours) { _, _ in syncIntervalFromState() }
+
+            Picker("", selection: $intervalMinutes) {
+                ForEach([0, 5, 10, 15, 20, 30, 45], id: \.self) { m in
+                    Text("\(m) min").tag(m)
+                }
+            }
+            .labelsHidden()
+            #if os(iOS)
+            .pickerStyle(.wheel)
+            .frame(width: 100, height: 120)
+            .clipped()
+            #else
+            .pickerStyle(.menu)
+            .frame(width: 90)
+            #endif
+            .onChange(of: intervalMinutes) { _, _ in syncIntervalFromState() }
+        }
+
+        HStack {
+            Text("Active window")
+            Spacer()
+            DatePicker("", selection: bindingToReminderTime(at: 0), displayedComponents: .hourAndMinute)
+                .labelsHidden()
+            Text("–")
+                .foregroundStyle(.secondary)
+            DatePicker("", selection: $reminderEndTime, displayedComponents: .hourAndMinute)
+                .labelsHidden()
+        }
+
+        Picker("Sound", selection: Binding(
+            get: { reminders.first?.sound ?? .default },
+            set: { s in if !reminders.isEmpty { reminders[0].sound = s } }
+        )) {
+            ForEach(ReminderSound.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+        }
+    }
+
+    // MARK: - Specific Times
+
+    @ViewBuilder
+    private var specificTimesRows: some View {
+        ForEach(reminders.indices, id: \.self) { idx in
+            HStack {
+                DatePicker(
+                    idx == 0 ? "Time" : "Time \(idx + 1)",
+                    selection: bindingToReminderTime(at: idx),
+                    displayedComponents: .hourAndMinute
+                )
+                if reminders.count > 1 {
+                    Button(role: .destructive) {
+                        withAnimation { _ = reminders.remove(at: idx) }
+                    } label: {
+                        Image(systemName: "minus.circle.fill")
+                            .foregroundStyle(.red)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+
+        Button {
+            withAnimation {
+                reminders.append(Reminder(name: "Reminder", time: Self.defaultStartTime, sound: .default))
+            }
+        } label: {
+            Label("Add another time", systemImage: "plus.circle.fill")
+        }
+
+        Picker("Sound", selection: Binding(
+            get: { reminders.first?.sound ?? .default },
+            set: { s in for i in reminders.indices { reminders[i].sound = s } }
+        )) {
+            ForEach(ReminderSound.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+        }
+    }
+
+    // MARK: - Helpers
+
+    private static var defaultStartTime: Date {
+        Calendar.current.date(bySettingHour: 8, minute: 0, second: 0, of: Date()) ?? Date()
+    }
+
+    private static var defaultEndTime: Date {
+        Calendar.current.date(bySettingHour: 21, minute: 0, second: 0, of: Date()) ?? Date()
+    }
+
+    private func bindingToReminderTime(at index: Int) -> Binding<Date> {
+        Binding(
+            get: { reminders.indices.contains(index) ? reminders[index].time : Self.defaultStartTime },
+            set: { new in
+                guard reminders.indices.contains(index) else { return }
+                reminders[index].time = new
+                reminders = reminders
+            }
+        )
+    }
+
+    private func syncIntervalFromState() {
+        let total = intervalHours * 60 + intervalMinutes
+        reminderIntervalMinutes = max(15, total)
+    }
+
+    private func syncStateFromInterval() {
+        intervalHours = reminderIntervalMinutes / 60
+        intervalMinutes = (reminderIntervalMinutes % 60 / 15) * 15
     }
 
     #if os(macOS)
     private var frequencyAndRemindersMac: some View {
         let config = LayoutConfig.current
-        return HStack(alignment: .top, spacing: config.spacingXL) {
-            VStack(alignment: .leading, spacing: config.spacingM) {
-                Text("Frequency")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                frequencyContent
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            VStack(alignment: .leading, spacing: config.spacingM) {
-                Text("Reminders")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                remindersContent
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+        return VStack(alignment: .leading, spacing: config.spacingM) {
+            Text("Schedule")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(.secondary)
+            scheduleContent
         }
         .padding(.bottom, config.formSectionSpacing)
     }
@@ -435,12 +618,22 @@ struct AddEditHabitView: View {
                 selectedEmoji = habit.emoji
             }
             frequency = habit.frequency
-            // Weekly with no days = show all days selected so the habit stays visible until user picks days
             selectedDays = habit.frequency == .weekly && habit.activeDays.isEmpty
                 ? Set(Weekday.allCases)
                 : habit.activeDays
             reminders = zip(habit.reminderTimes, zip(habit.reminderNames, habit.sounds)).map {
                 Reminder(name: $1.0, time: $0, sound: $1.1)
+            }
+            reminderIntervalMinutes = habit.reminderIntervalMinutes
+            reminderEndTime = habit.reminderEndTime ?? Self.defaultEndTime
+            useRepeatingReminders = habit.reminderIntervalMinutes > 0
+            syncStateFromInterval()
+            if useRepeatingReminders && reminders.isEmpty {
+                reminders = [Reminder(
+                    name: habit.reminderNames.first ?? "Reminder",
+                    time: habit.reminderTimes.first ?? Self.defaultStartTime,
+                    sound: habit.sounds.first ?? .default
+                )]
             }
         } else if let template {
             name = template.name
@@ -456,6 +649,8 @@ struct AddEditHabitView: View {
     }
     
     private func saveHabit() {
+        syncIntervalFromState()
+        
         if let habit {
             habit.name = name
             habit.habitDescription = description.isEmpty ? nil : description
@@ -463,11 +658,12 @@ struct AddEditHabitView: View {
             habit.color = selectedColor
             habit.customColorHex = selectedColor == .custom ? selectedCustomColor.toHex() : nil
             habit.frequency = frequency
-            // Weekly with no days selected = show every day so the habit doesn’t disappear from Home
             habit.activeDays = frequency == .weekly ? (selectedDays.isEmpty ? Set(Weekday.allCases) : selectedDays) : []
             habit.reminderTimes = reminders.map(\.time)
             habit.reminderNames = reminders.map(\.name)
             habit.sounds = reminders.map(\.sound)
+            habit.reminderIntervalMinutes = useRepeatingReminders ? reminderIntervalMinutes : 0
+            habit.reminderEndTime = useRepeatingReminders ? reminderEndTime : nil
             habit.updatedAt = .now
             NotificationService.shared.removeReminders(for: habit.id)
             scheduleNotifications(for: habit)
@@ -482,7 +678,9 @@ struct AddEditHabitView: View {
                 reminderTimes: reminders.map(\.time),
                 reminderNames: reminders.map(\.name),
                 reminderSounds: reminders.map(\.sound),
-                activeDays: frequency == .weekly ? (selectedDays.isEmpty ? Set(Weekday.allCases) : selectedDays) : []
+                activeDays: frequency == .weekly ? (selectedDays.isEmpty ? Set(Weekday.allCases) : selectedDays) : [],
+                reminderIntervalMinutes: useRepeatingReminders ? reminderIntervalMinutes : 0,
+                reminderEndTime: useRepeatingReminders ? reminderEndTime : nil
             )
             if selectedColor == .custom {
                 newHabit.customColorHex = selectedCustomColor.toHex()
@@ -498,7 +696,10 @@ struct AddEditHabitView: View {
         NotificationService.shared.scheduleReminders(for: NotificationHabit(
             id: habit.id, name: habit.name, frequency: habit.frequency,
             reminderTimes: habit.reminderTimes, reminderNames: habit.reminderNames,
-            reminderSounds: habit.sounds, activeDays: habit.activeDays
+            reminderSounds: habit.sounds,
+            reminderIntervalMinutes: habit.reminderIntervalMinutes,
+            reminderEndTime: habit.reminderEndTime,
+            activeDays: habit.activeDays
         ))
     }
 }

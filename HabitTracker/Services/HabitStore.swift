@@ -72,6 +72,68 @@ final class HabitStore {
         save()
         reloadWidgets()
     }
+
+    /// Mark all expected completions as done at once.
+    func markAllComplete(for habit: Habit, on date: Date) {
+        let expected = habit.expectedCompletions(on: date)
+        if let entry = habit.entry(for: date) {
+            if entry.isSkipped { entry.isSkipped = false; entry.skipReason = nil }
+            entry.completionCount = expected
+            entry.isCompleted = true
+            entry.updatedAt = .now
+        } else {
+            let newEntry = HabitEntry(date: date, isCompleted: true)
+            newEntry.completionCount = expected
+            habit.entries = (habit.entries ?? []) + [newEntry]
+        }
+        habit.updatedAt = .now
+        updateStreak(for: habit)
+        save()
+        reloadWidgets()
+    }
+
+    /// Reset all completions for a repeating habit back to zero.
+    func resetCompletion(for habit: Habit, on date: Date) {
+        guard let entry = habit.entry(for: date) else { return }
+        entry.completionCount = 0
+        entry.isCompleted = false
+        entry.isSkipped = false
+        entry.skipReason = nil
+        entry.updatedAt = .now
+        habit.updatedAt = .now
+        updateStreak(for: habit)
+        save()
+        reloadWidgets()
+    }
+
+    /// Increment the completion count for a repeating habit by 1, capped at expectedCompletions.
+    /// Tapping when already at max resets to 0.
+    func incrementCompletion(for habit: Habit, on date: Date) {
+        let expected = habit.expectedCompletions(on: date)
+        if let entry = habit.entry(for: date) {
+            if entry.isSkipped {
+                entry.isSkipped = false
+                entry.skipReason = nil
+            }
+            let current = entry.completionCount > 0 ? entry.completionCount : (entry.isCompleted ? expected : 0)
+            if current >= expected {
+                entry.completionCount = 0
+                entry.isCompleted = false
+            } else {
+                entry.completionCount = current + 1
+                entry.isCompleted = entry.completionCount > 0
+            }
+            entry.updatedAt = .now
+        } else {
+            let newEntry = HabitEntry(date: date, isCompleted: true)
+            newEntry.completionCount = 1
+            habit.entries = (habit.entries ?? []) + [newEntry]
+        }
+        habit.updatedAt = .now
+        updateStreak(for: habit)
+        save()
+        reloadWidgets()
+    }
     
     func skipDay(for habit: Habit, on date: Date, reason: String? = nil) {
         if let entry = habit.entry(for: date) {

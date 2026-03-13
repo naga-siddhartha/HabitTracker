@@ -2,7 +2,7 @@ import SwiftUI
 import SwiftData
 
 struct MonthlyView: View {
-    @Query(sort: \Habit.createdAt, order: .reverse) private var habits: [Habit]
+    @Query(sort: \Habit.createdAt, order: .reverse) private var allHabits: [Habit]
     @State private var currentMonth = Date.now
     @State private var selectedDate = Date.now
     @State private var habitForDetailsSheet: Habit?
@@ -13,7 +13,12 @@ struct MonthlyView: View {
     private let config = LayoutConfig.current
     private let calendar = Calendar.current
     private let columns = Array(repeating: GridItem(.flexible()), count: 7)
-    
+    private var habits: [Habit] {
+        let grouped = Dictionary(grouping: allHabits, by: \.name)
+        return grouped.compactMap { _, group in group.first }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
     var body: some View {
         let activeHabits = habits.filter { $0.isActive(on: selectedDate) }
         return VStack(spacing: 0) {
@@ -142,7 +147,7 @@ struct MonthDayCell: View {
     private var completionRatio: Double {
         let active = habits.filter { $0.isActive(on: date) }
         guard !active.isEmpty else { return 0 }
-        return Double(active.filter { $0.isCompleted(on: date) }.count) / Double(active.count)
+        return Double(active.filter { $0.isDone(on: date) }.count) / Double(active.count)
     }
     
     var body: some View {
@@ -168,8 +173,11 @@ struct MonthlyHabitRow: View {
     var onSkipWithReason: (() -> Void)? = nil
     var onTapSkipReason: ((String) -> Void)? = nil
 
-    private var isCompleted: Bool { habit.isCompleted(on: date) }
+    private var isCompleted: Bool { habit.isDone(on: date) }
     private var isSkipped: Bool { habit.isSkipped(on: date) }
+    private var isRepeating: Bool { habit.reminderIntervalMinutes > 0 }
+    private var count: Int { habit.completionCount(on: date) }
+    private var expected: Int { habit.expectedCompletions(on: date) }
     private var skipReason: String? { habit.entry(for: date)?.skipReason }
     
     private var skippedSubtitle: String {
@@ -226,12 +234,14 @@ struct MonthlyHabitRow: View {
             .buttonStyle(.plain)
             Button {
                 withAnimation(.snappy(duration: 0.3)) {
-                    HabitStore.shared.toggleCompletion(for: habit, on: date)
+                    if isRepeating {
+                        HabitStore.shared.incrementCompletion(for: habit, on: date)
+                    } else {
+                        HabitStore.shared.toggleCompletion(for: habit, on: date)
+                    }
                 }
             } label: {
-                Image(systemName: statusIcon)
-                    .foregroundStyle(statusColor)
-                    .contentTransition(.symbolEffect(.replace))
+                monthlyCompletionIcon
             }
             .buttonStyle(.plain)
             .frame(minWidth: 44, minHeight: 44)
@@ -240,7 +250,7 @@ struct MonthlyHabitRow: View {
         }
         .padding(.horizontal)
         .padding(.vertical, 8)
-        .background(habit.displayColor.opacity(0.08))
+        .background(isCompleted ? habit.displayColor.opacity(0.14) : habit.displayColor.opacity(0.08))
         .clipShape(RoundedRectangle(cornerRadius: LayoutConfig.current.cardCornerRadius))
         .cardBorder(cornerRadius: LayoutConfig.current.cardCornerRadius)
         .contentShape(Rectangle())
@@ -252,19 +262,59 @@ struct MonthlyHabitRow: View {
                 showSkipUnskip: true,
                 isSkippedOnDate: isSkipped,
                 onUnskip: onUnskip,
-                onSkipWithReason: onSkipWithReason
+                onSkipWithReason: onSkipWithReason,
+                onMarkAllComplete: isRepeating && !isCompleted ? {
+                    withAnimation(.spring(duration: 0.25)) {
+                        HabitStore.shared.markAllComplete(for: habit, on: date)
+                    }
+                } : nil,
+                onResetCompletion: isRepeating && count > 0 ? {
+                    withAnimation(.spring(duration: 0.25)) {
+                        HabitStore.shared.resetCompletion(for: habit, on: date)
+                    }
+                } : nil
             )
         }
     }
-    
-    private var statusIcon: String {
-        if isSkipped { return "pause.circle.fill" }
-        return isCompleted ? "checkmark.circle.fill" : "circle"
-    }
-    
-    private var statusColor: Color {
-        if isSkipped { return .orange }
-        return isCompleted ? habit.displayColor : .secondary
+
+    @ViewBuilder
+    private var monthlyCompletionIcon: some View {
+        if isSkipped {
+            Image(systemName: "pause.circle.fill")
+                .font(.title3)
+                .foregroundStyle(.orange)
+        } else if isRepeating {
+            VStack(spacing: 2) {
+                ZStack {
+                    Circle()
+                        .stroke(count > 0 ? habit.displayColor : Color.secondary.opacity(0.3), lineWidth: 2)
+                        .frame(width: 28, height: 28)
+                    if isCompleted {
+                        Circle().fill(habit.displayColor).frame(width: 28, height: 28)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(.white)
+                    } else if let emoji = habit.emoji, !emoji.isEmpty {
+                        Text(emoji).font(.system(size: 13)).opacity(count > 0 ? 1 : 0.35)
+                    } else {
+                        Image(systemName: count > 0 ? "checkmark" : "circle")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(count > 0 ? habit.displayColor : .secondary)
+                    }
+                }
+                Text("\(count)/\(expected)")
+                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .foregroundStyle(count > 0 ? habit.displayColor : .secondary)
+                    .monospacedDigit()
+            }
+            .animation(.spring(duration: 0.2), value: count)
+        } else {
+            Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
+                .font(.title3)
+                .foregroundStyle(isCompleted ? habit.displayColor : .secondary)
+                .contentTransition(.symbolEffect(.replace))
+                .animation(.spring(duration: 0.25), value: isCompleted)
+        }
     }
 }
 

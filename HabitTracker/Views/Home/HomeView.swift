@@ -23,11 +23,11 @@ struct HomeView: View {
     private var today: Date { Date.now }
     private var habits: [Habit] { allHabits }
     private var todayHabits: [Habit] { habits.filter { $0.isActive(on: today) } }
-    private var todayIncomplete: [Habit] { todayHabits.filter { !$0.isCompleted(on: today) } }
-    /// Habits due today that are done (for progress ring).
-    private var todayCompleted: [Habit] { todayHabits.filter { $0.isCompleted(on: today) } }
-    /// All habits completed today (any habit you checked off today), so Completed card is never empty when you’ve done something.
-    private var habitsCompletedToday: [Habit] { habits.filter { $0.isCompleted(on: today) } }
+    private var todayIncomplete: [Habit] { todayHabits.filter { !$0.isDone(on: today) } }
+    /// Habits due today that are fully done (for progress ring).
+    private var todayCompleted: [Habit] { todayHabits.filter { $0.isDone(on: today) } }
+    /// All habits fully done today - shown in the Completed card.
+    private var habitsCompletedToday: [Habit] { habits.filter { $0.isDone(on: today) } }
     private var uniqueNamesActiveToday: Set<String> { Set(todayHabits.map(\.name)) }
     private var uniqueNamesCompletedToday: Set<String> { Set(habitsCompletedToday.map(\.name)) }
     private var completedCount: Int { uniqueNamesCompletedToday.count }

@@ -18,6 +18,10 @@ final class Habit {
     var reminderTimes: [Date] = []
     var reminderNames: [String] = []
     var reminderSounds: [String] = []
+    /// When greater than zero, schedule a repeating reminder every N minutes (used for "every few hours" habits).
+    var reminderIntervalMinutes: Int = 0
+    /// End time for repeating reminders (stop sending after this time). Nil means remind all day.
+    var reminderEndTime: Date?
     var activeDaysRaw: [Int] = []
     var createdAt: Date = Date()
     var updatedAt: Date = Date()
@@ -42,7 +46,9 @@ final class Habit {
         reminderTimes: [Date] = [],
         reminderNames: [String] = [],
         reminderSounds: [ReminderSound] = [],
-        activeDays: Set<Weekday> = []
+        activeDays: Set<Weekday> = [],
+        reminderIntervalMinutes: Int = 0,
+        reminderEndTime: Date? = nil
     ) {
         self.id = UUID()
         self.name = name
@@ -55,6 +61,8 @@ final class Habit {
         self.reminderNames = reminderNames
         self.reminderSounds = reminderSounds.map(\.rawValue)
         self.activeDaysRaw = activeDays.map(\.rawValue)
+        self.reminderIntervalMinutes = reminderIntervalMinutes
+        self.reminderEndTime = reminderEndTime
         self.createdAt = .now
         self.updatedAt = .now
         self.isArchived = false
@@ -96,6 +104,34 @@ extension Habit {
         get { reminderSounds.compactMap { ReminderSound(rawValue: $0) } }
         set { reminderSounds = newValue.map(\.rawValue) }
     }
+
+    /// Human-readable schedule description for display (e.g., "Every 2h · 8 AM – 6 PM")
+    var scheduleDescription: String? {
+        guard reminderIntervalMinutes > 0 else {
+            if let first = reminderTimes.first {
+                return first.formatted(date: .omitted, time: .shortened)
+            }
+            return nil
+        }
+        let intervalText: String
+        if reminderIntervalMinutes < 60 {
+            intervalText = "Every \(reminderIntervalMinutes)m"
+        } else if reminderIntervalMinutes % 60 == 0 {
+            let hours = reminderIntervalMinutes / 60
+            intervalText = "Every \(hours)h"
+        } else {
+            let hours = reminderIntervalMinutes / 60
+            let mins = reminderIntervalMinutes % 60
+            intervalText = "Every \(hours)h \(mins)m"
+        }
+        guard let startTime = reminderTimes.first else { return intervalText }
+        let startText = startTime.formatted(date: .omitted, time: .shortened)
+        if let endTime = reminderEndTime {
+            let endText = endTime.formatted(date: .omitted, time: .shortened)
+            return "\(intervalText) · \(startText) – \(endText)"
+        }
+        return "\(intervalText) from \(startText)"
+    }
 }
 
 // MARK: - Status Checks
@@ -111,8 +147,10 @@ extension Habit {
     }
     
     func isCompleted(on date: Date) -> Bool {
-        let cal = Calendar.current
-        return entriesOrEmpty.contains { cal.isDate($0.date, inSameDayAs: date) && $0.isCompleted }
+        guard let e = entry(for: date) else { return false }
+        // For repeating habits: completed if at least one count recorded, or legacy isCompleted flag
+        if reminderIntervalMinutes > 0 { return e.completionCount > 0 || e.isCompleted }
+        return e.isCompleted
     }
 
     func isSkipped(on date: Date) -> Bool {
@@ -123,6 +161,50 @@ extension Habit {
     func entry(for date: Date) -> HabitEntry? {
         let cal = Calendar.current
         return entriesOrEmpty.first { cal.isDate($0.date, inSameDayAs: date) }
+    }
+
+    /// How many times this habit was completed on a given day.
+    func completionCount(on date: Date) -> Int {
+        guard let e = entry(for: date) else { return 0 }
+        if reminderIntervalMinutes > 0 {
+            // Legacy entries (isCompleted=true, completionCount=0): treat as fully completed
+            return e.completionCount > 0 ? e.completionCount : (e.isCompleted ? expectedCompletions(on: date) : 0)
+        }
+        return e.isCompleted ? 1 : 0
+    }
+
+    /// Total number of expected completions for this habit on a given day.
+    func expectedCompletions(on date: Date) -> Int {
+        guard reminderIntervalMinutes > 0 else { return 1 }
+        let cal = Calendar.current
+        // If no start time configured, default to 8 AM
+        let startMins: Int
+        if let start = reminderTimes.first {
+            startMins = cal.component(.hour, from: start) * 60 + cal.component(.minute, from: start)
+        } else {
+            startMins = 8 * 60
+        }
+        // If no end time configured, default to 10 PM (22:00)
+        let endMins: Int
+        if let end = reminderEndTime {
+            endMins = cal.component(.hour, from: end) * 60 + cal.component(.minute, from: end)
+        } else {
+            endMins = 22 * 60
+        }
+        guard endMins > startMins else { return 1 }
+        return max(1, (endMins - startMins) / reminderIntervalMinutes + 1)
+    }
+
+    /// Whether all expected completions for the day are done.
+    func isFullyCompleted(on date: Date) -> Bool {
+        completionCount(on: date) >= expectedCompletions(on: date)
+    }
+
+    /// The display-level "done" state used for home page categorization and visual completion.
+    /// For repeating habits: requires ALL expected instances done.
+    /// For single-completion habits: same as isCompleted.
+    func isDone(on date: Date) -> Bool {
+        reminderIntervalMinutes > 0 ? isFullyCompleted(on: date) : isCompleted(on: date)
     }
 }
 
@@ -140,6 +222,9 @@ final class HabitEntry {
     var habit: Habit?
     /// When non-nil, entry belongs to a signed-in user (sync).
     var userId: String?
+    /// Number of times this habit was completed on this day (for repeating/interval habits).
+    /// 0 means not started; for non-repeating habits this stays 0 and isCompleted is used instead.
+    var completionCount: Int = 0
     
     init(date: Date, isCompleted: Bool = true, isSkipped: Bool = false, skipReason: String? = nil, userId: String? = nil) {
         self.id = UUID()

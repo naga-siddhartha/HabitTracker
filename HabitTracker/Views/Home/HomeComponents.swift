@@ -108,30 +108,64 @@ struct ChecklistRow: View {
     var onSkipWithReason: (() -> Void)? = nil
     var onTapSkipReason: ((String) -> Void)? = nil
 
-    private var isCompleted: Bool { habit.isCompleted(on: date) }
+    private var isCompleted: Bool { habit.isDone(on: date) }
     private var isSkipped: Bool { habit.isSkipped(on: date) }
     private var skipReason: String? { habit.entry(for: date)?.skipReason }
 
     private var timeLabel: String {
-        habit.reminderTimes.isEmpty ? "All day" : habit.reminderTimes.first!.formatted(date: .omitted, time: .shortened)
+        if habit.reminderIntervalMinutes > 0 { return intervalLabel }
+        if let first = habit.reminderTimes.first {
+            return first.formatted(date: .omitted, time: .shortened)
+        }
+        return "All day"
     }
+
+    private var intervalLabel: String {
+        let mins = habit.reminderIntervalMinutes
+        if mins < 60 { return "Every \(mins) min" }
+        if mins % 60 == 0 {
+            let h = mins / 60
+            return h == 1 ? "Every 1 hr" : "Every \(h) hrs"
+        }
+        return "Every \(mins / 60) hr \(mins % 60) min"
+    }
+
+    private var windowLabel: String? {
+        guard habit.reminderIntervalMinutes > 0, let start = habit.reminderTimes.first else { return nil }
+        let s = start.formatted(date: .omitted, time: .shortened)
+        if let end = habit.reminderEndTime {
+            return "\(s) → \(end.formatted(date: .omitted, time: .shortened))"
+        }
+        return "from \(s)"
+    }
+
+    private var isRepeating: Bool { habit.reminderIntervalMinutes > 0 }
+    private var count: Int { habit.completionCount(on: date) }
+    private var expected: Int { habit.expectedCompletions(on: date) }
 
     var body: some View {
         HStack(spacing: config.spacingM + 6) {
+            // Emoji completion button (replaces circle checkbox)
             Button {
-                withAnimation(.spring(duration: 0.25)) {
-                    HabitStore.shared.toggleCompletion(for: habit, on: date)
+                withAnimation(.spring(duration: 0.25, bounce: 0.3)) {
+                    if isRepeating {
+                        HabitStore.shared.incrementCompletion(for: habit, on: date)
+                    } else {
+                        HabitStore.shared.toggleCompletion(for: habit, on: date)
+                    }
                 }
-            } label: { checkBox }
+            } label: {
+                completionButton
+            }
             .buttonStyle(.plain)
             .frame(minWidth: 44, minHeight: 44)
             .contentShape(Rectangle())
             .hapticFeedback(.light, trigger: isCompleted)
+
             Button {
                 onViewDescription?()
             } label: {
                 HStack(spacing: config.spacingM + 6) {
-                    habitIcon
                     habitInfo
                     Spacer(minLength: 0)
                 }
@@ -146,7 +180,17 @@ struct ChecklistRow: View {
                     showSkipUnskip: true,
                     isSkippedOnDate: isSkipped,
                     onUnskip: onUnskip,
-                    onSkipWithReason: onSkipWithReason
+                    onSkipWithReason: onSkipWithReason,
+                    onMarkAllComplete: isRepeating && !isCompleted ? {
+                        withAnimation(.spring(duration: 0.25)) {
+                            HabitStore.shared.markAllComplete(for: habit, on: date)
+                        }
+                    } : nil,
+                    onResetCompletion: isRepeating && count > 0 ? {
+                        withAnimation(.spring(duration: 0.25)) {
+                            HabitStore.shared.resetCompletion(for: habit, on: date)
+                        }
+                    } : nil
                 )
             } label: {
                 Image(systemName: "ellipsis.circle")
@@ -161,7 +205,7 @@ struct ChecklistRow: View {
         .contentShape(Rectangle())
         .accessibilityElement(children: .combine)
         .accessibilityLabel("\(habit.name), \(isSkipped ? "Skipped" : (isCompleted ? "Completed" : "Not completed"))")
-        .accessibilityHint(isCompleted ? "Double tap to uncheck" : "Double tap to mark complete")
+        .accessibilityHint(isRepeating ? "Tap to record one completion, or use menu to mark all or reset" : (isCompleted ? "Double tap to uncheck" : "Double tap to mark complete"))
         .contextMenu {
             HabitRowActions(
                 onViewDetails: { onViewDescription?() },
@@ -170,47 +214,69 @@ struct ChecklistRow: View {
                 showSkipUnskip: true,
                 isSkippedOnDate: isSkipped,
                 onUnskip: onUnskip,
-                onSkipWithReason: onSkipWithReason
+                onSkipWithReason: onSkipWithReason,
+                onMarkAllComplete: isRepeating && !isCompleted ? {
+                    withAnimation(.spring(duration: 0.25)) {
+                        HabitStore.shared.markAllComplete(for: habit, on: date)
+                    }
+                } : nil,
+                onResetCompletion: isRepeating && count > 0 ? {
+                    withAnimation(.spring(duration: 0.25)) {
+                        HabitStore.shared.resetCompletion(for: habit, on: date)
+                    }
+                } : nil
             )
         }
     }
 
-    private var checkBox: some View {
-        ZStack {
-            if isSkipped {
+    @ViewBuilder
+    private var completionButton: some View {
+        VStack(spacing: 3) {
+            ZStack {
+                // Background ring
                 Circle()
-                    .stroke(Color.orange, lineWidth: 2)
+                    .stroke(
+                        isSkipped ? Color.orange : (isCompleted ? habit.displayColor : Color.secondary.opacity(0.25)),
+                        lineWidth: 2
+                    )
                     .frame(width: config.checkboxSize, height: config.checkboxSize)
-                Image(systemName: "pause.fill")
-                    .font(.system(size: config.cornerRadiusMedium + 2))
-                    .foregroundStyle(.orange)
-            } else {
-                Circle()
-                    .stroke(isCompleted ? habit.displayColor : Color.systemGray4, lineWidth: 2)
-                    .frame(width: config.checkboxSize, height: config.checkboxSize)
-                if isCompleted {
-                    Circle().fill(habit.displayColor).frame(width: config.checkboxSize, height: config.checkboxSize)
-                    Image(systemName: "checkmark").font(.system(size: config.spacingL, weight: .bold)).foregroundStyle(.white)
+
+                if isSkipped {
+                    Image(systemName: "pause.fill")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(.orange)
+                } else if let emoji = habit.emoji, !emoji.isEmpty {
+                    // Emoji as the completion indicator
+                    Text(emoji)
+                        .font(.system(size: config.checkboxSize * 0.55))
+                        .opacity(isCompleted ? 1.0 : 0.3)
+                        .scaleEffect(isCompleted ? 1.0 : 0.85)
+                        .animation(.spring(duration: 0.25, bounce: 0.4), value: isCompleted)
+                } else {
+                    // Fallback: filled circle with checkmark
+                    if isCompleted {
+                        Circle()
+                            .fill(habit.displayColor)
+                            .frame(width: config.checkboxSize, height: config.checkboxSize)
+                        Image(systemName: "checkmark")
+                            .font(.system(size: config.spacingL, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
                 }
             }
-        }
-        .frame(width: config.checkboxSize, height: config.checkboxSize)
-        .contentShape(Rectangle())
-        .animation(.spring(duration: 0.25), value: isCompleted)
-        .animation(.spring(duration: 0.25), value: isSkipped)
-    }
+            .frame(width: config.checkboxSize, height: config.checkboxSize)
+            .animation(.spring(duration: 0.25), value: isCompleted)
+            .animation(.spring(duration: 0.25), value: isSkipped)
 
-    private var habitIcon: some View {
-        Group {
-            if let emoji = habit.emoji, !emoji.isEmpty {
-                Text(emoji).font(.system(size: config.iconSizeRow + 2))
-            } else {
-                Image(systemName: habit.iconName ?? "circle.fill")
-                    .font(.system(size: config.iconSizeRow + 2))
-                    .foregroundStyle(habit.displayColor)
+            // Subtle count badge for repeating habits
+            if isRepeating && !isSkipped {
+                Text("\(count)/\(expected)")
+                    .font(.system(size: 9, weight: .semibold, design: .rounded))
+                    .foregroundStyle(count > 0 ? habit.displayColor : .secondary)
+                    .monospacedDigit()
+                    .animation(.spring(duration: 0.2), value: count)
             }
         }
-        .frame(width: config.iconSizeRow)
     }
 
     private var skipReasonDisplayText: String {
@@ -219,7 +285,21 @@ struct ChecklistRow: View {
     }
 
     private var habitInfo: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        HStack(spacing: config.spacingM + 4) {
+            // Habit icon (emoji or system image) shown in the info section
+            Group {
+                if let emoji = habit.emoji, !emoji.isEmpty {
+                    Text(emoji).font(.system(size: config.iconSizeRow + 2))
+                } else {
+                    Image(systemName: habit.iconName ?? "circle.fill")
+                        .font(.system(size: config.iconSizeRow + 2))
+                        .foregroundStyle(habit.displayColor)
+                }
+            }
+            .frame(width: config.iconSizeRow)
+            .opacity(isCompleted ? 0.5 : 1.0)
+
+            VStack(alignment: .leading, spacing: 2) {
             Text(habit.name)
                 .font(.system(size: config.spacingM + 6, weight: .semibold))
                 .foregroundStyle(isCompleted || isSkipped ? .secondary : .primary)
@@ -247,13 +327,19 @@ struct ChecklistRow: View {
                         .truncationMode(.tail)
                 }
             }
+            if let window = windowLabel {
+                Text(window)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
             if isCompleted, let streak = habit.streak, streak.currentStreak > 0 {
                 HStack(spacing: 4) {
                     Image(systemName: "flame.fill").font(.system(size: 10))
                     Text("\(streak.currentStreak) day streak").font(.footnote).foregroundStyle(.orange)
                 }
             }
-        }
+            } // end VStack
+        } // end HStack
     }
 }
 
@@ -298,7 +384,27 @@ struct ScheduledRow: View {
     private let config = LayoutConfig.current
 
     private var timeLabel: String {
-        habit.reminderTimes.isEmpty ? "—" : habit.reminderTimes.first!.formatted(date: .omitted, time: .shortened)
+        if habit.reminderIntervalMinutes > 0 { return intervalLabel }
+        return habit.reminderTimes.isEmpty ? "—" : habit.reminderTimes.first!.formatted(date: .omitted, time: .shortened)
+    }
+
+    private var intervalLabel: String {
+        let mins = habit.reminderIntervalMinutes
+        if mins < 60 { return "Every \(mins) min" }
+        if mins % 60 == 0 {
+            let h = mins / 60
+            return h == 1 ? "Every 1 hr" : "Every \(h) hrs"
+        }
+        return "Every \(mins / 60) hr \(mins % 60) min"
+    }
+
+    private var windowLabel: String? {
+        guard habit.reminderIntervalMinutes > 0, let start = habit.reminderTimes.first else { return nil }
+        let s = start.formatted(date: .omitted, time: .shortened)
+        if let end = habit.reminderEndTime {
+            return "\(s) → \(end.formatted(date: .omitted, time: .shortened))"
+        }
+        return "from \(s)"
     }
 
     var body: some View {
@@ -323,6 +429,11 @@ struct ScheduledRow: View {
                         Text(timeLabel)
                             .font(.footnote)
                             .foregroundStyle(.secondary)
+                        if let window = windowLabel {
+                            Text(window)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     Spacer(minLength: 0)
                 }
