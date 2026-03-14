@@ -77,7 +77,7 @@ struct HabitDetailsSheetView: View {
                 VStack(alignment: .leading, spacing: config.spacingXL) {
                     headerCard
                     if habit.habitDescription.flatMap({ !$0.isEmpty }) == true {
-                        sectionCard(title: "Description", systemImage: "text.alignleft") {
+                        sectionCard(title: "Note", systemImage: "text.alignleft") {
                             Text(habit.habitDescription ?? "")
                                 .font(.body)
                                 .lineSpacing(6)
@@ -247,6 +247,7 @@ struct SkipReasonSheetView: View {
     @State private var reasonText = ""
     @Environment(\.dismiss) private var dismiss
     @FocusState private var reasonFocused: Bool
+    private let config = LayoutConfig.current
 
     private var dateLabel: String {
         if Calendar.current.isDateInToday(date) { return "Today" }
@@ -257,8 +258,8 @@ struct SkipReasonSheetView: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                VStack(alignment: .leading, spacing: 20) {
-                    HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: config.spacingXL) {
+                    HStack(spacing: config.spacingM) {
                         if let emoji = habit.emoji, !emoji.isEmpty {
                             Text(emoji).font(.system(size: 36))
                         } else {
@@ -275,19 +276,19 @@ struct SkipReasonSheetView: View {
                         }
                         Spacer(minLength: 0)
                     }
-                    .padding(.horizontal, 20)
-                    .padding(.top, 8)
+                    .padding(.horizontal, config.horizontalPadding)
+                    .padding(.top, config.spacingS)
 
                     TextField("Why are you skipping? (optional)", text: $reasonText)
                         .textFieldStyle(.plain)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 14)
+                        .padding(.horizontal, config.spacingL)
+                        .padding(.vertical, config.cardPadding)
                         .background(Color.secondarySystemGroupedBackground)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .clipShape(RoundedRectangle(cornerRadius: config.cornerRadiusMedium))
                         .focused($reasonFocused)
-                        .padding(.horizontal, 20)
+                        .padding(.horizontal, config.horizontalPadding)
 
-                    HStack(spacing: 8) {
+                    HStack(spacing: config.spacingS) {
                         Image(systemName: "flame.fill")
                             .font(.caption)
                             .foregroundStyle(.orange)
@@ -295,9 +296,9 @@ struct SkipReasonSheetView: View {
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, config.horizontalPadding)
                 }
-                .padding(.bottom, 24)
+                .padding(.bottom, config.spacingXXL)
 
                 Spacer(minLength: 0)
             }

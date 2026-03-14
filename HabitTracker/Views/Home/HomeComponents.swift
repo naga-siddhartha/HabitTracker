@@ -285,21 +285,7 @@ struct ChecklistRow: View {
     }
 
     private var habitInfo: some View {
-        HStack(spacing: config.spacingM + 4) {
-            // Habit icon (emoji or system image) shown in the info section
-            Group {
-                if let emoji = habit.emoji, !emoji.isEmpty {
-                    Text(emoji).font(.system(size: config.iconSizeRow + 2))
-                } else {
-                    Image(systemName: habit.iconName ?? "circle.fill")
-                        .font(.system(size: config.iconSizeRow + 2))
-                        .foregroundStyle(habit.displayColor)
-                }
-            }
-            .frame(width: config.iconSizeRow)
-            .opacity(isCompleted ? 0.5 : 1.0)
-
-            VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 2) {
             Text(habit.name)
                 .font(.system(size: config.spacingM + 6, weight: .semibold))
                 .foregroundStyle(isCompleted || isSkipped ? .secondary : .primary)
@@ -338,8 +324,7 @@ struct ChecklistRow: View {
                     Text("\(streak.currentStreak) day streak").font(.footnote).foregroundStyle(.orange)
                 }
             }
-            } // end VStack
-        } // end HStack
+        }
     }
 }
 
@@ -347,9 +332,10 @@ struct ChecklistRow: View {
 
 struct AdCardView: View {
     @Environment(\.colorScheme) private var colorScheme
+    private let config = LayoutConfig.current
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: config.cardRowPaddingVertical) {
             Text("Advertisement".uppercased().map { String($0) }.joined(separator: " "))
                 .font(.caption2.weight(.medium))
                 .foregroundStyle(.tertiary)
@@ -357,17 +343,17 @@ struct AdCardView: View {
             AdMobBannerView()
             #endif
         }
-        .padding(16)
+        .padding(config.spacingL)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.secondarySystemGroupedBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
         .overlay(
-            RoundedRectangle(cornerRadius: 16)
+            RoundedRectangle(cornerRadius: config.cardCornerRadius)
                 .stroke(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.05), lineWidth: 1)
         )
         .shadow(
             color: colorScheme == .dark ? .white.opacity(0.04) : .black.opacity(0.05),
-            radius: 8,
+            radius: config.cardShadowRadius,
             x: 0,
             y: 3
         )

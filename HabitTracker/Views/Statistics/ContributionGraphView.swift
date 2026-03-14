@@ -9,8 +9,13 @@ struct ContributionGraphView: View {
     @Environment(\.colorScheme) private var colorScheme
 
     private let calendar = Calendar.current
+    #if os(macOS)
+    private let cellSize: CGFloat = 14
+    private let cellSpacing: CGFloat = 4
+    #else
     private let cellSize: CGFloat = 12
     private let cellSpacing: CGFloat = 3
+    #endif
     
     // Cached computation
     @State private var levelCache: [Date: Int] = [:]
@@ -20,8 +25,8 @@ struct ContributionGraphView: View {
         self.weeks = weeks
     }
     
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
+    private var graphContent: some View {
+        VStack(alignment: .leading, spacing: 8) {
             // Month labels
             HStack(spacing: 0) {
                 ForEach(monthLabels, id: \.offset) { label in
@@ -48,8 +53,8 @@ struct ContributionGraphView: View {
                     }
                 }
                 
-                // Grid - use LazyHStack for performance
-                LazyHStack(spacing: cellSpacing) {
+                // Grid
+                HStack(spacing: cellSpacing) {
                     ForEach(0..<weeks, id: \.self) { weekOffset in
                         VStack(spacing: cellSpacing) {
                             ForEach(0..<7, id: \.self) { dayOffset in
@@ -64,6 +69,20 @@ struct ContributionGraphView: View {
                     }
                 }
             }
+        }
+    }
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            #if os(macOS)
+            graphContent
+                .frame(maxWidth: .infinity)
+            #else
+            ScrollView(.horizontal, showsIndicators: false) {
+                graphContent
+                    .padding(.horizontal, LayoutConfig.current.horizontalPadding)
+            }
+            #endif
             
             // Legend
             HStack(spacing: 4) {
@@ -81,13 +100,13 @@ struct ContributionGraphView: View {
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
-            .padding(.leading, 28)
+            .frame(maxWidth: .infinity, alignment: .center)
         }
         .onAppear { computeLevels() }
         .onChange(of: habits.count) { computeLevels() }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Activity graph, past \(weeks) weeks")
-        .accessibilityHint("Each cell is a day; darker green means more habits completed")
+        .accessibilityHint("Each cell is a day; darker green means more habits completed. Swipe horizontally to see more.")
     }
     
     private func computeLevels() {

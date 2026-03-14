@@ -12,6 +12,8 @@ struct StatisticsView: View {
     @State private var cachedCompletions = 0
     @State private var cachedActiveStreaks = 0
     
+    private let config = LayoutConfig.current
+    
     enum Timeframe: String, CaseIterable {
         case week = "Week", month = "Month", year = "Year", allTime = "All Time"
     }
@@ -29,26 +31,30 @@ struct StatisticsView: View {
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 24) {
+                VStack(spacing: config.spacingXXL) {
                     PageHeading(title: "Statistics")
 
                     // Contribution Graph
-                    VStack(alignment: .center, spacing: 8) {
+                    VStack(alignment: .leading, spacing: config.spacingM) {
                         Text("Activity")
                             .font(.headline)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.horizontal)
-                        
+                            .padding(.horizontal, config.horizontalPadding)
                         ContributionGraphView(weeks: 26)
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
                     
-                    Picker("Timeframe", selection: $selectedTimeframe) {
-                        ForEach(Timeframe.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                    VStack(alignment: .leading, spacing: config.spacingM) {
+                        Text("Summary")
+                            .font(.headline)
+                            .padding(.horizontal, config.horizontalPadding)
+                        Picker("Timeframe", selection: $selectedTimeframe) {
+                            ForEach(Timeframe.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                        }
+                        .pickerStyle(.segmented)
+                        .padding(.horizontal, config.horizontalPadding)
                     }
-                    .pickerStyle(.segmented)
-                    .padding(.horizontal)
-                    
-                    VStack(spacing: 16) {
+
+                    VStack(spacing: config.spacingL) {
                         Button {
                             showingHabitsDetail = true
                         } label: {
@@ -70,7 +76,7 @@ struct StatisticsView: View {
                         }
                         .buttonStyle(.plain)
                     }
-                    .padding(.horizontal)
+                    .padding(.horizontal, config.horizontalPadding)
                     
                     // Top habits
                     StatsSectionCard(
@@ -108,7 +114,7 @@ struct StatisticsView: View {
                         )
                     }
                 }
-                .padding(.bottom, 32)
+                .padding(.bottom, config.spacingXXL + config.spacingS)
             }
             .navigationTitle("")
             .inlineNavigationTitle()
@@ -199,6 +205,7 @@ struct CompletionsDetailView: View {
 struct StreaksDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let habits: [Habit]
+    private let config = LayoutConfig.current
     
     /// One row per habit name; duplicates merged, showing the best streak among same-named habits.
     private var habitsByBestStreak: [(habit: Habit, current: Int, longest: Int)] {
@@ -215,7 +222,7 @@ struct StreaksDetailView: View {
     var body: some View {
         NavigationStack {
             List(habitsByBestStreak, id: \.habit.id) { item in
-                VStack(alignment: .leading, spacing: 8) {
+                VStack(alignment: .leading, spacing: config.spacingS) {
                     Label(item.habit.name, systemImage: "circle.fill").foregroundStyle(item.habit.displayColor).font(.headline)
                     HStack {
                         Label("\(item.current) current", systemImage: "flame.fill").foregroundStyle(.orange)
@@ -238,6 +245,7 @@ struct StreaksDetailView: View {
 struct HabitsDetailView: View {
     @Environment(\.dismiss) private var dismiss
     let habits: [Habit]
+    private let config = LayoutConfig.current
     
     /// One row per habit name; duplicates merged, using first habit for display.
     private var habitsByName: [Habit] {
@@ -248,8 +256,8 @@ struct HabitsDetailView: View {
     var body: some View {
         NavigationStack {
             List(habitsByName) { habit in
-                VStack(alignment: .leading, spacing: 8) {
-                    HStack(spacing: 8) {
+                VStack(alignment: .leading, spacing: config.spacingS) {
+                    HStack(spacing: config.spacingS) {
                         if let emoji = habit.emoji, !emoji.isEmpty {
                             Text(emoji).font(.headline)
                         } else {
@@ -277,23 +285,24 @@ struct HabitsDetailView: View {
 
 struct StatCard: View {
     let title: String, value: String, icon: String, color: Color
+    private let config = LayoutConfig.current
     
     var body: some View {
         HStack {
             Image(systemName: icon).foregroundStyle(color).font(.title2).frame(width: 40)
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: config.spacingXS) {
                 Text(title).font(.subheadline).foregroundStyle(.secondary)
                 Text(value).font(.title2).bold()
             }
             Spacer()
             Image(systemName: "chevron.right").foregroundStyle(.secondary).font(.caption)
         }
-        .padding()
+        .padding(config.spacingL)
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
         .background(Color.systemGray6)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .cardBorder(cornerRadius: 12)
+        .clipShape(RoundedRectangle(cornerRadius: config.cornerRadiusMedium))
+        .cardBorder(cornerRadius: config.cornerRadiusMedium)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(title)
         .accessibilityValue(value)
@@ -355,18 +364,20 @@ struct StatsSectionCard<Content: View, EmptyContent: View>: View {
     @ViewBuilder let content: () -> Content
     @ViewBuilder let emptyContent: () -> EmptyContent
     
+    private let config = LayoutConfig.current
+    
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: 8) {
+            HStack(spacing: config.spacingS) {
                 Image(systemName: icon)
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(iconColor)
                 Text(title)
                     .font(.headline)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 16)
-            .padding(.bottom, 12)
+            .padding(.horizontal, config.horizontalPadding)
+            .padding(.top, config.spacingL)
+            .padding(.bottom, config.spacingM)
             
             if isEmpty {
                 emptyContent()
@@ -374,15 +385,15 @@ struct StatsSectionCard<Content: View, EmptyContent: View>: View {
                 VStack(spacing: 0) {
                     content()
                 }
-                .padding(.horizontal, 16)
-                .padding(.bottom, 16)
+                .padding(.horizontal, config.spacingL)
+                .padding(.bottom, config.spacingL)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.systemGray6)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
-        .cardBorder(cornerRadius: 16)
-        .padding(.horizontal)
+        .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
+        .cardBorder(cornerRadius: config.cardCornerRadius)
+        .padding(.horizontal, config.horizontalPadding)
     }
 }
 
@@ -391,10 +402,12 @@ struct StatsEmptyState: View {
     let title: String
     let message: String
     
+    private let config = LayoutConfig.current
+    
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: config.cardRowPaddingVertical) {
             Image(systemName: icon)
-                .font(.system(size: 28))
+                .font(.system(size: config.iconSizeRow))
                 .foregroundStyle(.secondary.opacity(0.8))
             Text(title)
                 .font(.subheadline.weight(.semibold))
@@ -405,8 +418,8 @@ struct StatsEmptyState: View {
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
-        .padding(.vertical, 24)
-        .padding(.horizontal, 20)
+        .padding(.vertical, config.spacingXXL)
+        .padding(.horizontal, config.horizontalPadding)
     }
 }
 

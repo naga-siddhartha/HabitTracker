@@ -139,6 +139,11 @@ extension Habit {
 @available(iOS 17.0, macOS 14.0, *)
 extension Habit {
     func isActive(on date: Date) -> Bool {
+        let cal = Calendar.current
+        let createdDay = cal.startOfDay(for: createdAt)
+        let checkDay = cal.startOfDay(for: date)
+        guard checkDay >= createdDay else { return false }
+        
         if frequency == .weekly && !activeDays.isEmpty {
             guard let weekday = date.weekday else { return false }
             return activeDays.contains(weekday)

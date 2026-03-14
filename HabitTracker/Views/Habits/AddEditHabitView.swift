@@ -62,7 +62,7 @@ struct AddEditHabitView: View {
     private var formContent: some View {
         Section("Basic Information") {
             TextField("Habit Name", text: $name)
-            TextField("Description (Optional)", text: $description, axis: .vertical)
+            TextField("Note (Optional)", text: $description, axis: .vertical)
                 .lineLimit(2...4)
         }
         #if os(macOS)
