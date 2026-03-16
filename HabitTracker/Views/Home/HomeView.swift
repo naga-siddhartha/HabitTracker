@@ -29,17 +29,20 @@ struct HomeView: View {
     /// All habits fully done today - shown in the Completed card.
     private var habitsCompletedToday: [Habit] { habits.filter { $0.isDone(on: today) } }
     private var uniqueNamesActiveToday: Set<String> { Set(todayHabits.map(\.name)) }
+    private var uniqueNamesSkippedToday: Set<String> { Set(todayHabits.filter { $0.isSkipped(on: today) }.map(\.name)) }
     private var uniqueNamesCompletedToday: Set<String> { Set(habitsCompletedToday.map(\.name)) }
     private var completedCount: Int { uniqueNamesCompletedToday.count }
+    /// Total habits due today that are not skipped (so progress is "done" out of "actionable").
+    private var progressTotal: Int { max(0, uniqueNamesActiveToday.count - uniqueNamesSkippedToday.count) }
     private var progress: Double {
-        let total = uniqueNamesActiveToday.count
-        return total == 0 ? 0 : Double(completedCount) / Double(total)
+        return progressTotal == 0 ? 0 : Double(completedCount) / Double(progressTotal)
     }
 
-    /// Due today, not completed, doable now: no reminder time (all day / on command) or scheduled time has arrived.
+    /// Due today, not completed, not skipped, doable now.
     private var activeHabits: [Habit] {
         let startOfToday = calendar.startOfDay(for: today)
         return todayIncomplete.filter { habit in
+            guard !habit.isSkipped(on: today) else { return false }
             if habit.reminderTimes.isEmpty { return true }
             guard let first = habit.reminderTimes.first else { return true }
             let scheduledToday = calendar.date(bySettingHour: calendar.component(.hour, from: first), minute: calendar.component(.minute, from: first), second: 0, of: startOfToday)
@@ -47,15 +50,22 @@ struct HomeView: View {
             return today >= scheduled
         }
     }
-    /// Due today, not completed, scheduled for a later time.
+    /// Due today, not completed, not skipped, scheduled for a later time.
     private var scheduledHabits: [Habit] {
         let startOfToday = calendar.startOfDay(for: today)
         return todayIncomplete.filter { habit in
+            guard !habit.isSkipped(on: today) else { return false }
             guard let first = habit.reminderTimes.first else { return false }
             let scheduledToday = calendar.date(bySettingHour: calendar.component(.hour, from: first), minute: calendar.component(.minute, from: first), second: 0, of: startOfToday)
             guard let scheduled = scheduledToday else { return false }
             return today < scheduled
         }
+    }
+    /// Due today and skipped (one per habit name).
+    private var skippedHabitsDisplay: [Habit] {
+        let skipped = todayHabits.filter { $0.isSkipped(on: today) }
+        let grouped = Dictionary(grouping: skipped, by: \.name)
+        return grouped.compactMap { _, group in group.first }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
     /// One row per habit name in Active; exclude names already completed today.
@@ -308,15 +318,14 @@ struct HomeView: View {
                 VStack(spacing: config.spacingL) {
                     if !uniqueNamesActiveToday.isEmpty {
                         activeCard
-                    } else if !habitsCompletedTodayDisplay.isEmpty {
-                        Text("No habits due today")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, config.spacingM)
+                    } else if !habitsCompletedTodayDisplay.isEmpty || !skippedHabitsDisplay.isEmpty {
+                        noHabitsDueTodayLine
                     }
                     if !scheduledHabitsDisplay.isEmpty {
                         scheduledCard
+                    }
+                    if !skippedHabitsDisplay.isEmpty {
+                        skippedCard
                     }
                     if !habitsCompletedTodayDisplay.isEmpty {
                         completedCard
@@ -459,9 +468,9 @@ struct HomeView: View {
 
     private var progressHeader: some View {
         HStack(spacing: config.spacingXL) {
-            ProgressRing(progress: progress, count: completedCount, total: uniqueNamesActiveToday.count, size: config.progressRingSize)
+            ProgressRing(progress: progress, count: completedCount, total: progressTotal, size: config.progressRingSize)
             VStack(alignment: .leading, spacing: config.spacingXS) {
-                Text("\(completedCount) of \(uniqueNamesActiveToday.count) done")
+                Text(progressTotal == 0 ? "0 of 0 done" : "\(completedCount) of \(progressTotal) done")
                     .font(.headline.weight(.semibold))
                 Text(motivationalMessage)
                     .font(.subheadline)
@@ -471,8 +480,63 @@ struct HomeView: View {
         }
     }
 
+    private var noHabitsDueTodayLine: some View {
+        VStack(spacing: config.spacingXS) {
+            Text("0 of 0 done")
+                .font(.headline.weight(.semibold))
+            Text("No habits due today")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, config.spacingM)
+    }
+
+    private var skippedCard: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(spacing: config.spacingS) {
+                Image(systemName: "pause.circle.fill")
+                    .font(.system(size: config.spacingL))
+                    .foregroundStyle(.orange)
+                Text("Skipped")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Spacer()
+            }
+            .padding(.horizontal, config.cardContentPaddingHorizontal)
+            .padding(.top, config.sectionHeaderTop)
+            .padding(.bottom, config.sectionHeaderBottom)
+            VStack(spacing: 0) {
+                ForEach(Array(skippedHabitsDisplay.enumerated()), id: \.element.id) { _, habit in
+                    ChecklistRow(
+                        habit: habit,
+                        date: today,
+                        onEdit: { editingHabit = habit },
+                        onDelete: { deleteHabit(habit) },
+                        onViewDescription: { habitForDetailsSheet = habit },
+                        onUnskip: { HabitStore.shared.unskipDay(for: habit, on: today) },
+                        onSkipWithReason: { skipReasonTarget = (habit, today) },
+                        onTapSkipReason: { skipReasonAlertMessage = $0 }
+                    )
+                    .padding(.horizontal, config.cardContentPaddingHorizontal)
+                    .padding(.vertical, config.cardRowPaddingVertical)
+                }
+            }
+        }
+        .padding(.bottom, config.cardBottomPaddingSmall)
+        .background(Color.secondarySystemGroupedBackground)
+        .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
+        .overlay(
+            RoundedRectangle(cornerRadius: config.cardCornerRadius)
+                .stroke(Color.primary.opacity(cardBorderOpacity), lineWidth: 1)
+        )
+        .shadow(color: cardShadowColor, radius: config.cardShadowRadius, x: 0, y: 3)
+        .frame(maxWidth: config.contentMaxWidth)
+        .padding(.horizontal, config.horizontalPadding)
+    }
+
     private var motivationalMessage: String {
-        let total = uniqueNamesActiveToday.count
+        let total = progressTotal
         if completedCount == total && completedCount > 0 { return "All done! 🎉" }
         if progress >= 0.5 { return "Keep going! 💪" }
         if completedCount > 0 { return "\(total - completedCount) left" }

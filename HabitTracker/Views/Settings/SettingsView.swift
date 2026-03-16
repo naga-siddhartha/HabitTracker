@@ -236,17 +236,7 @@ struct SettingsView: View {
             SettingsRow(icon: "info.circle.fill", iconColor: .gray, title: "Version") {
                 Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.3").foregroundStyle(.secondary)
             }
-            SettingsRow(icon: "checkmark.circle.fill", iconColor: .blue, title: "Habits") {
-                Text("\(habits.count)").foregroundStyle(.secondary)
-            }
-            SettingsRow(icon: "chart.bar.fill", iconColor: .purple, title: "Total Entries") {
-                Text("\(totalEntriesCount)").foregroundStyle(.secondary)
-            }
         }
-    }
-
-    private var totalEntriesCount: Int {
-        habits.reduce(0) { $0 + ($1.entries ?? []).count }
     }
 
     @ViewBuilder
