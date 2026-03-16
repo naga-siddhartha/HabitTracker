@@ -63,7 +63,7 @@ struct ExportService {
         
         let exportData = ExportData(
             exportDate: .now,
-            appVersion: "1.3",
+            appVersion: "1.2",
             habits: exportHabits
         )
         
