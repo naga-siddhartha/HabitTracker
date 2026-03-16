@@ -234,7 +234,7 @@ struct SettingsView: View {
     private var aboutSection: some View {
         Section(header: Text("About")) {
             SettingsRow(icon: "info.circle.fill", iconColor: .gray, title: "Version") {
-                Text("1.0.0").foregroundStyle(.secondary)
+                Text(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.3").foregroundStyle(.secondary)
             }
             SettingsRow(icon: "checkmark.circle.fill", iconColor: .blue, title: "Habits") {
                 Text("\(habits.count)").foregroundStyle(.secondary)
