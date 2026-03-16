@@ -43,5 +43,7 @@
 	</array>
 	<key>SupportURL</key>
 	<string>mailto:nagasiddhartha.d@gmail.com</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 </dict>
 </plist>
