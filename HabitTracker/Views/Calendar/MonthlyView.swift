@@ -173,6 +173,7 @@ struct MonthlyHabitRow: View {
     var onSkipWithReason: (() -> Void)? = nil
     var onTapSkipReason: ((String) -> Void)? = nil
 
+    private let config = LayoutConfig.current
     private var isCompleted: Bool { habit.isDone(on: date) }
     private var isSkipped: Bool { habit.isSkipped(on: date) }
     private var isRepeating: Bool { habit.reminderIntervalMinutes > 0 }
@@ -186,20 +187,36 @@ struct MonthlyHabitRow: View {
         return "Skipped"
     }
 
+    /// Fixed size for the completion button so all cards stay the same height (matches daily).
+    private let completionButtonSize: CGFloat = 36
+
     var body: some View {
-        HStack(alignment: .top, spacing: 8) {
+        HStack(alignment: .center, spacing: config.spacingL - 2) {
             Button {
                 onViewDescription?()
             } label: {
-                HStack(alignment: .top, spacing: 6) {
-                    if let emoji = habit.emoji, !emoji.isEmpty {
-                        Text(emoji).font(.subheadline)
-                    } else {
-                        Circle().fill(habit.displayColor).frame(width: 12, height: 12)
+                HStack(alignment: .center, spacing: config.spacingM) {
+                    Group {
+                        if let emoji = habit.emoji, !emoji.isEmpty {
+                            Text(emoji)
+                                .font(.title3)
+                        } else if let iconName = habit.iconName {
+                            Image(systemName: iconName)
+                                .font(.title3)
+                                .foregroundStyle(habit.displayColor)
+                        } else {
+                            Circle()
+                                .fill(habit.displayColor)
+                                .frame(width: config.iconSizeRow, height: config.iconSizeRow)
+                        }
                     }
+                    .frame(width: completionButtonSize, height: completionButtonSize, alignment: .center)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(habit.name)
-                            .font(.subheadline.weight(.medium))
+                            .font(.body.weight(.medium))
+                            .foregroundStyle(isSkipped ? .secondary : .primary)
+                            .lineLimit(1)
+                            .truncationMode(.tail)
                         if isSkipped {
                             Group {
                                 if skipReason != nil, !(skipReason?.isEmpty ?? true) {
@@ -244,15 +261,16 @@ struct MonthlyHabitRow: View {
                 monthlyCompletionIcon
             }
             .buttonStyle(.plain)
-            .frame(minWidth: 44, minHeight: 44)
+            .frame(width: completionButtonSize, height: completionButtonSize)
             .contentShape(Rectangle())
             .hapticFeedback(.success, trigger: isCompleted)
         }
-        .padding(.horizontal)
-        .padding(.vertical, 8)
+        .padding(.horizontal, config.spacingL)
+        .padding(.vertical, config.cornerRadiusMedium + 2)
+        .frame(minHeight: config.progressRingSize - 16)
         .background(isCompleted ? habit.displayColor.opacity(0.14) : habit.displayColor.opacity(0.08))
-        .clipShape(RoundedRectangle(cornerRadius: LayoutConfig.current.cardCornerRadius))
-        .cardBorder(cornerRadius: LayoutConfig.current.cardCornerRadius)
+        .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius))
+        .cardBorder(cornerRadius: config.cardCornerRadius)
         .contentShape(Rectangle())
         .contextMenu {
             HabitRowActions(
@@ -281,8 +299,9 @@ struct MonthlyHabitRow: View {
     private var monthlyCompletionIcon: some View {
         if isSkipped {
             Image(systemName: "pause.circle.fill")
-                .font(.title3)
+                .font(.system(size: 22, weight: .medium))
                 .foregroundStyle(.orange)
+                .frame(width: completionButtonSize, height: completionButtonSize)
         } else if isRepeating {
             VStack(spacing: 2) {
                 ZStack {
@@ -302,18 +321,33 @@ struct MonthlyHabitRow: View {
                             .foregroundStyle(count > 0 ? habit.displayColor : .secondary)
                     }
                 }
+                .frame(width: completionButtonSize, height: 28)
                 Text("\(count)/\(expected)")
                     .font(.system(size: 9, weight: .semibold, design: .rounded))
                     .foregroundStyle(count > 0 ? habit.displayColor : .secondary)
                     .monospacedDigit()
             }
+            .frame(height: completionButtonSize)
             .animation(.spring(duration: 0.2), value: count)
         } else {
-            Image(systemName: isCompleted ? "checkmark.circle.fill" : "circle")
-                .font(.title3)
-                .foregroundStyle(isCompleted ? habit.displayColor : .secondary)
-                .contentTransition(.symbolEffect(.replace))
-                .animation(.spring(duration: 0.25), value: isCompleted)
+            ZStack {
+                Circle()
+                    .stroke(isCompleted ? habit.displayColor : Color.secondary.opacity(0.25), lineWidth: 2)
+                    .frame(width: 28, height: 28)
+                if isCompleted {
+                    Circle().fill(habit.displayColor).frame(width: 28, height: 28)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(.white)
+                } else {
+                    Image(systemName: "circle")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .frame(width: completionButtonSize, height: completionButtonSize)
+            .contentTransition(.symbolEffect(.replace))
+            .animation(.spring(duration: 0.25), value: isCompleted)
         }
     }
 }

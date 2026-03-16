@@ -133,6 +133,62 @@ struct HabitDetailsSheetView: View {
                             }
                         }
                     }
+                    let completedToday = habit.completionCount(on: Date.now)
+                    sectionCard(title: "Today", systemImage: "checkmark.circle") {
+                        VStack(alignment: .leading, spacing: config.spacingS) {
+                            if habit.reminderIntervalMinutes > 0 {
+                                Text("Completed \(completedToday) of \(habit.expectedCompletions(on: Date.now)) times")
+                                    .font(.body.weight(.medium))
+                            } else {
+                                Text(completedToday > 0 ? "Completed once" : "Not completed yet")
+                                    .font(.body.weight(.medium))
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+                    if let streak = habit.streak {
+                        sectionCard(title: "Streaks", systemImage: "flame.fill") {
+                            VStack(alignment: .leading, spacing: config.spacingM) {
+                                HStack {
+                                    Text("Current streak")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                    Spacer()
+                                    Text("\(streak.currentStreak) days")
+                                        .font(.body.weight(.semibold))
+                                }
+                                HStack {
+                                    Text("Longest streak")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                    Spacer()
+                                    Text("\(streak.longestStreak) days")
+                                        .font(.body.weight(.semibold))
+                                }
+                                if let last = streak.lastCompletedDate {
+                                    HStack {
+                                        Text("Last completed")
+                                            .font(.subheadline)
+                                            .foregroundStyle(.secondary)
+                                        Spacer()
+                                        Text(last.formatted(date: .abbreviated, time: .omitted))
+                                            .font(.subheadline)
+                                    }
+                                }
+                                if let start = streak.streakStartDate {
+                                    HStack {
+                                        Text("Streak started")
+                                            .font(.subheadline)
+                                            .foregroundStyle(.secondary)
+                                        Spacer()
+                                        Text(start.formatted(date: .abbreviated, time: .omitted))
+                                            .font(.subheadline)
+                                    }
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    }
                 }
                 .padding(config.spacingXL)
             }

@@ -152,8 +152,8 @@ struct WeeklyHabitRow: View {
                         Circle().fill(habit.displayColor).frame(width: LayoutConfig.current.spacingM + 6, height: LayoutConfig.current.spacingM + 6)
                     }
                     Text(habit.name)
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(.secondary)
+                        .font(.body.weight(.medium))
+                        .foregroundStyle(.primary)
                         .lineLimit(1)
                 }
                 .frame(maxWidth: .infinity)
