@@ -16,7 +16,7 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "E4AD55882F1725920053BADC"
-               BuildableName = "HabitTracker Mac.app"
+               BuildableName = "Ritual Log.app"
                BlueprintName = "HabitTracker Mac"
                ReferencedContainer = "container:HabitTracker.xcodeproj">
             </BuildableReference>
@@ -45,7 +45,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "E4AD55882F1725920053BADC"
-            BuildableName = "HabitTracker Mac.app"
+            BuildableName = "Ritual Log.app"
             BlueprintName = "HabitTracker Mac"
             ReferencedContainer = "container:HabitTracker.xcodeproj">
          </BuildableReference>
@@ -62,7 +62,7 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "E4AD55882F1725920053BADC"
-            BuildableName = "HabitTracker Mac.app"
+            BuildableName = "Ritual Log.app"
             BlueprintName = "HabitTracker Mac"
             ReferencedContainer = "container:HabitTracker.xcodeproj">
          </BuildableReference>

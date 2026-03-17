@@ -58,7 +58,7 @@
 		E4AD556B2F1725900053BADC /* HabitTrackerWidgetExtensionExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HabitTrackerWidgetExtensionExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		E4AD556D2F1725900053BADC /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		E4AD556F2F1725900053BADC /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
-		E4AD55862F1725920053BADC /* HabitTracker Mac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "HabitTracker Mac.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		E4AD55862F1725920053BADC /* Ritual Log.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Ritual Log.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -173,7 +173,7 @@
 			isa = PBXGroup;
 			children = (
 				E4AD542E2F1723490053BADC /* HabitTracker.app */,
-				E4AD55862F1725920053BADC /* HabitTracker Mac.app */,
+				E4AD55862F1725920053BADC /* Ritual Log.app */,
 				E4AD543F2F17234B0053BADC /* HabitTrackerTests.xctest */,
 				E4AD54492F17234B0053BADC /* HabitTrackerUITests.xctest */,
 				E4AD556B2F1725900053BADC /* HabitTrackerWidgetExtensionExtension.appex */,
@@ -305,7 +305,7 @@
 			packageProductDependencies = (
 			);
 			productName = "HabitTracker Mac";
-			productReference = E4AD55862F1725920053BADC /* HabitTracker Mac.app */;
+			productReference = E4AD55862F1725920053BADC /* Ritual Log.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -869,7 +869,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nagasiddharthadonepudi.HabitTracker;
-				PRODUCT_NAME = "HabitTracker Mac";
+				PRODUCT_NAME = "Ritual Log";
 				SDKROOT = macosx;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = macosx;
@@ -903,7 +903,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nagasiddharthadonepudi.HabitTracker;
-				PRODUCT_NAME = "HabitTracker Mac";
+				PRODUCT_NAME = "Ritual Log";
 				SDKROOT = macosx;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = macosx;
