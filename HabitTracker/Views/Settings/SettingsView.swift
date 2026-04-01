@@ -304,13 +304,13 @@ struct SettingsView: View {
         switch format {
         case .json:
             data = ExportService.exportToJSON(habits: habits)
-            filename = "RitualLog-\(dateStr).json"
+            filename = "HabitGrabIt-\(dateStr).json"
         case .csvEntries:
             data = ExportService.exportToCSV(habits: habits)
-            filename = "RitualLog-Entries-\(dateStr).csv"
+            filename = "HabitGrabIt-Entries-\(dateStr).csv"
         case .csvSummary:
             data = ExportService.exportSummaryCSV(habits: habits)
-            filename = "RitualLog-Summary-\(dateStr).csv"
+            filename = "HabitGrabIt-Summary-\(dateStr).csv"
         }
 
         guard let data else {

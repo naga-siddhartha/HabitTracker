@@ -9,11 +9,11 @@
 	<key>AdNetworkIdentifiers</key>
 	<array/>
 	<key>CFBundleDisplayName</key>
-	<string>Ritual Log</string>
+	<string>Habit</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-1864456501435529~1257203621</string>
 	<key>PrivacyPolicyURL</key>
-	<string>https://naga-siddhartha.github.io/RitualLog/privacy.html</string>
+	<string>https://naga-siddhartha.github.io/Habit-GrabIt/privacy.html</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>

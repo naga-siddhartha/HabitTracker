@@ -70,7 +70,9 @@ struct HabitTrackerWidgetExtension: Widget {
         StaticConfiguration(kind: kind, provider: HabitTimelineProvider()) { entry in
             SmallWidgetView(entry: entry)
         }
-        .configurationDisplayName("Ritual Log")
+        .configurationDisplayName(
+            (Bundle.main.object(forInfoDictionaryKey: "CFBundleDisplayName") as? String) ?? "Habit"
+        )
         .description("Today's habit progress at a glance.")
         .supportedFamilies([.systemSmall])
     }

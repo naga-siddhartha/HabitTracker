@@ -36,7 +36,7 @@ enum AppConfig {
 // MARK: - App Store / Support URLs (Info.plist: PrivacyPolicyURL, SupportURL)
 
 enum AppLinks {
-    /// Read from Info.plist keys PrivacyPolicyURL and SupportURL. Replace placeholder values with your real URLs before App Store submission.
+    /// Read from Info.plist PrivacyPolicyURL. Canonical live policy: naga-siddhartha.github.io/Habit-GrabIt/privacy.html (GitHub Pages from repo naga-siddhartha/Habit-GrabIt).
     static var privacyPolicyURL: URL? {
         guard let string = Bundle.main.object(forInfoDictionaryKey: "PrivacyPolicyURL") as? String,
               !string.isEmpty else { return nil }

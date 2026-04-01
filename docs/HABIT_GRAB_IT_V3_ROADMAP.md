@@ -1,4 +1,4 @@
-# Ritual Log – Version 3 Roadmap: In-App Purchase & Premium
+# Habit: Grab It – Version 3 Roadmap: In-App Purchase & Premium
 
 **Purpose:** Introduce sustainable monetization via (1) a one-time “Remove Ads” IAP and (2) a Premium subscription tier, with feature set and pricing informed by behavioral research and competitor analysis.
 
@@ -43,8 +43,8 @@ This section reflects what the app already has so the roadmap and “free vs. Pr
 - **About:** Version 1.0.0, habit count, total entries.
 
 ### 0.7 Widgets & system
-- **Widget:** one **systemSmall** (“Ritual Log”) – Today’s completed/total and progress bar; timeline refreshes at midnight. No lock screen, no medium/large, no tap-to-complete.
-- **App Intents:** ToggleHabitIntent (by **habit ID**). App Shortcuts: “Complete a habit in Ritual Log” / “Mark habit done in Ritual Log” (Siri + Shortcuts). No parameterized “Complete [habit name]” discovery.
+- **Widget:** one **systemSmall** (“Habit: Grab It”) – Today’s completed/total and progress bar; timeline refreshes at midnight. No lock screen, no medium/large, no tap-to-complete.
+- **App Intents:** ToggleHabitIntent (by **habit ID**). App Shortcuts use “Complete a habit in [app name]” / “Mark habit done in [app name]” (Siri + Shortcuts). No parameterized “Complete [habit name]” discovery.
 
 ### 0.8 Platforms & sync
 - **iOS** (primary), **macOS** (shared UI). **watchOS:** stub “Habits” view only.
@@ -66,7 +66,7 @@ This section reflects what the app already has so the roadmap and “free vs. Pr
 
 ### 1.1 Psychological Drivers of In-App Purchase
 
-| Factor | Finding | Implication for Ritual Log |
+| Factor | Finding | Implication for Habit: Grab It |
 |--------|---------|----------------------------|
 | **Perceived value** | Playfulness, connectedness, flexibility, and reward drive loyalty → IAP intention. “Good price” and loyalty are the two values that most directly predict purchase. | Deliver clear, tangible value in Premium; avoid vague “pro” labels. |
 | **Perceived fairness** | Fairness increases likelihood of *ever* spending; perceived *aggressive* monetization (reactance + unfairness) is a major barrier. | No dark patterns. Transparent pricing. Don’t gate core habit-tracking behind paywall. |

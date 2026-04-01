@@ -58,7 +58,7 @@
 		E4AD556B2F1725900053BADC /* HabitTrackerWidgetExtensionExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = HabitTrackerWidgetExtensionExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		E4AD556D2F1725900053BADC /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		E4AD556F2F1725900053BADC /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
-		E4AD55862F1725920053BADC /* Ritual Log.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Ritual Log.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		E4AD55862F1725920053BADC /* Habit Grab It.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Habit Grab It.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -173,7 +173,7 @@
 			isa = PBXGroup;
 			children = (
 				E4AD542E2F1723490053BADC /* HabitTracker.app */,
-				E4AD55862F1725920053BADC /* Ritual Log.app */,
+				E4AD55862F1725920053BADC /* Habit Grab It.app */,
 				E4AD543F2F17234B0053BADC /* HabitTrackerTests.xctest */,
 				E4AD54492F17234B0053BADC /* HabitTrackerUITests.xctest */,
 				E4AD556B2F1725900053BADC /* HabitTrackerWidgetExtensionExtension.appex */,
@@ -305,7 +305,7 @@
 			packageProductDependencies = (
 			);
 			productName = "HabitTracker Mac";
-			productReference = E4AD55862F1725920053BADC /* Ritual Log.app */;
+			productReference = E4AD55862F1725920053BADC /* Habit Grab It.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -315,8 +315,8 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2620;
-				LastUpgradeCheck = 2630;
+				LastSwiftUpdateCheck = 2640;
+				LastUpgradeCheck = 2640;
 				TargetAttributes = {
 					E4AD542D2F1723490053BADC = {
 						CreatedOnToolsVersion = 26.2;
@@ -474,7 +474,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = HabitTracker/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Ritual Log";
+				INFOPLIST_KEY_CFBundleDisplayName = "Habit";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -520,7 +520,7 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = HabitTracker/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Ritual Log";
+				INFOPLIST_KEY_CFBundleDisplayName = "Habit";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -787,7 +787,7 @@
 				DEVELOPMENT_TEAM = T6VSDYRN99;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = HabitTrackerWidgetExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Ritual Log";
+				INFOPLIST_KEY_CFBundleDisplayName = "Habit";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -822,7 +822,7 @@
 				DEVELOPMENT_TEAM = T6VSDYRN99;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = HabitTrackerWidgetExtension/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = "Ritual Log";
+				INFOPLIST_KEY_CFBundleDisplayName = "Habit";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -864,12 +864,13 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = HabitTracker/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Habit";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nagasiddharthadonepudi.HabitTracker;
-				PRODUCT_NAME = "Ritual Log";
+				PRODUCT_NAME = "Habit Grab It";
 				SDKROOT = macosx;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = macosx;
@@ -898,12 +899,13 @@
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = HabitTracker/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = "Habit";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 14.0;
 				MARKETING_VERSION = 1.2;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nagasiddharthadonepudi.HabitTracker;
-				PRODUCT_NAME = "Ritual Log";
+				PRODUCT_NAME = "Habit Grab It";
 				SDKROOT = macosx;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = macosx;

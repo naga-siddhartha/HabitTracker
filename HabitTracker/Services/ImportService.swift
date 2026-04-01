@@ -1,7 +1,7 @@
 import Foundation
 import SwiftData
 
-/// Restore from Ritual Log v1 JSON export (ExportService.ExportData format).
+/// Restore from Habit: Grab It / Ritual Log v1 JSON export (ExportService.ExportData format).
 @available(iOS 17.0, macOS 14.0, *)
 struct ImportService {
 
