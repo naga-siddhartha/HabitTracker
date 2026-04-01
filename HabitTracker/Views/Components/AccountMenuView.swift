@@ -2,8 +2,6 @@ import SwiftUI
 import Combine
 import WidgetKit
 
-#if !os(watchOS)
-
 // MARK: - Account menu state (shared across tabs)
 
 @available(iOS 17.0, macOS 14.0, *)
@@ -126,5 +124,3 @@ extension View {
         modifier(AccountToolbarModifier(accountMenuState: accountMenuState))
     }
 }
-
-#endif

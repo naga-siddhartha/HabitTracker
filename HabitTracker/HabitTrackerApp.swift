@@ -37,12 +37,8 @@ struct HabitTrackerApp: App {
     
     var body: some Scene {
         WindowGroup {
-            #if os(watchOS)
-            WatchMainView()
-            #else
             MainTabView()
                 .environmentObject(containerProvider)
-            #endif
         }
         .modelContainer(containerProvider.currentContainer)
         
@@ -53,13 +49,3 @@ struct HabitTrackerApp: App {
         #endif
     }
 }
-
-
-#if os(watchOS)
-struct WatchMainView: View {
-    var body: some View {
-        Text("Ritual Log")
-    }
-}
-#endif
-

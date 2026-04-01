@@ -1,7 +1,6 @@
 import SwiftUI
 import SwiftData
 
-#if !os(watchOS)
 // MARK: - Main Tab View
 
 struct MainTabView: View {
@@ -133,4 +132,3 @@ private struct ResettingOverlayModifier: ViewModifier {
         #endif
     }
 }
-#endif
