@@ -7,8 +7,8 @@ import Foundation
 /// - Skipped days and unscheduled days are neutral: they neither add to nor break a streak.
 /// - A scheduled day with no completion and no skip breaks the streak.
 /// - Today is never a miss. If today isn't done yet, the streak carries through yesterday.
-struct StreakEngine {
-    struct Result: Equatable {
+nonisolated struct StreakEngine {
+    nonisolated struct Result: Equatable {
         var current: Int
         var longest: Int
         var lastCompleted: DayKey?

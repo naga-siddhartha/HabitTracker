@@ -3,9 +3,10 @@ import Foundation
 // MARK: - Day Key
 
 /// A calendar day (year, month, day) with no time or time zone attached.
+/// `nonisolated` because the app target defaults to MainActor isolation and this is pure value logic.
 /// Habits are tracked per day, so comparing days by key avoids the off-by-one bugs that come
 /// from comparing `Date` instants across time zones and daylight-saving transitions.
-struct DayKey: Hashable, Comparable, Sendable, CustomStringConvertible {
+nonisolated struct DayKey: Hashable, Comparable, Sendable, CustomStringConvertible {
     let year: Int
     let month: Int
     let day: Int
@@ -25,7 +26,7 @@ struct DayKey: Hashable, Comparable, Sendable, CustomStringConvertible {
     }
 }
 
-extension Calendar {
+nonisolated extension Calendar {
     /// The calendar day containing `date` in this calendar's time zone.
     func dayKey(for date: Date) -> DayKey {
         let c = dateComponents([.year, .month, .day], from: date)
