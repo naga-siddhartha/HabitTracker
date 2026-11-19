@@ -16,6 +16,7 @@ struct HabitTrackerApp: App {
     init() {
         store.updateAllStreaks()
         store.writeWidgetData()
+        store.rescheduleAllReminders()
         #if os(iOS)
         configureTabBarAppearance()
         MobileAds.shared.requestConfiguration.testDeviceIdentifiers = [

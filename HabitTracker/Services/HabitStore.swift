@@ -40,6 +40,7 @@ final class HabitStore {
             guard let self else { return }
             self.repository.delete(habit)
             self.reloadWidgets()
+            self.rescheduleAllReminders()
         }
     }
 
@@ -54,7 +55,7 @@ final class HabitStore {
     // MARK: - Entries
     
     func toggleCompletion(for habit: Habit, on date: Date) {
-        if let entry = habit.entry(for: date) {
+        if let entry = canonicalEntry(for: habit, on: date) {
             if entry.isSkipped {
                 entry.isSkipped = false
                 entry.skipReason = nil
@@ -76,7 +77,7 @@ final class HabitStore {
     /// Mark all expected completions as done at once.
     func markAllComplete(for habit: Habit, on date: Date) {
         let expected = habit.expectedCompletions(on: date)
-        if let entry = habit.entry(for: date) {
+        if let entry = canonicalEntry(for: habit, on: date) {
             if entry.isSkipped { entry.isSkipped = false; entry.skipReason = nil }
             entry.completionCount = expected
             entry.isCompleted = true
@@ -94,7 +95,7 @@ final class HabitStore {
 
     /// Reset all completions for a repeating habit back to zero.
     func resetCompletion(for habit: Habit, on date: Date) {
-        guard let entry = habit.entry(for: date) else { return }
+        guard let entry = canonicalEntry(for: habit, on: date) else { return }
         entry.completionCount = 0
         entry.isCompleted = false
         entry.isSkipped = false
@@ -110,7 +111,7 @@ final class HabitStore {
     /// Tapping when already at max resets to 0.
     func incrementCompletion(for habit: Habit, on date: Date) {
         let expected = habit.expectedCompletions(on: date)
-        if let entry = habit.entry(for: date) {
+        if let entry = canonicalEntry(for: habit, on: date) {
             if entry.isSkipped {
                 entry.isSkipped = false
                 entry.skipReason = nil
@@ -136,7 +137,7 @@ final class HabitStore {
     }
     
     func skipDay(for habit: Habit, on date: Date, reason: String? = nil) {
-        if let entry = habit.entry(for: date) {
+        if let entry = canonicalEntry(for: habit, on: date) {
             entry.isCompleted = false
             entry.isSkipped = true
             entry.skipReason = reason
@@ -152,7 +153,7 @@ final class HabitStore {
     }
     
     func unskipDay(for habit: Habit, on date: Date) {
-        if let entry = habit.entry(for: date) {
+        if let entry = canonicalEntry(for: habit, on: date) {
             entry.isSkipped = false
             entry.skipReason = nil
             entry.updatedAt = .now
@@ -164,6 +165,26 @@ final class HabitStore {
         reloadWidgets()
     }
     
+    /// The single entry for a day, used before any write. If sync produced duplicate entries for
+    /// the same day, they are folded into the most complete one and the extras are deleted, so
+    /// every write leaves at most one entry per day.
+    private func canonicalEntry(for habit: Habit, on date: Date) -> HabitEntry? {
+        let sameDay = habit.entries(on: date)
+        guard let keep = sameDay.max(by: { HabitEntry.isLessComplete($0, than: $1, countsAsCompleted: habit.countsAsCompleted) }) else {
+            return nil
+        }
+        guard sameDay.count > 1 else { return keep }
+        let duplicates = sameDay.filter { $0 !== keep }
+        for dup in duplicates {
+            keep.completionCount = max(keep.completionCount, dup.completionCount)
+            if keep.isSkipped, keep.skipReason == nil { keep.skipReason = dup.skipReason }
+            modelContext.delete(dup)
+        }
+        habit.entries = habit.entriesOrEmpty.filter { entry in !duplicates.contains { $0 === entry } }
+        keep.updatedAt = .now
+        return keep
+    }
+
     // MARK: - Streaks
     
     func updateStreak(for habit: Habit) {
@@ -183,6 +204,26 @@ final class HabitStore {
         save()
     }
     
+    // MARK: - Reminders
+
+    /// Rebuild all pending reminders from the current habits. Call after any change to habits or
+    /// their reminder settings, and on launch so lost or stale reminders heal themselves.
+    func rescheduleAllReminders() {
+        let habits = fetchHabits()
+            .filter { !$0.isArchived }
+            .map {
+                NotificationHabit(
+                    id: $0.id, name: $0.name, frequency: $0.frequency,
+                    reminderTimes: $0.reminderTimes, reminderNames: $0.reminderNames,
+                    reminderSounds: $0.sounds,
+                    reminderIntervalMinutes: $0.reminderIntervalMinutes,
+                    reminderEndTime: $0.reminderEndTime,
+                    activeDays: $0.activeDays
+                )
+            }
+        NotificationService.shared.rescheduleAll(habits)
+    }
+
     // MARK: - Persistence
     
     func save() {

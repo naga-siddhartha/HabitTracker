@@ -544,7 +544,6 @@ struct HomeView: View {
     }
     
     private func deleteHabit(_ habit: Habit) {
-        NotificationService.shared.removeReminders(for: habit.id)
         HabitStore.shared.deleteHabit(habit)
     }
 }

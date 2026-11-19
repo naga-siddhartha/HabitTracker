@@ -143,29 +143,50 @@ extension Habit {
         let createdDay = cal.startOfDay(for: createdAt)
         let checkDay = cal.startOfDay(for: date)
         guard checkDay >= createdDay else { return false }
-        
-        if frequency == .weekly && !activeDays.isEmpty {
-            guard let weekday = date.weekday else { return false }
-            return activeDays.contains(weekday)
-        }
-        return true
+        return isScheduledWeekday(date, calendar: cal)
     }
-    
+
+    /// Whether the habit's schedule includes this weekday, ignoring the creation date.
+    /// Streaks use this so imported or backfilled history is judged by the same schedule.
+    func isScheduledWeekday(_ date: Date, calendar: Calendar = .current) -> Bool {
+        guard frequency == .weekly, !activeDays.isEmpty else { return true }
+        guard let weekday = Weekday(rawValue: calendar.component(.weekday, from: date)) else { return false }
+        return activeDays.contains(weekday)
+    }
+
+    /// Single definition of "completed" for an entry. Interval habits count any progress.
+    func countsAsCompleted(_ entry: HabitEntry) -> Bool {
+        if reminderIntervalMinutes > 0 { return entry.completionCount > 0 || entry.isCompleted }
+        return entry.isCompleted
+    }
+
     func isCompleted(on date: Date) -> Bool {
         guard let e = entry(for: date) else { return false }
-        // For repeating habits: completed if at least one count recorded, or legacy isCompleted flag
-        if reminderIntervalMinutes > 0 { return e.completionCount > 0 || e.isCompleted }
-        return e.isCompleted
+        return countsAsCompleted(e)
     }
 
     func isSkipped(on date: Date) -> Bool {
-        let cal = Calendar.current
-        return entriesOrEmpty.contains { cal.isDate($0.date, inSameDayAs: date) && $0.isSkipped }
+        guard let e = entry(for: date) else { return false }
+        return e.isSkipped && !countsAsCompleted(e)
     }
 
+    /// The entry for a day. If sync left several entries for the same day, returns the most
+    /// complete one (most progress, then most recently updated) so results are deterministic.
     func entry(for date: Date) -> HabitEntry? {
+        entries(on: date).max(by: { HabitEntry.isLessComplete($0, than: $1, countsAsCompleted: countsAsCompleted) })
+    }
+
+    /// All entries recorded for the same day (normally one; more only after sync conflicts).
+    func entries(on date: Date) -> [HabitEntry] {
         let cal = Calendar.current
-        return entriesOrEmpty.first { cal.isDate($0.date, inSameDayAs: date) }
+        let key = cal.dayKey(for: date)
+        // Cheap time-window check first so calendar math only runs for nearby entries.
+        let center = cal.noon(of: key).timeIntervalSinceReferenceDate
+        let window: TimeInterval = 26 * 3600
+        return entriesOrEmpty.filter {
+            abs($0.date.timeIntervalSinceReferenceDate - center) < window
+                && cal.storedDayKey(for: $0.date) == key
+        }
     }
 
     /// How many times this habit was completed on a given day.
@@ -239,6 +260,18 @@ final class HabitEntry {
         self.skipReason = skipReason
         self.updatedAt = .now
         self.userId = userId
+    }
+}
+
+@available(iOS 17.0, macOS 14.0, *)
+extension HabitEntry {
+    /// Ordering used to pick the "best" of several same-day entries.
+    static func isLessComplete(_ a: HabitEntry, than b: HabitEntry, countsAsCompleted: (HabitEntry) -> Bool) -> Bool {
+        let ac = countsAsCompleted(a), bc = countsAsCompleted(b)
+        if ac != bc { return !ac }
+        if a.completionCount != b.completionCount { return a.completionCount < b.completionCount }
+        if a.isSkipped != b.isSkipped { return !a.isSkipped }
+        return a.updatedAt < b.updatedAt
     }
 }
 

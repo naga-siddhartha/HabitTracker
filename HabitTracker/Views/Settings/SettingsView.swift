@@ -145,7 +145,8 @@ struct SettingsView: View {
                     .labelsHidden()
                     .onChange(of: notificationsEnabled) { _, newValue in
                         if newValue {
-                            NotificationService.shared.requestAuthorization()
+                            // Turning reminders back on must restore them, not just ask permission.
+                            HabitStore.shared.rescheduleAllReminders()
                         } else {
                             NotificationService.shared.cancelAllNotifications()
                         }
@@ -268,6 +269,10 @@ struct SettingsView: View {
                 await MainActor.run {
                     do {
                         try ImportService.replaceAllAndRestore(from: exportData, context: HabitStore.shared.modelContext)
+                        // Recompute streaks from the restored history instead of trusting the backup's numbers,
+                        // and drop reminders for habits that no longer exist.
+                        HabitStore.shared.updateAllStreaks()
+                        HabitStore.shared.rescheduleAllReminders()
                         HabitStore.shared.writeWidgetData()
                         WidgetKit.WidgetCenter.shared.reloadAllTimelines()
                         importSuccess = true

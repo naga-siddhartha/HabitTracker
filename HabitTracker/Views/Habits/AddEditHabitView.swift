@@ -665,8 +665,6 @@ struct AddEditHabitView: View {
             habit.reminderIntervalMinutes = useRepeatingReminders ? reminderIntervalMinutes : 0
             habit.reminderEndTime = useRepeatingReminders ? reminderEndTime : nil
             habit.updatedAt = .now
-            NotificationService.shared.removeReminders(for: habit.id)
-            scheduleNotifications(for: habit)
         } else {
             let newHabit = Habit(
                 name: name,
@@ -686,21 +684,10 @@ struct AddEditHabitView: View {
                 newHabit.customColorHex = selectedCustomColor.toHex()
             }
             HabitStore.shared.addHabit(newHabit)
-            scheduleNotifications(for: newHabit)
         }
         HabitStore.shared.save()
+        HabitStore.shared.rescheduleAllReminders()
         dismiss()
-    }
-    
-    private func scheduleNotifications(for habit: Habit) {
-        NotificationService.shared.scheduleReminders(for: NotificationHabit(
-            id: habit.id, name: habit.name, frequency: habit.frequency,
-            reminderTimes: habit.reminderTimes, reminderNames: habit.reminderNames,
-            reminderSounds: habit.sounds,
-            reminderIntervalMinutes: habit.reminderIntervalMinutes,
-            reminderEndTime: habit.reminderEndTime,
-            activeDays: habit.activeDays
-        ))
     }
 }
 

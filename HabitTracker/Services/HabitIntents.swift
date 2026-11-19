@@ -23,33 +23,25 @@ struct ToggleHabitIntent: AppIntent {
             return .result()
         }
         
-        let container = try await Task.detached(priority: .userInitiated) {
-            try AppConfig.createModelContainer()
-        }.value
-        let context = container.mainContext
-        
-        var descriptor = FetchDescriptor<Habit>()
-        descriptor.predicate = #Predicate { $0.id == uuid }
-        
-        guard let habit = try? context.fetch(descriptor).first else {
+        // Use the app's own store (CloudKit-backed when signed in) rather than opening a second
+        // container on the same file, and go through HabitStore so day matching, interval habits,
+        // streaks and widget data all stay consistent with in-app taps.
+        let store = HabitStore.shared
+        guard let habit = store.fetchHabits().first(where: { $0.id == uuid }) else {
             return .result()
         }
-        
-        let today = Date.now.startOfDay
-        
-        if let entry = habit.entriesOrEmpty.first(where: { $0.date == today }) {
-            entry.isCompleted.toggle()
-            entry.updatedAt = Date.now
+
+        let today = Date.now
+        if habit.reminderIntervalMinutes > 0 {
+            if habit.isDone(on: today) {
+                store.resetCompletion(for: habit, on: today)
+            } else {
+                store.markAllComplete(for: habit, on: today)
+            }
         } else {
-            let entry = HabitEntry(date: today)
-            habit.entries = (habit.entries ?? []) + [entry]
+            store.toggleCompletion(for: habit, on: today)
         }
-        
-        habit.updatedAt = Date.now
-        try? context.save()
-        
-        WidgetCenter.shared.reloadAllTimelines()
-        
+
         return .result()
     }
 }

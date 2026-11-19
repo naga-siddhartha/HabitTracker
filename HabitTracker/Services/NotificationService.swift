@@ -21,11 +21,9 @@ struct NotificationHabit {
 final class NotificationService {
     static let shared = NotificationService()
     
-    private init() {
-        #if canImport(UserNotifications)
-        requestAuthorization()
-        #endif
-    }
+    /// Permission is requested by `rescheduleAll` the first time there is a reminder to schedule,
+    /// not when this object is first touched, so launching the app never triggers a prompt.
+    private init() {}
     
     func requestAuthorization() {
         #if canImport(UserNotifications)
@@ -33,21 +31,38 @@ final class NotificationService {
         #endif
     }
     
-    func scheduleReminders(for habit: NotificationHabit) {
-        #if canImport(UserNotifications)
-        let hasSpecificTimes = !habit.reminderTimes.isEmpty
-        let hasRepeatingInterval = habit.reminderIntervalMinutes > 0
-        guard hasSpecificTimes || hasRepeatingInterval else { return }
-        // Respect the app's Notifications toggle (defaults to true when unset).
-        if UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool == false { return }
-        removeReminders(for: habit.id)
+    /// iOS keeps at most 64 pending local notifications per app and silently drops the rest.
+    static let maxPendingRequests = 64
 
-        UNUserNotificationCenter.current().getNotificationSettings { [self] settings in
+    /// Replace every pending reminder with a fresh set built from `habits`.
+    ///
+    /// Rebuilding the whole set in one place fixes two problems with per-habit scheduling:
+    /// 1. Removing a habit's old reminders was asynchronous, so it could run after the new ones
+    ///    were added and delete them.
+    /// 2. With several "every N hours" or weekly habits, the total went past iOS's 64 limit and
+    ///    reminders vanished at random. Here fixed-time reminders win, then interval slots are
+    ///    shared round-robin so every habit keeps its earliest reminders.
+    func rescheduleAll(_ habits: [NotificationHabit]) {
+        #if canImport(UserNotifications)
+        let center = UNUserNotificationCenter.current()
+        // Respect the app's Notifications toggle (defaults to true when unset).
+        if UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool == false {
+            center.removeAllPendingNotificationRequests()
+            return
+        }
+        let requests = Self.buildRequests(for: habits)
+        guard !requests.isEmpty else {
+            center.removeAllPendingNotificationRequests()
+            return
+        }
+        center.getNotificationSettings { settings in
             switch settings.authorizationStatus {
             case .notDetermined:
-                requestAuthorizationAndSchedule(habit: habit)
+                center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
+                    if granted { Self.replaceAll(with: requests) }
+                }
             case .authorized, .provisional, .ephemeral:
-                performScheduleReminders(for: habit)
+                Self.replaceAll(with: requests)
             case .denied:
                 break
             @unknown default:
@@ -58,111 +73,107 @@ final class NotificationService {
     }
 
     #if canImport(UserNotifications)
-    private func requestAuthorizationAndSchedule(habit: NotificationHabit) {
-        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound, .badge]) { [self] granted, _ in
-            guard granted else { return }
-            performScheduleReminders(for: habit)
+    nonisolated private static func replaceAll(with requests: [UNNotificationRequest]) {
+        let center = UNUserNotificationCenter.current()
+        // The notification center applies calls in order, so the removal can't land after the adds.
+        center.removeAllPendingNotificationRequests()
+        for request in requests {
+            center.add(request)
         }
     }
 
-    private func performScheduleReminders(for habit: NotificationHabit) {
+    /// Builds the prioritized, capped request list. Internal (not private) for unit tests.
+    static func buildRequests(for habits: [NotificationHabit], limit: Int = maxPendingRequests) -> [UNNotificationRequest] {
         let calendar = Calendar.current
+        var planned: [(priority: Int, order: Int, request: UNNotificationRequest)] = []
 
-        // Interval-based reminders (e.g. "every 2 hours from 8 AM to 6 PM")
-        if habit.reminderIntervalMinutes > 0 {
-            let intervalMinutes = habit.reminderIntervalMinutes
-            let reminderName = habit.reminderNames.first ?? "Reminder"
-            let sound = habit.reminderSounds.first ?? .default
-
-            let content = UNMutableNotificationContent()
-            content.title = reminderName
-            content.body = "Time to work on: \(habit.name)"
-            content.sound = notificationSound(for: sound)
-            content.userInfo = ["habitId": habit.id.uuidString]
-
-            if let startTime = habit.reminderTimes.first {
-                let startComponents = calendar.dateComponents([.hour, .minute], from: startTime)
-                let startMinutesOfDay = (startComponents.hour ?? 0) * 60 + (startComponents.minute ?? 0)
-                
-                // Calculate end time in minutes
-                let endMinutesOfDay: Int
-                if let endTime = habit.reminderEndTime {
-                    let endComponents = calendar.dateComponents([.hour, .minute], from: endTime)
-                    endMinutesOfDay = (endComponents.hour ?? 23) * 60 + (endComponents.minute ?? 59)
-                } else {
-                    endMinutesOfDay = 24 * 60 // midnight
-                }
-                
-                let maxTriggersPerDay = 24
-                var slotIndex = 0
-                var minutesOfDay = startMinutesOfDay
-                while slotIndex < maxTriggersPerDay && minutesOfDay <= endMinutesOfDay {
-                    var dateComponents = DateComponents()
-                    dateComponents.hour = minutesOfDay / 60
-                    dateComponents.minute = minutesOfDay % 60
-                    let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
-                    let request = UNNotificationRequest(
-                        identifier: "\(habit.id.uuidString)-interval-\(slotIndex)",
-                        content: content,
-                        trigger: trigger
-                    )
-                    UNUserNotificationCenter.current().add(request)
-                    slotIndex += 1
-                    minutesOfDay += intervalMinutes
-                }
-            } else {
-                // No start time: repeat from now (e.g. every 2 hours)
-                let intervalSeconds = max(60, TimeInterval(intervalMinutes * 60))
-                let trigger = UNTimeIntervalNotificationTrigger(timeInterval: intervalSeconds, repeats: true)
-                let request = UNNotificationRequest(
-                    identifier: habit.id.uuidString,
-                    content: content,
-                    trigger: trigger
-                )
-                UNUserNotificationCenter.current().add(request)
-            }
-            return
+        func add(_ request: UNNotificationRequest, priority: Int) {
+            planned.append((priority, planned.count, request))
         }
 
-        for (index, reminderTime) in habit.reminderTimes.enumerated() {
-            let timeComponents = calendar.dateComponents([.hour, .minute], from: reminderTime)
-            let reminderName = habit.reminderNames.indices.contains(index) ? habit.reminderNames[index] : "Reminder"
-            let sound = habit.reminderSounds.indices.contains(index) ? habit.reminderSounds[index] : .default
-            
-            let content = UNMutableNotificationContent()
-            content.title = reminderName
-            content.body = "Time to work on: \(habit.name)"
-            content.sound = notificationSound(for: sound)
-            content.userInfo = ["habitId": habit.id.uuidString]
-            
-            var dateComponents = DateComponents()
-            dateComponents.hour = timeComponents.hour
-            dateComponents.minute = timeComponents.minute
-            
-            switch habit.frequency {
-            case .daily:
-                let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
-                let request = UNNotificationRequest(
-                    identifier: "\(habit.id.uuidString)-\(index)",
-                    content: content,
-                    trigger: trigger
+        for habit in habits {
+            // Specific weekdays only when the habit isn't effectively every day.
+            let weekdays: [Weekday]? = {
+                guard habit.frequency == .weekly, !habit.activeDays.isEmpty,
+                      habit.activeDays.count < Weekday.allCases.count else { return nil }
+                return habit.activeDays.sorted { $0.rawValue < $1.rawValue }
+            }()
+
+            if habit.reminderIntervalMinutes > 0 {
+                let content = makeContent(
+                    habit: habit,
+                    title: habit.reminderNames.first ?? "Reminder",
+                    sound: habit.reminderSounds.first ?? .default
                 )
-                UNUserNotificationCenter.current().add(request)
-                
-            case .weekly:
-                let days = habit.activeDays.isEmpty ? Set(Weekday.allCases) : habit.activeDays
-                for weekday in days {
-                    dateComponents.weekday = weekday.rawValue
-                    let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
-                    let request = UNNotificationRequest(
-                        identifier: "\(habit.id.uuidString)-\(index)-\(weekday.rawValue)",
-                        content: content,
-                        trigger: trigger
-                    )
-                    UNUserNotificationCenter.current().add(request)
+                guard let startTime = habit.reminderTimes.first else {
+                    // No start time: repeat every N minutes from now.
+                    let seconds = max(60, TimeInterval(habit.reminderIntervalMinutes * 60))
+                    let trigger = UNTimeIntervalNotificationTrigger(timeInterval: seconds, repeats: true)
+                    add(UNNotificationRequest(identifier: habit.id.uuidString, content: content, trigger: trigger), priority: 1)
+                    continue
+                }
+                let start = calendar.dateComponents([.hour, .minute], from: startTime)
+                let startMinutes = (start.hour ?? 0) * 60 + (start.minute ?? 0)
+                let endMinutes: Int = {
+                    guard let end = habit.reminderEndTime else { return 24 * 60 - 1 }
+                    let c = calendar.dateComponents([.hour, .minute], from: end)
+                    return (c.hour ?? 23) * 60 + (c.minute ?? 59)
+                }()
+                var slot = 0
+                var minutes = startMinutes
+                while slot < 24 && minutes <= endMinutes && minutes < 24 * 60 {
+                    let days: [Weekday?] = weekdays.map { $0.map(Optional.some) } ?? [nil]
+                    for day in days {
+                        var comps = DateComponents()
+                        comps.hour = minutes / 60
+                        comps.minute = minutes % 60
+                        comps.weekday = day?.rawValue
+                        let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: true)
+                        let suffix = day.map { "-\($0.rawValue)" } ?? ""
+                        add(UNNotificationRequest(identifier: "\(habit.id.uuidString)-interval-\(slot)\(suffix)", content: content, trigger: trigger),
+                            priority: 1 + slot)
+                    }
+                    slot += 1
+                    minutes += habit.reminderIntervalMinutes
+                }
+                continue
+            }
+
+            for (index, time) in habit.reminderTimes.enumerated() {
+                let title = habit.reminderNames.indices.contains(index) ? habit.reminderNames[index] : "Reminder"
+                let sound = habit.reminderSounds.indices.contains(index) ? habit.reminderSounds[index] : .default
+                let content = makeContent(habit: habit, title: title, sound: sound)
+                let t = calendar.dateComponents([.hour, .minute], from: time)
+                let days: [Weekday?] = weekdays.map { $0.map(Optional.some) } ?? [nil]
+                for day in days {
+                    var comps = DateComponents()
+                    comps.hour = t.hour
+                    comps.minute = t.minute
+                    comps.weekday = day?.rawValue
+                    let trigger = UNCalendarNotificationTrigger(dateMatching: comps, repeats: true)
+                    let suffix = day.map { "-\($0.rawValue)" } ?? ""
+                    add(UNNotificationRequest(identifier: "\(habit.id.uuidString)-\(index)\(suffix)", content: content, trigger: trigger),
+                        priority: 0)
                 }
             }
         }
+
+        let sorted = planned.sorted { ($0.priority, $0.order) < ($1.priority, $1.order) }
+        #if DEBUG
+        if sorted.count > limit {
+            print("[Notifications] \(sorted.count) reminders requested, keeping \(limit) (iOS limit)")
+        }
+        #endif
+        return sorted.prefix(limit).map(\.request)
+    }
+
+    private static func makeContent(habit: NotificationHabit, title: String, sound: ReminderSound) -> UNMutableNotificationContent {
+        let content = UNMutableNotificationContent()
+        content.title = title
+        content.body = "Time to work on: \(habit.name)"
+        content.sound = notificationSound(for: sound)
+        content.userInfo = ["habitId": habit.id.uuidString]
+        return content
     }
     #endif
 
@@ -182,7 +193,7 @@ final class NotificationService {
     }
     
     #if canImport(UserNotifications)
-    private func notificationSound(for sound: ReminderSound) -> UNNotificationSound? {
+    private static func notificationSound(for sound: ReminderSound) -> UNNotificationSound? {
         switch sound {
         case .default: .default
         case .chime: UNNotificationSound(named: UNNotificationSoundName("chime.aiff"))
