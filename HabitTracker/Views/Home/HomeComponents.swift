@@ -336,9 +336,17 @@ struct AdCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: config.cardRowPaddingVertical) {
-            Text("Advertisement".uppercased().map { String($0) }.joined(separator: " "))
-                .font(.caption2.weight(.medium))
-                .foregroundStyle(.tertiary)
+            HStack {
+                Text("Advertisement".uppercased().map { String($0) }.joined(separator: " "))
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.tertiary)
+                Spacer()
+                Button("Remove ads") {
+                    Task { await PurchaseManager.shared.purchaseRemoveAds() }
+                }
+                .font(.caption.weight(.semibold))
+                .buttonStyle(.borderless)
+            }
             #if os(iOS)
             AdMobBannerView()
             #endif

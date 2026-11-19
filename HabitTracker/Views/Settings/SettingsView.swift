@@ -9,6 +9,7 @@ struct SettingsView: View {
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("appearanceMode") private var appearanceMode = AppearanceMode.system
     @AppStorage(Analytics.enabledKey) private var analyticsEnabled = true
+    @ObservedObject private var purchases = PurchaseManager.shared
 
     var onRequestReset: (() -> Void)? = nil
 
@@ -103,6 +104,9 @@ struct SettingsView: View {
     private var settingsList: some View {
         List {
             accountSection
+            #if os(iOS)
+            removeAdsSection
+            #endif
             notificationsSection
             appearanceSection
             dataSection
@@ -115,7 +119,56 @@ struct SettingsView: View {
         #else
         .listStyle(.inset)
         #endif
+        .alert("App Store", isPresented: Binding(
+            get: { purchases.message != nil },
+            set: { if !$0 { purchases.message = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(purchases.message ?? "")
+        }
     }
+
+    #if os(iOS)
+    @ViewBuilder
+    private var removeAdsSection: some View {
+        Section {
+            if purchases.isAdFree {
+                SettingsRow(icon: "checkmark.seal.fill", iconColor: .green, title: "Ads removed") {
+                    Text("Thank you!").foregroundStyle(.secondary)
+                }
+            } else {
+                Button {
+                    Task { await purchases.purchaseRemoveAds() }
+                } label: {
+                    SettingsRow(icon: "sparkles", iconColor: .purple, title: "Remove Ads") {
+                        if purchases.isWorking {
+                            ProgressView()
+                        } else if let price = purchases.removeAdsProduct?.displayPrice {
+                            Text(price).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+                .disabled(purchases.isWorking)
+
+                Button {
+                    Task { await purchases.restore() }
+                } label: {
+                    SettingsRow(icon: "arrow.clockwise", iconColor: .gray, title: "Restore Purchases") {
+                        EmptyView()
+                    }
+                }
+                .buttonStyle(.plain)
+                .disabled(purchases.isWorking)
+            }
+        } footer: {
+            if !purchases.isAdFree {
+                Text("One-time purchase. Also removes ads on your other devices signed in to the same Apple Account.")
+            }
+        }
+    }
+    #endif
 
     @ViewBuilder
     private var accountSection: some View {

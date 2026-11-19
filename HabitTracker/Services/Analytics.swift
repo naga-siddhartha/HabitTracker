@@ -53,6 +53,8 @@ enum Analytics {
         case accountDeleted
         case syncError
         case launchTime(seconds: TimeInterval)
+        case removeAdsPurchased
+        case removeAdsRestored
 
         var name: String {
             switch self {
@@ -65,6 +67,8 @@ enum Analytics {
             case .accountDeleted: "Account.deleted"
             case .syncError: "Sync.error"
             case .launchTime: "Performance.launch"
+            case .removeAdsPurchased: "Purchase.removeAds"
+            case .removeAdsRestored: "Purchase.restored"
             }
         }
 
@@ -124,6 +128,7 @@ enum Analytics {
             "usesSkip": "\(active.contains { $0.entriesOrEmpty.contains(where: \.isSkipped) })",
             "iCloudSync": "\(cloudSyncOn)",
             "appearance": UserDefaults.standard.string(forKey: "appearanceMode") ?? "system",
+            "adFree": "\(PurchaseManager.shared.isAdFree)",
         ]
 
         Task {

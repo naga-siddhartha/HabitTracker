@@ -22,14 +22,20 @@ struct HabitTrackerApp: App {
         store.updateAllStreaks()
         store.writeWidgetData()
         store.rescheduleAllReminders()
+        PurchaseManager.shared.start()
         #if os(iOS)
         configureTabBarAppearance()
-        MobileAds.shared.requestConfiguration.testDeviceIdentifiers = [
-            "7898b85d170daffccea1430f55291c02",
-            "eca025c65f76a343b5651fde452346bd", // Mac (simulator/Catalyst)
-        ]
-        // Start SDK as early as possible so banner can load after a short delay (see AdMobBannerView).
-        MobileAds.shared.start(completionHandler: { (_: InitializationStatus) in })
+        // Buyers of Remove Ads never load the ads SDK at all (faster launch, no ad network traffic).
+        if !PurchaseManager.shared.isAdFree {
+            #if DEBUG
+            MobileAds.shared.requestConfiguration.testDeviceIdentifiers = [
+                "7898b85d170daffccea1430f55291c02",
+                "eca025c65f76a343b5651fde452346bd", // Mac (simulator/Catalyst)
+            ]
+            #endif
+            // Start SDK as early as possible so banner can load after a short delay (see AdMobBannerView).
+            MobileAds.shared.start(completionHandler: { (_: InitializationStatus) in })
+        }
         #endif
     }
 

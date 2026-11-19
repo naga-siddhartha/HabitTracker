@@ -7,6 +7,7 @@ struct HomeView: View {
     @Environment(\.colorScheme) private var colorScheme
     @EnvironmentObject private var accountMenuState: AccountMenuState
     @Query(sort: \Habit.createdAt, order: .reverse) private var allHabits: [Habit]
+    @ObservedObject private var purchases = PurchaseManager.shared
     @State private var showingAddHabit = false
     @State private var showingAddMenuPopover = false
     @State private var editingHabit: Habit?
@@ -104,10 +105,12 @@ struct HomeView: View {
                             .frame(maxWidth: config.contentMaxWidth)
                             .padding(.horizontal, config.horizontalPadding)
                         #if os(iOS)
-                        AdCardView()
-                            .frame(maxWidth: config.contentMaxWidth)
-                            .padding(.horizontal, config.horizontalPadding)
-                            .padding(.top, config.spacingXXL)
+                        if !purchases.isAdFree {
+                            AdCardView()
+                                .frame(maxWidth: config.contentMaxWidth)
+                                .padding(.horizontal, config.horizontalPadding)
+                                .padding(.top, config.spacingXXL)
+                        }
                         #endif
                         Spacer(minLength: 0)
                     }
@@ -118,9 +121,11 @@ struct HomeView: View {
                             headerSection
                             homeContent
                             #if os(iOS)
-                            AdCardView()
-                                .frame(maxWidth: config.contentMaxWidth)
-                                .padding(.horizontal, config.horizontalPadding)
+                            if !purchases.isAdFree {
+                                AdCardView()
+                                    .frame(maxWidth: config.contentMaxWidth)
+                                    .padding(.horizontal, config.horizontalPadding)
+                            }
                             #endif
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
