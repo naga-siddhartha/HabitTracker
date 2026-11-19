@@ -39,6 +39,7 @@ final class HabitStore {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
             self.repository.delete(habit)
+            Analytics.track(.habitDeleted)
             self.reloadWidgets()
             self.rescheduleAllReminders()
         }

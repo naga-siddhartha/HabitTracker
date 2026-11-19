@@ -701,6 +701,12 @@ struct AddEditHabitView: View {
                 newHabit.customColorHex = selectedCustomColor.toHex()
             }
             HabitStore.shared.addHabit(newHabit)
+            Analytics.track(.habitCreated(
+                fromTemplate: template != nil,
+                hasReminder: !reminders.isEmpty || useRepeatingReminders,
+                isInterval: useRepeatingReminders,
+                isWeekly: frequency == .weekly
+            ))
         }
         HabitStore.shared.save()
         HabitStore.shared.rescheduleAllReminders()

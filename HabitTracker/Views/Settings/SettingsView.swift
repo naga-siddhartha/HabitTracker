@@ -8,6 +8,7 @@ struct SettingsView: View {
     @Query private var habits: [Habit]
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("appearanceMode") private var appearanceMode = AppearanceMode.system
+    @AppStorage(Analytics.enabledKey) private var analyticsEnabled = true
 
     var onRequestReset: (() -> Void)? = nil
 
@@ -105,6 +106,7 @@ struct SettingsView: View {
             notificationsSection
             appearanceSection
             dataSection
+            privacySection
             supportSection
             aboutSection
         }
@@ -167,6 +169,16 @@ struct SettingsView: View {
             .pickerStyle(.segmented)
             .alignmentGuide(.listRowSeparatorLeading) { _ in 0 }
             .alignmentGuide(.listRowSeparatorTrailing) { d in d[.trailing] }
+        }
+    }
+
+    private var privacySection: some View {
+        Section {
+            Toggle("Share anonymous usage stats", isOn: $analyticsEnabled)
+        } header: {
+            Text("Privacy")
+        } footer: {
+            Text("Sends one anonymous daily summary, like how many habits you have and whether reminders are on. Never your habit names, notes or history. Turning this off stops it right away.")
         }
     }
 
@@ -276,6 +288,7 @@ struct SettingsView: View {
                         HabitStore.shared.writeWidgetData()
                         WidgetKit.WidgetCenter.shared.reloadAllTimelines()
                         importSuccess = true
+                        Analytics.track(.backupRestored)
                     } catch {
                         importError = error.localizedDescription
                         showingImportErrorAlert = true
@@ -318,6 +331,9 @@ struct SettingsView: View {
             filename = "HabitGrabIt-Summary-\(dateStr).csv"
         }
 
+        if data != nil {
+            Analytics.track(.backupExported(format: "\(format)"))
+        }
         guard let data else {
             isExporting = false
             exportError = "Could not prepare export data."

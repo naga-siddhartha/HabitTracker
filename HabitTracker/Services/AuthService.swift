@@ -100,6 +100,7 @@ final class AuthService: NSObject, ObservableObject {
             throw error
         }
         signOut()
+        Analytics.track(.accountDeleted)
     }
 }
 
@@ -123,6 +124,7 @@ extension AuthService: ASAuthorizationControllerDelegate {
                     service.userDisplayName = KeychainHelper.loadUserDisplayName()
                     service.isSignedIn = true
                     NotificationCenter.default.post(name: .userDidSignIn, object: nil)
+                    Analytics.track(.signedIn)
                 } else {
                     cont?.resume(throwing: AuthError.keychainSaveFailed)
                 }

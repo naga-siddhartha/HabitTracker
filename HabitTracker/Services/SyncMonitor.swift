@@ -15,6 +15,7 @@ final class SyncMonitor: ObservableObject {
     @Published private(set) var lastError: String?
 
     private var inFlight = Set<UUID>()
+    private var reportedErrorThisLaunch = false
     private var observer: NSObjectProtocol?
     private var pendingRemoteRefresh: Task<Void, Never>?
 
@@ -54,6 +55,10 @@ final class SyncMonitor: ObservableObject {
             if type == .import { scheduleRemoteRefresh() }
         } else if let error {
             lastError = error
+            if !reportedErrorThisLaunch {
+                reportedErrorThisLaunch = true
+                Analytics.track(.syncError)
+            }
         }
     }
 

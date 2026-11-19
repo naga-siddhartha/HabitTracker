@@ -13,8 +13,10 @@ struct HabitTrackerApp: App {
     @StateObject private var containerProvider = ModelContainerProvider.shared
     let store = HabitStore.shared
     @State private var showingStoreError = false
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
+        Analytics.start()
         SyncMonitor.shared.start()
         store.mergeDuplicates()
         store.updateAllStreaks()
@@ -43,7 +45,17 @@ struct HabitTrackerApp: App {
         WindowGroup {
             MainTabView()
                 .environmentObject(containerProvider)
-                .onAppear { showingStoreError = containerProvider.storeLoadError != nil }
+                .onAppear {
+                    showingStoreError = containerProvider.storeLoadError != nil
+                    Analytics.trackLaunchTimeOnce()
+                }
+                .onChange(of: scenePhase, initial: true) { _, phase in
+                    guard phase == .active else { return }
+                    Analytics.sendDailySummaryIfNeeded(
+                        habits: store.fetchHabits(),
+                        cloudSyncOn: containerProvider.isCloudSyncEnabled
+                    )
+                }
                 .alert("Your habits couldn't be opened", isPresented: $showingStoreError) {
                     Button("OK", role: .cancel) {}
                 } message: {

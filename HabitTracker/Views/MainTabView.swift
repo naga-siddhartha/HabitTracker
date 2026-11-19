@@ -14,7 +14,12 @@ struct MainTabView: View {
     private var showOnboarding: Binding<Bool> {
         Binding(
             get: { !hasCompletedOnboarding },
-            set: { if !$0 { hasCompletedOnboarding = true } }
+            set: {
+                if !$0 && !hasCompletedOnboarding {
+                    hasCompletedOnboarding = true
+                    Analytics.track(.onboardingCompleted)
+                }
+            }
         )
     }
 
