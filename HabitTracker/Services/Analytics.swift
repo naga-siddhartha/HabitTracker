@@ -130,11 +130,21 @@ enum Analytics {
             var params = params
             let settings = await UNUserNotificationCenter.current().notificationSettings()
             params["notificationsAllowed"] = "\(settings.authorizationStatus == .authorized)"
-            let widgets = (try? await WidgetCenter.shared.currentConfigurations()) ?? []
-            params["hasWidget"] = "\(!widgets.isEmpty)"
+            let hasWidget = await hasInstalledWidget()
+            params["hasWidget"] = "\(hasWidget)"
             #if canImport(TelemetryDeck)
             TelemetryDeck.signal("Daily.summary", parameters: params)
             #endif
+        }
+    }
+
+    /// Callback API instead of the async `currentConfigurations()`, which needs iOS 18.
+    private static func hasInstalledWidget() async -> Bool {
+        await withCheckedContinuation { continuation in
+            WidgetCenter.shared.getCurrentConfigurations { result in
+                let count = (try? result.get())?.count ?? 0
+                continuation.resume(returning: count > 0)
+            }
         }
     }
 
