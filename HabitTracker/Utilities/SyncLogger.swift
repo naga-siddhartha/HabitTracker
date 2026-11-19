@@ -11,20 +11,4 @@ enum SyncLogger {
             log.error("ModelContainer creation error: \(error.localizedDescription)")
         }
     }
-
-    static func recreateContainerWithCloudKitStarted() {
-        log.info("recreateContainerWithCloudKit() called (e.g. sign-in or Sync now)")
-    }
-
-    static func recreateContainerWithCloudKitSuccess() {
-        log.info("recreateContainerWithCloudKit() succeeded – container now uses CloudKit")
-    }
-
-    static func recreateContainerWithCloudKitFailed(_ error: Error) {
-        log.error("recreateContainerWithCloudKit() failed: \(error.localizedDescription)")
-    }
-
-    static func syncNowTapped() {
-        log.info("Sync now tapped – triggering container recreate with CloudKit")
-    }
 }

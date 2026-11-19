@@ -166,10 +166,15 @@ final class HabitStore {
     }
     
     /// The single entry for a day, used before any write. If sync produced duplicate entries for
-    /// the same day, they are folded into the most complete one and the extras are deleted, so
-    /// every write leaves at most one entry per day.
+    /// the same day, they are folded into the most complete one first.
     private func canonicalEntry(for habit: Habit, on date: Date) -> HabitEntry? {
-        let sameDay = habit.entries(on: date)
+        fold(habit.entries(on: date), in: habit)
+    }
+
+    /// Fold same-day entries into the most complete one and delete the rest. The choice is
+    /// deterministic, so two devices merging the same duplicates end up with the same result.
+    @discardableResult
+    private func fold(_ sameDay: [HabitEntry], in habit: Habit) -> HabitEntry? {
         guard let keep = sameDay.max(by: { HabitEntry.isLessComplete($0, than: $1, countsAsCompleted: habit.countsAsCompleted) }) else {
             return nil
         }
@@ -181,8 +186,57 @@ final class HabitStore {
             modelContext.delete(dup)
         }
         habit.entries = habit.entriesOrEmpty.filter { entry in !duplicates.contains { $0 === entry } }
-        keep.updatedAt = .now
         return keep
+    }
+
+    // MARK: - Duplicate cleanup
+
+    /// Merge habits that share a name, and same-day entries inside each habit.
+    ///
+    /// Duplicates come from sync: the same habit set up on two devices before signing in, or a
+    /// template added on each. The app has always treated a name as one habit (Home and Stats
+    /// grouped by name), so this makes the data match. The surviving habit is the one with the
+    /// lowest id, which every device agrees on, so merges on two devices never fight.
+    @discardableResult
+    func mergeDuplicates() -> Int {
+        var removed = 0
+        let byName = Dictionary(grouping: fetchHabits()) { $0.name.trimmingCharacters(in: .whitespacesAndNewlines) }
+        for (name, group) in byName where !name.isEmpty && group.count > 1 {
+            let sorted = group.sorted { $0.id.uuidString < $1.id.uuidString }
+            let keeper = sorted[0]
+            for dup in sorted.dropFirst() {
+                keeper.createdAt = min(keeper.createdAt, dup.createdAt)
+                // Detach entries before deleting, or the cascade rule would delete them too.
+                let moved = dup.entriesOrEmpty
+                dup.entries = []
+                keeper.entries = keeper.entriesOrEmpty + moved
+                modelContext.delete(dup)
+                removed += 1
+            }
+            // Visible if any copy was visible.
+            keeper.isArchived = group.allSatisfy(\.isArchived)
+            keeper.updatedAt = .now
+        }
+        for habit in fetchHabits() {
+            let byDay = Dictionary(grouping: habit.entriesOrEmpty) { Calendar.current.storedDayKey(for: $0.date) }
+            for (_, sameDay) in byDay where sameDay.count > 1 {
+                fold(sameDay, in: habit)
+                removed += sameDay.count - 1
+            }
+        }
+        if removed > 0 {
+            save()
+        }
+        return removed
+    }
+
+    /// Called after CloudKit imports changes from another device.
+    func handleRemoteChanges() {
+        mergeDuplicates()
+        updateAllStreaks()
+        writeWidgetData()
+        WidgetCenter.shared.reloadAllTimelines()
+        rescheduleAllReminders()
     }
 
     // MARK: - Streaks
@@ -230,19 +284,6 @@ final class HabitStore {
         repository.save()
     }
 
-    /// Push local changes and pull latest from iCloud (when signed in). Saves, then reconnects the CloudKit-backed container so remote changes from other devices are merged, then refreshes widgets.
-    func syncNow() {
-        save()
-        if KeychainHelper.loadUserId() != nil {
-            ModelContainerProvider.shared.recreateContainerWithCloudKit { [weak self] in
-                self?.writeWidgetData()
-                WidgetCenter.shared.reloadAllTimelines()
-            }
-        } else {
-            reloadWidgets()
-        }
-    }
-    
     private func reloadWidgets() {
         writeWidgetData()
         WidgetCenter.shared.reloadAllTimelines()

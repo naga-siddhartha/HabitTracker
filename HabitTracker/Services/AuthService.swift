@@ -75,16 +75,30 @@ final class AuthService: NSObject, ObservableObject {
         #endif
     }
 
+    /// Signs out and stops iCloud sync. Habits stay on this device.
     func signOut() {
         _ = KeychainHelper.deleteUserId()
         currentUserId = nil
         userDisplayName = nil
         isSignedIn = false
+        NotificationCenter.default.post(name: .userDidSignOut, object: nil)
     }
 
-    /// Removes account data from this device (Keychain + in-memory). Required for App Store Guideline 5.1.1(v).
-    /// When we add a backend/CloudKit, this should also delete or disassociate data there.
-    func deleteAccount() {
+    /// Deletes the account (App Store Guideline 5.1.1(v)): removes the copy of the user's habits
+    /// stored in iCloud, then the sign-in. Habits stay on this device.
+    ///
+    /// Sync is switched off first so nothing re-uploads while the iCloud data is being deleted. If
+    /// the deletion fails (offline, iCloud unavailable) sync is switched back on and the user stays
+    /// signed in, so they can try again.
+    func deleteAccount() async throws {
+        let provider = ModelContainerProvider.shared
+        provider.setCloudSync(enabled: false)
+        do {
+            try await CloudDataEraser.deleteSyncedData()
+        } catch {
+            provider.setCloudSync(enabled: true)
+            throw error
+        }
         signOut()
     }
 }

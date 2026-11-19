@@ -35,7 +35,16 @@ struct AddEditHabitView: View {
     @State private var intervalHours: Int = 2
     @State private var intervalMinutes: Int = 0
 
+    @Query private var allHabits: [Habit]
+
     private var isEditing: Bool { habit != nil }
+    private var trimmedName: String { name.trimmingCharacters(in: .whitespacesAndNewlines) }
+    /// Habits are identified by name across devices (duplicates get merged), so block reusing one.
+    private var nameTaken: Bool {
+        !trimmedName.isEmpty && allHabits.contains {
+            $0.id != habit?.id && $0.name.trimmingCharacters(in: .whitespacesAndNewlines) == trimmedName
+        }
+    }
     private var suggestedEmoji: String { HabitEmoji.suggest(for: name, description: description.isEmpty ? nil : description) }
     
     var body: some View {
@@ -43,7 +52,7 @@ struct AddEditHabitView: View {
             title: isEditing ? "Edit Habit" : "New Habit",
             onCancel: { dismiss() },
             onSave: saveHabit,
-            saveDisabled: name.isEmpty
+            saveDisabled: trimmedName.isEmpty || nameTaken
         ) {
             formContent
         }
@@ -60,10 +69,17 @@ struct AddEditHabitView: View {
     
     @ViewBuilder
     private var formContent: some View {
-        Section("Basic Information") {
+        Section {
             TextField("Habit Name", text: $name)
             TextField("Note (Optional)", text: $description, axis: .vertical)
                 .lineLimit(2...4)
+        } header: {
+            Text("Basic Information")
+        } footer: {
+            if nameTaken {
+                Text("You already have a habit called “\(trimmedName)”.")
+                    .foregroundStyle(.red)
+            }
         }
         #if os(macOS)
         .padding(.bottom, LayoutConfig.current.formSectionSpacing)
@@ -649,10 +665,11 @@ struct AddEditHabitView: View {
     }
     
     private func saveHabit() {
+        guard !trimmedName.isEmpty, !nameTaken else { return }
         syncIntervalFromState()
         
         if let habit {
-            habit.name = name
+            habit.name = trimmedName
             habit.habitDescription = description.isEmpty ? nil : description
             habit.emoji = resolvedEmoji
             habit.color = selectedColor
@@ -667,7 +684,7 @@ struct AddEditHabitView: View {
             habit.updatedAt = .now
         } else {
             let newHabit = Habit(
-                name: name,
+                name: trimmedName,
                 description: description.isEmpty ? nil : description,
                 iconName: template?.iconName,
                 emoji: resolvedEmoji,

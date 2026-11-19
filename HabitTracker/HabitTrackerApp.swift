@@ -12,8 +12,11 @@ import GoogleMobileAds
 struct HabitTrackerApp: App {
     @StateObject private var containerProvider = ModelContainerProvider.shared
     let store = HabitStore.shared
+    @State private var showingStoreError = false
 
     init() {
+        SyncMonitor.shared.start()
+        store.mergeDuplicates()
         store.updateAllStreaks()
         store.writeWidgetData()
         store.rescheduleAllReminders()
@@ -40,6 +43,12 @@ struct HabitTrackerApp: App {
         WindowGroup {
             MainTabView()
                 .environmentObject(containerProvider)
+                .onAppear { showingStoreError = containerProvider.storeLoadError != nil }
+                .alert("Your habits couldn't be opened", isPresented: $showingStoreError) {
+                    Button("OK", role: .cancel) {}
+                } message: {
+                    Text("Your data hasn't been deleted, but changes you make now won't be saved. Please quit and reopen the app. If this keeps happening, contact support.\n\n\(containerProvider.storeLoadError ?? "")")
+                }
         }
         .modelContainer(containerProvider.currentContainer)
         

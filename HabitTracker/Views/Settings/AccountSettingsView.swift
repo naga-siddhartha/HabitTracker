@@ -5,6 +5,7 @@ import SwiftUI
 struct AccountSettingsView: View {
     @ObservedObject private var authService = AuthService.shared
     @ObservedObject private var containerProvider = ModelContainerProvider.shared
+    @ObservedObject private var syncMonitor = SyncMonitor.shared
     @Environment(\.dismiss) private var dismiss
 
     @State private var showingAccountProfile = false
@@ -35,15 +36,13 @@ struct AccountSettingsView: View {
                             }
                         }
                         .buttonStyle(.plain)
-                        Button {
-                            HabitStore.shared.syncNow()
-                        } label: {
-                            SettingsRow(icon: "arrow.triangle.2.circlepath", iconColor: .green, title: containerProvider.isSyncing ? "Syncing…" : "Sync now") {
-                                chevronAccessory
-                            }
+                        // Sync runs automatically; this row reports what it is doing.
+                        SettingsRow(icon: "icloud.fill", iconColor: .green, title: "iCloud sync") {
+                            Text(SyncStatus.summary(monitor: syncMonitor, provider: containerProvider))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                         }
-                        .buttonStyle(.plain)
-                        .disabled(containerProvider.isSyncing)
+                        .accessibilityElement(children: .combine)
                         Button {
                             authService.signOut()
                         } label: {
@@ -71,7 +70,7 @@ struct AccountSettingsView: View {
                     if !authService.isSignedIn {
                         Text("Sign in to back up your habits and sync across your devices.")
                     } else {
-                        Text("Sync: Sign in with Apple on both iPhone and Mac. Use the same iCloud account on both. In Xcode, add the iCloud capability with CloudKit for both app targets.")
+                        Text("Habits sync automatically through iCloud. Sign in on each device with the same Apple ID.")
                             .font(.caption)
                     }
                 }

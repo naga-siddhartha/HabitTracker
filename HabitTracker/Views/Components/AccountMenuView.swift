@@ -18,6 +18,7 @@ struct AccountMenuButton: View {
     @ObservedObject private var authService = AuthService.shared
     @ObservedObject var accountMenuState: AccountMenuState
     @EnvironmentObject private var containerProvider: ModelContainerProvider
+    @ObservedObject private var syncMonitor = SyncMonitor.shared
 
     var body: some View {
         Menu {
@@ -27,12 +28,8 @@ struct AccountMenuButton: View {
                 } label: {
                     Label("Account", systemImage: "person.crop.circle.fill")
                 }
-                Button {
-                    triggerSyncNow()
-                } label: {
-                    Label(containerProvider.isSyncing ? "Syncing…" : "Sync now", systemImage: "arrow.triangle.2.circlepath")
-                }
-                .disabled(containerProvider.isSyncing)
+                // Sync runs automatically; show its status instead of a manual button.
+                Label(SyncStatus.summary(monitor: syncMonitor, provider: containerProvider), systemImage: "icloud")
                 Divider()
                 Button(role: .destructive) {
                     authService.signOut()
@@ -75,11 +72,6 @@ struct AccountMenuButton: View {
                 }
             }
         }
-    }
-
-    private func triggerSyncNow() {
-        SyncLogger.syncNowTapped()
-        HabitStore.shared.syncNow()
     }
 }
 

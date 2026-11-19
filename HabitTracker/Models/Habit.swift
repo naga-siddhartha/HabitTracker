@@ -271,7 +271,9 @@ extension HabitEntry {
         if ac != bc { return !ac }
         if a.completionCount != b.completionCount { return a.completionCount < b.completionCount }
         if a.isSkipped != b.isSkipped { return !a.isSkipped }
-        return a.updatedAt < b.updatedAt
+        if a.updatedAt != b.updatedAt { return a.updatedAt < b.updatedAt }
+        // Final tie-break on id so every device picks the same entry when merging after sync.
+        return a.id.uuidString > b.id.uuidString
     }
 }
 

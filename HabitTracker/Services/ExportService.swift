@@ -25,6 +25,14 @@ struct ExportService {
         let currentStreak: Int
         let longestStreak: Int
         let entries: [ExportEntry]
+        // Added in 1.4. Optional so older backups still restore.
+        var emoji: String? = nil
+        var customColorHex: String? = nil
+        var reminderTimes: [Date]? = nil
+        var reminderNames: [String]? = nil
+        var reminderSounds: [String]? = nil
+        var reminderIntervalMinutes: Int? = nil
+        var reminderEndTime: Date? = nil
     }
     
     struct ExportEntry: Codable {
@@ -32,6 +40,8 @@ struct ExportService {
         let isCompleted: Bool
         let isSkipped: Bool
         let skipReason: String?
+        /// Progress for "every few hours" habits. Added in 1.4.
+        var completionCount: Int? = nil
     }
     
     // MARK: - Export to JSON
@@ -55,15 +65,23 @@ struct ExportService {
                         date: entry.date,
                         isCompleted: entry.isCompleted,
                         isSkipped: entry.isSkipped,
-                        skipReason: entry.skipReason
+                        skipReason: entry.skipReason,
+                        completionCount: entry.completionCount
                     )
-                }.sorted { $0.date < $1.date }
+                }.sorted { $0.date < $1.date },
+                emoji: habit.emoji,
+                customColorHex: habit.customColorHex,
+                reminderTimes: habit.reminderTimes,
+                reminderNames: habit.reminderNames,
+                reminderSounds: habit.reminderSounds,
+                reminderIntervalMinutes: habit.reminderIntervalMinutes,
+                reminderEndTime: habit.reminderEndTime
             )
         }
         
         let exportData = ExportData(
             exportDate: .now,
-            appVersion: "1.2",
+            appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown",
             habits: exportHabits
         )
         

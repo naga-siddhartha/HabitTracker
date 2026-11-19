@@ -74,11 +74,18 @@ struct ImportService {
             emoji: nil,
             color: color,
             frequency: frequency,
-            reminderTimes: [],
-            reminderNames: [],
-            reminderSounds: [],
-            activeDays: activeDays
+            reminderTimes: export.reminderTimes ?? [],
+            reminderNames: export.reminderNames ?? [],
+            reminderSounds: (export.reminderSounds ?? []).compactMap { ReminderSound(rawValue: $0) },
+            activeDays: activeDays,
+            reminderIntervalMinutes: export.reminderIntervalMinutes ?? 0,
+            reminderEndTime: export.reminderEndTime
         )
+        // Keep the original id so a restored habit lines up with its synced copy instead of
+        // becoming a duplicate.
+        if let id = UUID(uuidString: export.id) { habit.id = id }
+        habit.emoji = export.emoji
+        habit.customColorHex = export.customColorHex
         habit.isArchived = export.isArchived
         habit.createdAt = export.createdAt
         habit.updatedAt = export.createdAt
@@ -94,6 +101,7 @@ struct ImportService {
                 isSkipped: exportEntry.isSkipped,
                 skipReason: exportEntry.skipReason
             )
+            entry.completionCount = exportEntry.completionCount ?? 0
             entry.habit = habit
             context.insert(entry)
         }
