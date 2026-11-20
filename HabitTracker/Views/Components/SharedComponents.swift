@@ -194,45 +194,38 @@ struct HabitDetailsSheetView: View {
                     }
                     if let streak = habit.streakIfStarted {
                         sectionCard(title: "Streaks", systemImage: "flame.fill") {
-                            VStack(alignment: .leading, spacing: config.spacingM) {
-                                HStack {
-                                    Text("Current streak")
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
-                                    Spacer()
-                                    Text("\(streak.currentStreak) days")
-                                        .font(.body.weight(.semibold))
+                            VStack(spacing: config.spacingL) {
+                                HStack(spacing: config.spacingM) {
+                                    streakStatBox(
+                                        value: streak.currentStreak,
+                                        label: "Current",
+                                        icon: "flame.fill",
+                                        iconColor: streak.currentStreak > 0 ? .orange : .secondary
+                                    )
+                                    streakStatBox(
+                                        value: streak.longestStreak,
+                                        label: "Best",
+                                        icon: "trophy.fill",
+                                        iconColor: streak.longestStreak > 1 ? Color.rewardGold : .secondary
+                                    )
                                 }
-                                HStack {
-                                    Text("Longest streak")
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
-                                    Spacer()
-                                    Text("\(streak.longestStreak) days")
-                                        .font(.body.weight(.semibold))
-                                }
-                                if let last = streak.lastCompletedDate {
+                                if let start = streak.streakStartDate, streak.currentStreak > 0 {
                                     HStack {
-                                        Text("Last completed")
-                                            .font(.subheadline)
+                                        Image(systemName: "calendar")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                        Text("Started \(start.formatted(date: .abbreviated, time: .omitted))")
+                                            .font(.caption)
                                             .foregroundStyle(.secondary)
                                         Spacer()
-                                        Text(last.formatted(date: .abbreviated, time: .omitted))
-                                            .font(.subheadline)
-                                    }
-                                }
-                                if let start = streak.streakStartDate {
-                                    HStack {
-                                        Text("Streak started")
-                                            .font(.subheadline)
-                                            .foregroundStyle(.secondary)
-                                        Spacer()
-                                        Text(start.formatted(date: .abbreviated, time: .omitted))
-                                            .font(.subheadline)
+                                        if let last = streak.lastCompletedDate {
+                                            Text("Last: \(last.formatted(date: .abbreviated, time: .omitted))")
+                                                .font(.caption)
+                                                .foregroundStyle(.tertiary)
+                                        }
                                     }
                                 }
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
                 }
@@ -274,6 +267,28 @@ struct HabitDetailsSheetView: View {
         }
         .padding(config.spacingL)
         .background(Color.secondarySystemGroupedBackground)
+        .clipShape(RoundedRectangle(cornerRadius: config.cornerRadiusMedium))
+    }
+
+    private func streakStatBox(value: Int, label: String, icon: String, iconColor: Color) -> some View {
+        VStack(spacing: 6) {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundStyle(iconColor)
+            Text("\(value)")
+                .font(.system(size: 34, weight: .bold, design: .rounded))
+                .monospacedDigit()
+            Text(value == 1 ? "day" : "days")
+                .font(.caption2.weight(.medium))
+                .foregroundStyle(.secondary)
+            Text(label.uppercased())
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(.tertiary)
+                .tracking(0.5)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, config.spacingL)
+        .background(Color.systemGray6)
         .clipShape(RoundedRectangle(cornerRadius: config.cornerRadiusMedium))
     }
 

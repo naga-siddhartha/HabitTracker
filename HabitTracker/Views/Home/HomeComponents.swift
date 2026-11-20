@@ -285,36 +285,51 @@ struct ChecklistRow: View {
                 .font(.system(size: config.spacingM + 6, weight: .semibold))
                 .foregroundStyle(isCompleted || isSkipped ? .secondary : .primary)
                 .strikethrough(isCompleted)
-            Group {
-                if isSkipped, skipReason != nil, !(skipReason?.isEmpty ?? true) {
-                    Button {
-                        onTapSkipReason?(skipReasonDisplayText)
-                    } label: {
+            if isSkipped {
+                Group {
+                    if skipReason != nil, !(skipReason?.isEmpty ?? true) {
+                        Button {
+                            onTapSkipReason?(skipReasonDisplayText)
+                        } label: {
+                            Text(skipReasonDisplayText)
+                                .font(.footnote)
+                                .foregroundStyle(.orange)
+                                .lineLimit(2)
+                                .truncationMode(.tail)
+                                .multilineTextAlignment(.leading)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Double tap to show full reason")
+                    } else {
                         Text(skipReasonDisplayText)
                             .font(.footnote)
                             .foregroundStyle(.orange)
                             .lineLimit(2)
                             .truncationMode(.tail)
-                            .multilineTextAlignment(.leading)
-                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("Double tap to show full reason")
-                } else {
+                }
+            } else {
+                HStack(spacing: 4) {
                     Text(skipReasonDisplayText)
                         .font(.footnote)
-                        .foregroundStyle(isSkipped ? .orange : .secondary)
-                        .lineLimit(isSkipped ? 2 : 1)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                         .truncationMode(.tail)
+                    if isCompleted, let streak = habit.streakIfStarted, streak.currentStreak > 0 {
+                        Text("·")
+                            .font(.footnote)
+                            .foregroundStyle(.tertiary)
+                        Text("🔥 \(streak.currentStreak)")
+                            .font(.footnote.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             if let window = windowLabel {
                 Text(window)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-            }
-            if isCompleted, let streak = habit.streakIfStarted, streak.currentStreak > 0 {
-                StreakLabel(text: "\(streak.currentStreak) day streak", font: .footnote)
             }
         }
     }
