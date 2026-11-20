@@ -71,21 +71,27 @@ struct AccountToolbarModifier: ViewModifier {
         #endif
     }
 
-    func body(content: Content) -> some View {
-        content
-            .toolbar {
-                if #available(iOS 26.0, macOS 26.0, *) {
-                    // The icon is its own circle; no glass capsule around it.
-                    ToolbarItem(placement: toolbarAccountPlacement) {
-                        AccountMenuButton(accountMenuState: accountMenuState)
-                    }
-                    .sharedBackgroundVisibility(.hidden)
-                } else {
-                    ToolbarItem(placement: toolbarAccountPlacement) {
-                        AccountMenuButton(accountMenuState: accountMenuState)
-                    }
+    @ViewBuilder
+    private func withAccountToolbarItem(_ content: Content) -> some View {
+        if #available(iOS 26.0, macOS 26.0, *) {
+            content.toolbar {
+                // The icon is its own circle; no glass capsule around it.
+                ToolbarItem(placement: toolbarAccountPlacement) {
+                    AccountMenuButton(accountMenuState: accountMenuState)
+                }
+                .sharedBackgroundVisibility(.hidden)
+            }
+        } else {
+            content.toolbar {
+                ToolbarItem(placement: toolbarAccountPlacement) {
+                    AccountMenuButton(accountMenuState: accountMenuState)
                 }
             }
+        }
+    }
+
+    func body(content: Content) -> some View {
+        withAccountToolbarItem(content)
             .sheet(isPresented: $accountMenuState.showingAccountProfile) {
                 AccountSheet()
             }
