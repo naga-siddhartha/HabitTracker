@@ -19,13 +19,9 @@ struct DailyView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            DatePicker("Date", selection: $selectedDate, displayedComponents: .date)
-                #if os(macOS)
-                .datePickerStyle(.field)
-                #else
-                .datePickerStyle(.compact)
-                #endif
-                .padding()
+            DaySwitcher(date: $selectedDate)
+                .padding(.horizontal, config.horizontalPadding)
+                .padding(.vertical, config.spacingS)
 
             if activeHabits.isEmpty {
                 CalendarEmptyState(

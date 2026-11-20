@@ -45,7 +45,10 @@ struct AccountMenuButton: View {
             }
         } label: {
             Image(systemName: authService.isSignedIn ? "person.crop.circle.fill" : "person.crop.circle")
+                #if os(iOS)
                 .font(.system(size: 28))
+                #endif
+                // On macOS the toolbar sizes the symbol to fit its glass button.
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(authService.isSignedIn ? Color.accentColor : Color.gray)
         }
