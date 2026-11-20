@@ -154,8 +154,10 @@ final class StreakCache {
 
 @available(iOS 17.0, macOS 14.0, *)
 extension Habit {
+    @MainActor
     var liveStreak: HabitStreak { StreakCache.shared.streak(for: self) }
     /// Nil until the habit has been completed at least once.
+    @MainActor
     var streakIfStarted: HabitStreak? {
         let s = liveStreak
         return s.longestStreak > 0 ? s : nil

@@ -160,11 +160,13 @@ extension Habit {
         return entry.isCompleted
     }
 
+    @MainActor
     func isCompleted(on date: Date) -> Bool {
         guard let e = entry(for: date) else { return false }
         return countsAsCompleted(e)
     }
 
+    @MainActor
     func isSkipped(on date: Date) -> Bool {
         guard let e = entry(for: date) else { return false }
         return e.isSkipped && !countsAsCompleted(e)
@@ -172,16 +174,19 @@ extension Habit {
 
     /// The entry for a day. If sync left several entries for the same day, returns the most
     /// complete one (most progress, then most recently updated) so results are deterministic.
+    @MainActor
     func entry(for date: Date) -> HabitEntry? {
         entries(on: date).max(by: { HabitEntry.isLessComplete($0, than: $1, countsAsCompleted: countsAsCompleted) })
     }
 
     /// All entries recorded for the same day (normally one; more only after sync conflicts).
+    @MainActor
     func entries(on date: Date) -> [HabitEntry] {
         EntryDayIndex.shared.entries(of: self, on: Calendar.current.dayKey(for: date))
     }
 
     /// How many times this habit was completed on a given day.
+    @MainActor
     func completionCount(on date: Date) -> Int {
         guard let e = entry(for: date) else { return 0 }
         if reminderIntervalMinutes > 0 {
@@ -214,6 +219,7 @@ extension Habit {
     }
 
     /// Whether all expected completions for the day are done.
+    @MainActor
     func isFullyCompleted(on date: Date) -> Bool {
         completionCount(on: date) >= expectedCompletions(on: date)
     }
@@ -221,6 +227,7 @@ extension Habit {
     /// The display-level "done" state used for home page categorization and visual completion.
     /// For repeating habits: requires ALL expected instances done.
     /// For single-completion habits: same as isCompleted.
+    @MainActor
     func isDone(on date: Date) -> Bool {
         reminderIntervalMinutes > 0 ? isFullyCompleted(on: date) : isCompleted(on: date)
     }
