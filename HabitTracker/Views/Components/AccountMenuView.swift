@@ -44,14 +44,13 @@ struct AccountMenuButton: View {
                 }
             }
         } label: {
-            Image(systemName: authService.isSignedIn ? "person.crop.circle.fill" : "person.crop.circle")
-                #if os(iOS)
+            // A solid filled circle: white figure on brand purple (gray when signed out).
+            Image(systemName: "person.crop.circle.fill")
                 .font(.system(size: 28))
-                #endif
-                // On macOS the toolbar sizes the symbol to fit its glass button.
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(authService.isSignedIn ? Color.accentColor : Color.gray)
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(.white, authService.isSignedIn ? Color.brandPurple : Color.gray)
         }
+        .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .accessibilityLabel(authService.isSignedIn ? "Account menu" : "Sign in")
         .accessibilityHint(authService.isSignedIn ? "Open account, sync, or sign out" : "Sign in with Apple to sync across devices")
@@ -75,8 +74,16 @@ struct AccountToolbarModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .toolbar {
-                ToolbarItem(placement: toolbarAccountPlacement) {
-                    AccountMenuButton(accountMenuState: accountMenuState)
+                if #available(iOS 26.0, macOS 26.0, *) {
+                    // The icon is its own circle; no glass capsule around it.
+                    ToolbarItem(placement: toolbarAccountPlacement) {
+                        AccountMenuButton(accountMenuState: accountMenuState)
+                    }
+                    .sharedBackgroundVisibility(.hidden)
+                } else {
+                    ToolbarItem(placement: toolbarAccountPlacement) {
+                        AccountMenuButton(accountMenuState: accountMenuState)
+                    }
                 }
             }
             .sheet(isPresented: $accountMenuState.showingAccountProfile) {
