@@ -45,6 +45,9 @@ struct HabitTrackerApp: App {
                     // Let the first frame render, then do housekeeping.
                     Task { @MainActor in
                         await Task.yield()
+                        #if DEBUG
+                        MarketingDemoSeeder.seedIfNeeded(store: store)
+                        #endif
                         store.performLaunchMaintenance()
                     }
                 }

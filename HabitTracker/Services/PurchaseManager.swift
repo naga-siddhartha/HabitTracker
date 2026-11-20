@@ -17,7 +17,13 @@ final class PurchaseManager {
     static let removeAdsProductID = "com.nagasiddharthadonepudi.HabitTracker.removeads"
     private static let cacheKey = "purchases.isAdFree"
 
-    private(set) var isAdFree: Bool
+    var isAdFree: Bool {
+        #if DEBUG
+        if MarketingDemoSeeder.isActive { return true }
+        #endif
+        return _isAdFree
+    }
+    private var _isAdFree: Bool
     private(set) var removeAdsProduct: Product?
     private(set) var isWorking = false
     /// User-facing message after a failed or pending purchase/restore.
@@ -26,7 +32,7 @@ final class PurchaseManager {
     @ObservationIgnored private var updatesTask: Task<Void, Never>?
 
     private init() {
-        isAdFree = UserDefaults.standard.bool(forKey: Self.cacheKey)
+        _isAdFree = UserDefaults.standard.bool(forKey: Self.cacheKey)
     }
 
     /// Call once at launch.
@@ -112,8 +118,8 @@ final class PurchaseManager {
     }
 
     private func setAdFree(_ value: Bool) {
-        guard value != isAdFree else { return }
-        isAdFree = value
+        guard value != _isAdFree else { return }
+        _isAdFree = value
         UserDefaults.standard.set(value, forKey: Self.cacheKey)
     }
 }
