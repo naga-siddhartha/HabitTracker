@@ -1,7 +1,9 @@
 import Foundation
 
 /// Shared data store for the home screen widget. Uses App Groups so both the main app and widget extension can read/write.
-enum WidgetDataStore {
+/// `nonisolated` so the app target's default MainActor isolation doesn't apply: the widget and
+/// background code read this too, and it only touches thread-safe UserDefaults.
+nonisolated enum WidgetDataStore {
     static let appGroupIdentifier = "group.com.nagasiddharthadonepudi.HabitTracker"
 
     /// Cached so we only open the App Group suite once per process (avoids repeated CFPreferences warnings when container is unavailable, e.g. Simulator).
