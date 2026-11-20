@@ -9,7 +9,7 @@ struct SettingsView: View {
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("appearanceMode") private var appearanceMode = AppearanceMode.system
     @AppStorage(Analytics.enabledKey) private var analyticsEnabled = true
-    @ObservedObject private var purchases = PurchaseManager.shared
+    private var purchases = PurchaseManager.shared
 
     var onRequestReset: (() -> Void)? = nil
 

@@ -1,5 +1,5 @@
-import Combine
 import Foundation
+import Observation
 import SwiftData
 
 /// Provides the app's ModelContainer and switches it between local-only and CloudKit-backed
@@ -9,22 +9,23 @@ import SwiftData
 /// there is no "sync now" container swap any more. The container is only replaced when the sync
 /// mode actually changes, and it always opens the same store file, so data carries over.
 @available(iOS 17.0, macOS 14.0, *)
-final class ModelContainerProvider: ObservableObject {
+@Observable
+final class ModelContainerProvider {
     static let shared: ModelContainerProvider = {
         let p = ModelContainerProvider()
         p.observeAccountChanges()
         return p
     }()
 
-    @Published private(set) var currentContainer: ModelContainer
+    private(set) var currentContainer: ModelContainer
     /// True when the container is mirroring to CloudKit.
-    @Published private(set) var isCloudSyncEnabled: Bool
+    private(set) var isCloudSyncEnabled: Bool
     /// Set when the user is signed in but the CloudKit container couldn't be created. Data is
     /// still saved locally; only sync is off.
-    @Published private(set) var cloudSetupError: String?
+    private(set) var cloudSetupError: String?
     /// Set when the on-disk store couldn't be opened at all and the app is running on a temporary
     /// in-memory store. Nothing saved in this state survives a relaunch, so the UI must say so.
-    @Published private(set) var storeLoadError: String?
+    private(set) var storeLoadError: String?
 
     private init() {
         let wantsCloudKit = KeychainHelper.loadUserId() != nil

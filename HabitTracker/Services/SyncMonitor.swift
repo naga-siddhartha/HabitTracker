@@ -1,23 +1,24 @@
-import Combine
 import CoreData
 import Foundation
+import Observation
 
 /// Reports real CloudKit sync activity. SwiftData mirrors through NSPersistentCloudKitContainer,
 /// which posts an event for every setup, import and export, so the UI can show what is actually
 /// happening instead of a fake "Sync now" spinner.
 @available(iOS 17.0, macOS 14.0, *)
 @MainActor
-final class SyncMonitor: ObservableObject {
+@Observable
+final class SyncMonitor {
     static let shared = SyncMonitor()
 
-    @Published private(set) var isSyncing = false
-    @Published private(set) var lastSuccessfulSync: Date?
-    @Published private(set) var lastError: String?
+    private(set) var isSyncing = false
+    private(set) var lastSuccessfulSync: Date?
+    private(set) var lastError: String?
 
-    private var inFlight = Set<UUID>()
-    private var reportedErrorThisLaunch = false
-    private var observer: NSObjectProtocol?
-    private var pendingRemoteRefresh: Task<Void, Never>?
+    @ObservationIgnored private var inFlight = Set<UUID>()
+    @ObservationIgnored private var reportedErrorThisLaunch = false
+    @ObservationIgnored private var observer: NSObjectProtocol?
+    @ObservationIgnored private var pendingRemoteRefresh: Task<Void, Never>?
 
     private init() {
         observer = NotificationCenter.default.addObserver(

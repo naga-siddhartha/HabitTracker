@@ -9,7 +9,7 @@ struct MainTabView: View {
     @State private var selectedTab = 0
     @State private var isPresentingTemplates = false
     @State private var isResetting = false
-    @StateObject private var accountMenuState = AccountMenuState()
+    @State private var accountMenuState = AccountMenuState()
     
     private var showOnboarding: Binding<Bool> {
         Binding(
@@ -56,7 +56,7 @@ struct MainTabView: View {
                 }
             .accessibilityHint("Notifications, appearance, and data")
         }
-        .environmentObject(accountMenuState)
+        .environment(accountMenuState)
         #if os(macOS)
         .withAccountToolbar(accountMenuState: accountMenuState)
         #endif

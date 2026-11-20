@@ -10,7 +10,7 @@ import GoogleMobileAds
 
 @main
 struct HabitTrackerApp: App {
-    @StateObject private var containerProvider = ModelContainerProvider.shared
+    @State private var containerProvider = ModelContainerProvider.shared
     let store = HabitStore.shared
     @State private var showingStoreError = false
     @Environment(\.scenePhase) private var scenePhase
@@ -46,7 +46,7 @@ struct HabitTrackerApp: App {
     var body: some Scene {
         WindowGroup {
             MainTabView()
-                .environmentObject(containerProvider)
+                .environment(containerProvider)
                 .onAppear {
                     showingStoreError = containerProvider.storeLoadError != nil
                     Analytics.trackLaunchTimeOnce()

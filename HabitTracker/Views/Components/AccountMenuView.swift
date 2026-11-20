@@ -1,24 +1,25 @@
+import Observation
 import SwiftUI
-import Combine
 import WidgetKit
 
 // MARK: - Account menu state (shared across tabs)
 
 @available(iOS 17.0, macOS 14.0, *)
-final class AccountMenuState: ObservableObject {
-    @Published var showingAccountProfile = false
-    @Published var authError: String?
-    @Published var isSigningIn = false
+@Observable
+final class AccountMenuState {
+    var showingAccountProfile = false
+    var authError: String?
+    var isSigningIn = false
 }
 
 // MARK: - Profile icon + menu (toolbar)
 
 @available(iOS 17.0, macOS 14.0, *)
 struct AccountMenuButton: View {
-    @ObservedObject private var authService = AuthService.shared
-    @ObservedObject var accountMenuState: AccountMenuState
-    @EnvironmentObject private var containerProvider: ModelContainerProvider
-    @ObservedObject private var syncMonitor = SyncMonitor.shared
+    private var authService = AuthService.shared
+    @Bindable var accountMenuState: AccountMenuState
+    @Environment(ModelContainerProvider.self) private var containerProvider
+    private var syncMonitor = SyncMonitor.shared
 
     var body: some View {
         Menu {
@@ -79,7 +80,7 @@ struct AccountMenuButton: View {
 
 @available(iOS 17.0, macOS 14.0, *)
 struct AccountToolbarModifier: ViewModifier {
-    @ObservedObject var accountMenuState: AccountMenuState
+    @Bindable var accountMenuState: AccountMenuState
 
     private var toolbarAccountPlacement: ToolbarItemPlacement {
         #if os(iOS)

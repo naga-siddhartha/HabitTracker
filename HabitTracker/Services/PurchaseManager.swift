@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 import StoreKit
 
 /// One-time "Remove Ads" purchase, StoreKit 2 only (no extra SDK, no receipt server).
@@ -8,20 +9,21 @@ import StoreKit
 /// - `Transaction.updates` is observed for purchases made elsewhere (other devices, Family
 ///   Sharing, Ask to Buy approvals) and for refunds, which revoke the entitlement.
 @MainActor
-final class PurchaseManager: ObservableObject {
+@Observable
+final class PurchaseManager {
     static let shared = PurchaseManager()
 
     /// Must match the product ID created in App Store Connect.
     static let removeAdsProductID = "com.nagasiddharthadonepudi.HabitTracker.removeads"
     private static let cacheKey = "purchases.isAdFree"
 
-    @Published private(set) var isAdFree: Bool
-    @Published private(set) var removeAdsProduct: Product?
-    @Published private(set) var isWorking = false
+    private(set) var isAdFree: Bool
+    private(set) var removeAdsProduct: Product?
+    private(set) var isWorking = false
     /// User-facing message after a failed or pending purchase/restore.
-    @Published var message: String?
+    var message: String?
 
-    private var updatesTask: Task<Void, Never>?
+    @ObservationIgnored private var updatesTask: Task<Void, Never>?
 
     private init() {
         isAdFree = UserDefaults.standard.bool(forKey: Self.cacheKey)

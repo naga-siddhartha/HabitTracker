@@ -1,5 +1,5 @@
 import Foundation
-import Combine
+import Observation
 import AuthenticationServices
 #if os(iOS)
 import UIKit
@@ -9,15 +9,16 @@ import AppKit
 
 /// Sign in with Apple only. Stores user identifier and optional display name in Keychain. No custom backend.
 @MainActor
-final class AuthService: NSObject, ObservableObject {
+@Observable
+final class AuthService: NSObject {
 
     // MARK: - Public state
 
     static let shared = AuthService()
-    @Published private(set) var isSignedIn: Bool = false
-    @Published private(set) var currentUserId: String? = nil
+    private(set) var isSignedIn: Bool = false
+    private(set) var currentUserId: String? = nil
     /// Display name or email from Sign in with Apple (only provided on first sign-in).
-    @Published private(set) var userDisplayName: String? = nil
+    private(set) var userDisplayName: String? = nil
 
     // MARK: - Private state
 

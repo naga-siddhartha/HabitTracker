@@ -3,9 +3,9 @@ import SwiftUI
 /// Dedicated account screen: sign in, profile, Sync now, sign out. Presented from Settings.
 @available(iOS 17.0, macOS 14.0, *)
 struct AccountSettingsView: View {
-    @ObservedObject private var authService = AuthService.shared
-    @ObservedObject private var containerProvider = ModelContainerProvider.shared
-    @ObservedObject private var syncMonitor = SyncMonitor.shared
+    private var authService = AuthService.shared
+    private var containerProvider = ModelContainerProvider.shared
+    private var syncMonitor = SyncMonitor.shared
     @Environment(\.dismiss) private var dismiss
 
     @State private var showingAccountProfile = false

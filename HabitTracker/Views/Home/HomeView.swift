@@ -5,9 +5,9 @@ struct HomeView: View {
     var onPresentTemplates: (() -> Void)?
 
     @Environment(\.colorScheme) private var colorScheme
-    @EnvironmentObject private var accountMenuState: AccountMenuState
+    @Environment(AccountMenuState.self) private var accountMenuState
     @Query(sort: \Habit.createdAt, order: .reverse) private var allHabits: [Habit]
-    @ObservedObject private var purchases = PurchaseManager.shared
+    private var purchases = PurchaseManager.shared
     @State private var showingAddHabit = false
     @State private var showingAddMenuPopover = false
     @State private var editingHabit: Habit?
@@ -137,7 +137,10 @@ struct HomeView: View {
             .background(Color.appGroupedBackground)
             .navigationTitle("")
             .inlineNavigationTitle()
-            .sheet(isPresented: $accountMenuState.showingAccountProfile) {
+            .sheet(isPresented: Binding(
+                get: { accountMenuState.showingAccountProfile },
+                set: { accountMenuState.showingAccountProfile = $0 }
+            )) {
                 AccountProfileView()
             }
             .alert("Sign in", isPresented: Binding(
@@ -557,8 +560,8 @@ struct HomeView: View {
 
 #Preview {
     HomeView()
-        .environmentObject(AccountMenuState())
-        .environmentObject(ModelContainerProvider.shared)
+        .environment(AccountMenuState())
+        .environment(ModelContainerProvider.shared)
         .modelContainer(for: Habit.self, inMemory: true)
 }
 

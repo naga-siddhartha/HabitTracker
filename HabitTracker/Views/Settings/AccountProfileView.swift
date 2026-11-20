@@ -5,7 +5,7 @@ import AppKit
 
 /// Account profile when signed in with Apple: display info, sign out, delete account (Guideline 5.1.1(v)).
 struct AccountProfileView: View {
-    @ObservedObject private var authService = AuthService.shared
+    private var authService = AuthService.shared
     @Environment(\.dismiss) private var dismiss
     @State private var showingDeleteAccountConfirmation = false
     @State private var isDeleting = false
