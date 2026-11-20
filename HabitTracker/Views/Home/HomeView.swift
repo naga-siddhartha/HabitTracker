@@ -286,11 +286,15 @@ struct HomeView: View {
                 .padding(.top, config.progressHeaderTop)
                 .padding(.bottom, config.progressHeaderBottom)
             if activeHabitsDisplay.isEmpty {
-                Text("All done!")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, config.spacingM + 6)
+                // The header already celebrates a finished day; only explain an empty list when
+                // habits are still coming up later.
+                if !scheduledHabitsDisplay.isEmpty {
+                    Text("Nothing due right now")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, config.spacingM)
+                }
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(activeHabitsDisplay.enumerated()), id: \.element.id) { index, habit in
@@ -478,10 +482,10 @@ struct HomeView: View {
 
     private var motivationalMessage: String {
         let total = progressTotal
-        if completedCount == total && completedCount > 0 { return "All done! 🎉" }
-        if progress >= 0.5 { return "Keep going! 💪" }
+        if completedCount == total && completedCount > 0 { return "Perfect day" }
+        if progress >= 0.5 { return "Keep going" }
         if completedCount > 0 { return "\(total - completedCount) left" }
-        return "Let's start! 👋"
+        return "Let's start"
     }
     
     private func deleteHabit(_ habit: Habit) {
