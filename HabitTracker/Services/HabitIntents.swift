@@ -5,8 +5,8 @@ import WidgetKit
 // MARK: - Toggle Habit Intent
 
 struct ToggleHabitIntent: AppIntent {
-    static var title: LocalizedStringResource = "Toggle Habit"
-    static var description = IntentDescription("Mark a habit as complete or incomplete")
+    static let title: LocalizedStringResource = "Toggle Habit"
+    static let description = IntentDescription("Mark a habit as complete or incomplete")
     
     @Parameter(title: "Habit ID")
     var habitId: String

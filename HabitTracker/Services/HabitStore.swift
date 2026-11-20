@@ -35,7 +35,7 @@ final class HabitStore {
     func deleteHabit(_ habit: Habit) {
         // Defer delete to next run loop so SwiftUI finishes current render cycle.
         // Prevents "model instance was invalidated" crash when views still reference entries.
-        DispatchQueue.main.async { [weak self] in
+        Task { @MainActor [weak self] in
             guard let self else { return }
             self.repository.delete(habit)
             Analytics.track(.habitDeleted)
@@ -49,7 +49,7 @@ final class HabitStore {
         repository.deleteAll()
         writeWidgetData()
         // Defer widget reload so overlay dismisses quickly; widget updates shortly after.
-        DispatchQueue.main.async { WidgetCenter.shared.reloadAllTimelines() }
+        Task { @MainActor in WidgetCenter.shared.reloadAllTimelines() }
     }
     
     // MARK: - Entries

@@ -55,12 +55,11 @@ final class NotificationService {
             center.removeAllPendingNotificationRequests()
             return
         }
-        center.getNotificationSettings { settings in
-            switch settings.authorizationStatus {
+        Task {
+            switch await center.notificationSettings().authorizationStatus {
             case .notDetermined:
-                center.requestAuthorization(options: [.alert, .sound, .badge]) { granted, _ in
-                    if granted { Self.replaceAll(with: requests) }
-                }
+                let granted = (try? await center.requestAuthorization(options: [.alert, .sound, .badge])) ?? false
+                if granted { Self.replaceAll(with: requests) }
             case .authorized, .provisional, .ephemeral:
                 Self.replaceAll(with: requests)
             case .denied:

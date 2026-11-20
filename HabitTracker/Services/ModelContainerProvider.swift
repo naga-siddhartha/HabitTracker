@@ -37,11 +37,12 @@ final class ModelContainerProvider {
     }
 
     private func observeAccountChanges() {
+        // queue: .main delivers on the main thread; assumeIsolated tells the compiler so.
         NotificationCenter.default.addObserver(forName: .userDidSignIn, object: nil, queue: .main) { [weak self] _ in
-            self?.setCloudSync(enabled: true)
+            MainActor.assumeIsolated { self?.setCloudSync(enabled: true) }
         }
         NotificationCenter.default.addObserver(forName: .userDidSignOut, object: nil, queue: .main) { [weak self] _ in
-            self?.setCloudSync(enabled: false)
+            MainActor.assumeIsolated { self?.setCloudSync(enabled: false) }
         }
     }
 

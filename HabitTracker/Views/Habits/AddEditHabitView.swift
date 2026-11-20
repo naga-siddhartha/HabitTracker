@@ -356,7 +356,7 @@ struct AddEditHabitView: View {
     @ViewBuilder
     private var colorRow: some View {
         Button {
-            DispatchQueue.main.async { showingColorPickerSheet = true }
+            Task { @MainActor in showingColorPickerSheet = true }
         } label: {
             HStack {
                 Text("Color")
@@ -483,7 +483,7 @@ struct AddEditHabitView: View {
     @ViewBuilder
     private var emojiRow: some View {
         Button {
-            DispatchQueue.main.async { showingEmojiPickerSheet = true }
+            Task { @MainActor in showingEmojiPickerSheet = true }
         } label: {
             HStack {
                 Text("Emoji")

@@ -42,7 +42,8 @@ struct OnboardingView: View {
                     #if os(macOS)
                     dismiss()
                     #endif
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                    Task { @MainActor in
+                        try? await Task.sleep(for: .milliseconds(250))
                         onGetStarted()
                     }
                 } label: {

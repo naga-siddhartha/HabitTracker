@@ -114,21 +114,19 @@ extension AuthService: ASAuthorizationControllerDelegate {
         let displayName = Self.formatDisplayName(from: credential)
         let cont = AuthService.sharedContinuation
         AuthService.sharedContinuation = nil
-        // Keychain I/O off the delegate (often Default QoS); resume continuation on main to avoid priority inversion.
         guard let service = Self._sharedRef else { return }
-        DispatchQueue.global(qos: .userInitiated).async {
+        Task { @MainActor in
+            // A single small Keychain write; fine on the main actor.
             let success = KeychainHelper.save(userId: userId, displayName: displayName)
-            DispatchQueue.main.async {
-                if success {
-                    cont?.resume()
-                    service.currentUserId = userId
-                    service.userDisplayName = KeychainHelper.loadUserDisplayName()
-                    service.isSignedIn = true
-                    NotificationCenter.default.post(name: .userDidSignIn, object: nil)
-                    Analytics.track(.signedIn)
-                } else {
-                    cont?.resume(throwing: AuthError.keychainSaveFailed)
-                }
+            if success {
+                cont?.resume()
+                service.currentUserId = userId
+                service.userDisplayName = KeychainHelper.loadUserDisplayName()
+                service.isSignedIn = true
+                NotificationCenter.default.post(name: .userDidSignIn, object: nil)
+                Analytics.track(.signedIn)
+            } else {
+                cont?.resume(throwing: AuthError.keychainSaveFailed)
             }
         }
     }
@@ -149,9 +147,7 @@ extension AuthService: ASAuthorizationControllerDelegate {
         AuthService.sharedContinuation = nil
         let authError = error as? ASAuthorizationError
         let toThrow = authError?.code == .canceled ? AuthError.canceled : error
-        DispatchQueue.main.async {
-            cont?.resume(throwing: toThrow)
-        }
+        cont?.resume(throwing: toThrow)
     }
 }
 
