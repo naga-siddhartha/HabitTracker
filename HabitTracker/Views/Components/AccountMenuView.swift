@@ -53,7 +53,7 @@ struct AccountMenuButton: View {
             Image(systemName: authService.isSignedIn ? "person.crop.circle.fill" : "person.crop.circle")
                 .font(.system(size: 28))
                 .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(authService.isSignedIn ? Color(red: 0.35, green: 0.51, blue: 0.88) : Color.gray)
+                .foregroundStyle(authService.isSignedIn ? Color.accentColor : Color.gray)
         }
         .accessibilityLabel(authService.isSignedIn ? "Account menu" : "Sign in")
         .accessibilityHint(authService.isSignedIn ? "Open account, sync, or sign out" : "Sign in with Apple to sync across devices")

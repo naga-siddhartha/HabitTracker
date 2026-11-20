@@ -27,7 +27,6 @@ struct AccountProfileView: View {
         }
     }
 
-    private var appAccent: Color { Color(red: 0.35, green: 0.51, blue: 0.88) }
 
     var body: some View {
         #if os(macOS)
@@ -46,7 +45,7 @@ struct AccountProfileView: View {
                     HStack(spacing: 14) {
                         Image(systemName: "person.crop.circle.fill")
                             .font(.system(size: 44))
-                            .foregroundStyle(appAccent)
+                            .foregroundStyle(Color.accentColor)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Signed in with Apple")
                                 .font(.headline)
@@ -129,7 +128,7 @@ struct AccountProfileView: View {
                 HStack(spacing: 16) {
                     Image(systemName: "person.crop.circle.fill")
                         .font(.system(size: 40))
-                        .foregroundStyle(appAccent)
+                        .foregroundStyle(Color.accentColor)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Signed in with Apple")
                             .font(.headline)

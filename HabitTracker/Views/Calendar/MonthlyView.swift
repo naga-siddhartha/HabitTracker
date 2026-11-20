@@ -263,7 +263,7 @@ struct MonthlyHabitRow: View {
             .buttonStyle(.plain)
             .frame(width: completionButtonSize, height: completionButtonSize)
             .contentShape(Rectangle())
-            .hapticFeedback(.success, trigger: isCompleted)
+            .completionHaptic(isDone: isCompleted)
         }
         .padding(.horizontal, config.spacingL)
         .padding(.vertical, config.cornerRadiusMedium + 2)

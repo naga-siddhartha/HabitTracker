@@ -88,7 +88,7 @@ struct HabitDetailView: View {
                 .foregroundStyle(completed ? habit.displayColor : .primary)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
-            .hapticFeedback(.success, trigger: completed)
+            .completionHaptic(isDone: completed)
             .padding(.horizontal)
         }
     }

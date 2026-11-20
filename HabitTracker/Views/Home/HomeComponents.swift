@@ -160,7 +160,7 @@ struct ChecklistRow: View {
             .buttonStyle(.plain)
             .frame(minWidth: 44, minHeight: 44)
             .contentShape(Rectangle())
-            .hapticFeedback(.light, trigger: isCompleted)
+            .completionHaptic(isDone: isCompleted)
 
             Button {
                 onViewDescription?()
@@ -358,12 +358,6 @@ struct AdCardView: View {
         .overlay(
             RoundedRectangle(cornerRadius: config.cardCornerRadius)
                 .stroke(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.05), lineWidth: 1)
-        )
-        .shadow(
-            color: colorScheme == .dark ? .white.opacity(0.04) : .black.opacity(0.05),
-            radius: config.cardShadowRadius,
-            x: 0,
-            y: 3
         )
     }
 }

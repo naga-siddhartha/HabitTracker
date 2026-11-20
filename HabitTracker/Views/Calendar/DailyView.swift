@@ -170,7 +170,7 @@ struct DailyHabitRow: View {
             .buttonStyle(.plain)
             .frame(minWidth: LayoutConfig.current.iconSizeButton, minHeight: LayoutConfig.current.iconSizeButton)
             .contentShape(Rectangle())
-            .hapticFeedback(.success, trigger: isCompleted)
+            .completionHaptic(isDone: isCompleted)
         }
         .padding(.horizontal, LayoutConfig.current.spacingL)
         .padding(.vertical, LayoutConfig.current.cornerRadiusMedium + 2)

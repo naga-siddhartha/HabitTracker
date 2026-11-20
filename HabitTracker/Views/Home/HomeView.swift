@@ -17,7 +17,6 @@ struct HomeView: View {
 
     private let config = LayoutConfig.current
 
-    private var cardShadowColor: Color { colorScheme == .dark ? .white.opacity(0.04) : .black.opacity(0.05) }
 
     /// Current date/time so Home always reflects "today" when the view is evaluated.
     private var today: Date { Date.now }
@@ -134,7 +133,6 @@ struct HomeView: View {
     }
 
     /// Same blue as iOS so the add button stands out on all platforms.
-    private static let floatingButtonBlue = Color(red: 0.22, green: 0.45, blue: 0.88)
 
     @ViewBuilder
     private var floatingAddButton: some View {
@@ -195,23 +193,19 @@ struct HomeView: View {
         #endif
     }
 
+    @ViewBuilder
     private var floatingAddButtonLabel: some View {
-        #if os(macOS)
-        Image(systemName: "plus.circle.fill")
-            .font(.system(size: config.iconSizeRow + 2))
+        let icon = Image(systemName: "plus")
+            .font(.title2.weight(.semibold))
             .foregroundStyle(.white)
-            .frame(width: config.iconSizeButton, height: config.iconSizeButton)
-            .background(Self.floatingButtonBlue, in: Circle())
-            .overlay(Circle().strokeBorder(.white.opacity(0.4), lineWidth: 1))
-            .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
-        #else
-        Image(systemName: "plus.circle.fill")
-            .font(.system(size: config.iconSizeRow + 4))
-            .foregroundStyle(.white)
-            .frame(width: config.progressRingSize - 16, height: config.progressRingSize - 16)
-            .background(Self.floatingButtonBlue, in: Circle())
-            .shadow(color: .black.opacity(0.2), radius: config.cardShadowRadius, x: 0, y: 4)
-        #endif
+            .frame(width: 56, height: 56)
+        if #available(iOS 26.0, macOS 26.0, *) {
+            icon.glassEffect(.regular.tint(.accentColor).interactive(), in: .circle)
+        } else {
+            icon
+                .background(Color.accentColor, in: Circle())
+                .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 3)
+        }
     }
     
     // MARK: - Header
@@ -329,7 +323,6 @@ struct HomeView: View {
             RoundedRectangle(cornerRadius: config.cardCornerRadius)
                 .stroke(Color.primary.opacity(cardBorderOpacity), lineWidth: 1)
         )
-        .shadow(color: cardShadowColor, radius: config.cardShadowRadius, x: 0, y: 3)
         .frame(maxWidth: config.contentMaxWidth)
         .padding(.horizontal, config.horizontalPadding)
     }
@@ -374,7 +367,6 @@ struct HomeView: View {
             RoundedRectangle(cornerRadius: config.cardCornerRadius)
                 .stroke(Color.primary.opacity(cardBorderOpacity), lineWidth: 1)
         )
-        .shadow(color: cardShadowColor, radius: config.cardShadowRadius, x: 0, y: 3)
         .frame(maxWidth: config.contentMaxWidth)
         .padding(.horizontal, config.horizontalPadding)
     }
@@ -417,7 +409,6 @@ struct HomeView: View {
             RoundedRectangle(cornerRadius: config.cardCornerRadius)
                 .stroke(Color.primary.opacity(cardBorderOpacity), lineWidth: 1)
         )
-        .shadow(color: cardShadowColor, radius: config.cardShadowRadius, x: 0, y: 3)
         .frame(maxWidth: config.contentMaxWidth)
         .padding(.horizontal, config.horizontalPadding)
     }
@@ -428,6 +419,7 @@ struct HomeView: View {
             VStack(alignment: .leading, spacing: config.spacingXS) {
                 Text(progressTotal == 0 ? "0 of 0 done" : "\(completedCount) of \(progressTotal) done")
                     .font(.headline.weight(.semibold))
+                    .contentTransition(.numericText())
                 Text(motivationalMessage)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
@@ -486,7 +478,6 @@ struct HomeView: View {
             RoundedRectangle(cornerRadius: config.cardCornerRadius)
                 .stroke(Color.primary.opacity(cardBorderOpacity), lineWidth: 1)
         )
-        .shadow(color: cardShadowColor, radius: config.cardShadowRadius, x: 0, y: 3)
         .frame(maxWidth: config.contentMaxWidth)
         .padding(.horizontal, config.horizontalPadding)
     }

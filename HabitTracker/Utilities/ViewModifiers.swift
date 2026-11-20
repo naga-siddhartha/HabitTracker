@@ -17,6 +17,20 @@ extension View {
     }
 }
 
+extension View {
+    /// Success haptic when a habit becomes done, a light tap when it's undone.
+    @ViewBuilder
+    func completionHaptic(isDone: Bool) -> some View {
+        #if os(iOS)
+        self.sensoryFeedback(trigger: isDone) { wasDone, nowDone in
+            nowDone && !wasDone ? .success : .impact(weight: .light)
+        }
+        #else
+        self
+        #endif
+    }
+}
+
 /// Haptic feedback kinds used by controls.
 enum HapticStyle { case light, success, selection }
 

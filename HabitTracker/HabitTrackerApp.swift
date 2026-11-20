@@ -20,7 +20,6 @@ struct HabitTrackerApp: App {
         SyncMonitor.shared.start()
         PurchaseManager.shared.start()
         #if os(iOS)
-        configureTabBarAppearance()
         // Buyers of Remove Ads never load the ads SDK at all (faster launch, no ad network traffic).
         if !PurchaseManager.shared.isAdFree {
             #if DEBUG
@@ -35,13 +34,6 @@ struct HabitTrackerApp: App {
         #endif
     }
 
-    #if os(iOS)
-    private func configureTabBarAppearance() {
-        let tabBar = UITabBar.appearance()
-        tabBar.unselectedItemTintColor = UIColor.tertiaryLabel
-        tabBar.tintColor = UIColor(red: 0.35, green: 0.51, blue: 0.88, alpha: 1)
-    }
-    #endif
     
     var body: some Scene {
         WindowGroup {

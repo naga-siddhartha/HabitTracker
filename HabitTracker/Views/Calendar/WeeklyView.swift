@@ -236,7 +236,7 @@ private struct DayDot: View {
             .animation(.spring(duration: 0.2), value: isSkipped)
         }
         .buttonStyle(.plain)
-        .hapticFeedback(.success, trigger: isCompleted)
+        .completionHaptic(isDone: isCompleted)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .contextMenu {
             if isActive {
