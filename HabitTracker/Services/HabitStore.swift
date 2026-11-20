@@ -7,19 +7,36 @@ import WidgetKit
 @available(iOS 17.0, macOS 14.0, *)
 @MainActor
 final class HabitStore {
-    static let shared = HabitStore()
+    static let shared = HabitStore(container: { ModelContainerProvider.shared.currentContainer })
 
-    private let provider = ModelContainerProvider.shared
-    var modelContainer: ModelContainer { provider.currentContainer }
+    /// Where the container comes from. The app follows ModelContainerProvider (which swaps the
+    /// container on sign-in/out); tests pass an in-memory container.
+    private let containerSource: () -> ModelContainer
+    /// False in tests so they don't touch the real widget, notification center or analytics.
+    private let performsSideEffects: Bool
+
+    var modelContainer: ModelContainer { containerSource() }
     var modelContext: ModelContext {
-        let ctx = provider.currentContainer.mainContext
+        let ctx = containerSource().mainContext
         ctx.autosaveEnabled = true
         return ctx
     }
 
     private var repository: HabitRepository { HabitRepository(modelContext: modelContext) }
 
-    private init() {}
+    init(container: @escaping () -> ModelContainer, performsSideEffects: Bool = true) {
+        self.containerSource = container
+        self.performsSideEffects = performsSideEffects
+    }
+
+    /// A store backed by an in-memory database, for tests and previews.
+    static func inMemory() throws -> HabitStore {
+        let container = try ModelContainer(
+            for: AppConfig.schema,
+            configurations: ModelConfiguration(isStoredInMemoryOnly: true)
+        )
+        return HabitStore(container: { container }, performsSideEffects: false)
+    }
     
     // MARK: - Habits
     
@@ -38,7 +55,7 @@ final class HabitStore {
         Task { @MainActor [weak self] in
             guard let self else { return }
             self.repository.delete(habit)
-            Analytics.track(.habitDeleted)
+            if self.performsSideEffects { Analytics.track(.habitDeleted) }
             self.reloadWidgets()
             self.rescheduleAllReminders()
         }
@@ -49,7 +66,7 @@ final class HabitStore {
         repository.deleteAll()
         writeWidgetData()
         // Defer widget reload so overlay dismisses quickly; widget updates shortly after.
-        Task { @MainActor in WidgetCenter.shared.reloadAllTimelines() }
+        if performsSideEffects { Task { @MainActor in WidgetCenter.shared.reloadAllTimelines() } }
     }
     
     // MARK: - Entries
@@ -228,7 +245,7 @@ final class HabitStore {
     func handleRemoteChanges() {
         mergeDuplicates()
         writeWidgetData()
-        WidgetCenter.shared.reloadAllTimelines()
+        if performsSideEffects { WidgetCenter.shared.reloadAllTimelines() }
         rescheduleAllReminders()
     }
 
@@ -251,6 +268,7 @@ final class HabitStore {
     /// Rebuild all pending reminders from the current habits. Call after any change to habits or
     /// their reminder settings, and on launch so lost or stale reminders heal themselves.
     func rescheduleAllReminders() {
+        guard performsSideEffects else { return }
         let habits = fetchHabits()
             .filter { !$0.isArchived }
             .map {
@@ -273,12 +291,14 @@ final class HabitStore {
     }
 
     private func reloadWidgets() {
+        guard performsSideEffects else { return }
         writeWidgetData()
         WidgetCenter.shared.reloadAllTimelines()
     }
 
     /// Write today's habit counts to shared UserDefaults for the widget. Call on launch and when data changes.
     func writeWidgetData() {
+        guard performsSideEffects else { return }
         let habits = fetchHabits().filter { !$0.isArchived }
         let today = Date.now
         let todayHabits = habits.filter { $0.isActive(on: today) }
