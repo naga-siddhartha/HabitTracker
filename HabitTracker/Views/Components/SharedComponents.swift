@@ -63,6 +63,24 @@ struct ProgressRing: View {
     }
 }
 
+// MARK: - Streak Label
+
+/// Streak count with a gold flame. Gold is the reward color; the text stays readable gray.
+struct StreakLabel: View {
+    let text: String
+    var font: Font = .caption
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "flame.fill")
+                .foregroundStyle(Color.rewardGold)
+            Text(text)
+                .foregroundStyle(.secondary)
+        }
+        .font(font)
+    }
+}
+
 // MARK: - Habit Details Sheet (read-only, all edit fields)
 
 @available(iOS 17.0, macOS 14.0, *)
@@ -347,7 +365,7 @@ struct SkipReasonSheetView: View {
                     HStack(spacing: config.spacingS) {
                         Image(systemName: "flame.fill")
                             .font(.caption)
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.rewardGold)
                         Text("Skipping doesn’t break your streak. Your progress is preserved.")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)

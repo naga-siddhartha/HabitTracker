@@ -6,7 +6,7 @@ extension AddEditHabitView {
     // MARK: - Color
 
     var presetColors: [HabitColor] {
-        HabitColor.allCases.filter { $0 != .custom }
+        HabitColor.pickerColors
     }
 
     var currentDisplayColor: Color {

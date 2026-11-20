@@ -89,8 +89,10 @@ final class EnumTests: XCTestCase {
         XCTAssertEqual(Weekday.monday.fullName, "Monday")
     }
     
-    func testHabitColorCount() {
-        XCTAssertEqual(HabitColor.allCases.count, 9)
+    func testPickerOffersNinePresetsWithoutPurple() {
+        XCTAssertEqual(HabitColor.pickerColors.count, 9)
+        XCTAssertFalse(HabitColor.pickerColors.contains(.purple))
+        XCTAssertFalse(HabitColor.pickerColors.contains(.custom))
     }
     
     func testReminderSoundCount() {

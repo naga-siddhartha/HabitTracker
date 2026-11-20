@@ -16,7 +16,12 @@ nonisolated enum ReminderSound: String, Codable, CaseIterable, Sendable {
 
 /// Preset habit color; `.custom` uses `Habit.customColorHex`.
 nonisolated enum HabitColor: String, Codable, CaseIterable, Sendable {
-    case red, orange, yellow, green, blue, purple, pink, indigo, teal, custom
+    // `purple` stays decodable so existing habits keep their color, but isn't offered: it clashes
+    // with the violet brand color.
+    case red, orange, yellow, green, blue, purple, pink, indigo, teal, brown, custom
+
+    /// The preset colors offered in the picker, in display order.
+    static let pickerColors: [HabitColor] = [.red, .orange, .yellow, .green, .teal, .blue, .indigo, .pink, .brown]
 
     var color: Color {
         switch self {
@@ -29,6 +34,7 @@ nonisolated enum HabitColor: String, Codable, CaseIterable, Sendable {
         case .pink: .pink
         case .indigo: .indigo
         case .teal: .teal
+        case .brown: .brown
         case .custom: .blue
         }
     }

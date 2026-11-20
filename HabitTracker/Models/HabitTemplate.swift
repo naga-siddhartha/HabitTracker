@@ -34,14 +34,14 @@ struct HabitTemplate: Identifiable, Equatable {
         HabitTemplate(id: "water", name: "Drink Water", description: "Stay hydrated with 8 glasses", iconName: "drop.fill", color: .teal, category: .health),
         HabitTemplate(id: "vitamins", name: "Take Vitamins", description: "Daily supplements", iconName: "pill.fill", color: .orange, category: .health),
         HabitTemplate(id: "sleep", name: "Sleep 8 Hours", description: "Get enough rest", iconName: "bed.double.fill", color: .indigo, category: .health),
-        HabitTemplate(id: "noalcohol", name: "No Alcohol", description: "Stay sober", iconName: "wineglass", color: .purple, category: .health),
+        HabitTemplate(id: "noalcohol", name: "No Alcohol", description: "Stay sober", iconName: "wineglass", color: .indigo, category: .health),
         // Fitness
         HabitTemplate(id: "exercise", name: "Exercise", description: "30 min workout", iconName: "figure.run", color: .green, category: .fitness),
         HabitTemplate(id: "steps", name: "Walk 10K Steps", description: "Daily step goal", iconName: "figure.walk", color: .green, category: .fitness),
         HabitTemplate(id: "stretch", name: "Stretch", description: "Morning stretches", iconName: "figure.flexibility", color: .teal, category: .fitness),
-        HabitTemplate(id: "yoga", name: "Yoga", description: "Daily yoga practice", iconName: "figure.yoga", color: .purple, category: .fitness),
+        HabitTemplate(id: "yoga", name: "Yoga", description: "Daily yoga practice", iconName: "figure.yoga", color: .pink, category: .fitness),
         // Mindfulness
-        HabitTemplate(id: "meditate", name: "Meditate", description: "10 min mindfulness", iconName: "leaf.fill", color: .purple, category: .mindfulness),
+        HabitTemplate(id: "meditate", name: "Meditate", description: "10 min mindfulness", iconName: "leaf.fill", color: .teal, category: .mindfulness),
         HabitTemplate(id: "journal", name: "Journal", description: "Write daily thoughts", iconName: "book.closed.fill", color: .orange, category: .mindfulness),
         HabitTemplate(id: "gratitude", name: "Gratitude", description: "List 3 things grateful for", iconName: "heart.fill", color: .pink, category: .mindfulness),
         HabitTemplate(id: "nosocial", name: "No Social Media", description: "Digital detox", iconName: "iphone.slash", color: .red, category: .mindfulness),

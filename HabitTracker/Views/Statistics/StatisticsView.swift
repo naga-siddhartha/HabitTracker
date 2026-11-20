@@ -72,7 +72,7 @@ struct StatisticsView: View {
                         Button {
                             showingStreaksDetail = true
                         } label: {
-                            StatCard(title: "Current Streaks", value: "\(cachedActiveStreaks)", icon: "flame.fill", color: .orange)
+                            StatCard(title: "Current Streaks", value: "\(cachedActiveStreaks)", icon: "flame.fill", color: .rewardGold)
                         }
                         .buttonStyle(.plain)
                     }
@@ -100,7 +100,7 @@ struct StatisticsView: View {
                     StatsSectionCard(
                         title: "Longest Streaks",
                         icon: "flame.fill",
-                        iconColor: .orange,
+                        iconColor: .rewardGold,
                         isEmpty: habitsWithStreaks.isEmpty
                     ) {
                         ForEach(habitsWithStreaks.prefix(5)) { habit in
@@ -225,9 +225,12 @@ struct StreaksDetailView: View {
                 VStack(alignment: .leading, spacing: config.spacingS) {
                     Label(item.habit.name, systemImage: "circle.fill").foregroundStyle(item.habit.displayColor).font(.headline)
                     HStack {
-                        Label("\(item.current) current", systemImage: "flame.fill").foregroundStyle(.orange)
+                        StreakLabel(text: "\(item.current) current")
                         Spacer()
-                        Label("\(item.longest) longest", systemImage: "trophy.fill").foregroundStyle(.yellow)
+                        HStack(spacing: 4) {
+                            Image(systemName: "trophy.fill").foregroundStyle(Color.rewardGold)
+                            Text("\(item.longest) longest").foregroundStyle(.secondary)
+                        }
                     }
                     .font(.caption)
                 }
@@ -268,7 +271,7 @@ struct HabitsDetailView: View {
                     }
                     Text("Frequency: \(habit.frequency.rawValue.capitalized)").font(.caption).foregroundStyle(.secondary)
                     if let streak = habit.streakIfStarted {
-                        Text("Current streak: \(streak.currentStreak) days").font(.caption).foregroundStyle(.orange)
+                        StreakLabel(text: "Current streak: \(streak.currentStreak) days")
                     }
                     Text("Created: \(habit.createdAt.mediumDateString)").font(.caption2).foregroundStyle(.secondary)
                 }
@@ -347,8 +350,7 @@ struct StreakRow: View {
             }
             Text(habit.name).font(.subheadline)
             Spacer()
-            Label("\(habit.liveStreak.longestStreak) days", systemImage: "flame.fill")
-                .font(.caption).foregroundStyle(.orange)
+            StreakLabel(text: "\(habit.liveStreak.longestStreak) days")
         }
         .padding(.horizontal)
     }

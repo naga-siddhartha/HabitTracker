@@ -312,10 +312,7 @@ struct ChecklistRow: View {
                     .foregroundStyle(.secondary)
             }
             if isCompleted, let streak = habit.streakIfStarted, streak.currentStreak > 0 {
-                HStack(spacing: 4) {
-                    Image(systemName: "flame.fill").font(.system(size: 10))
-                    Text("\(streak.currentStreak) day streak").font(.footnote).foregroundStyle(.orange)
-                }
+                StreakLabel(text: "\(streak.currentStreak) day streak", font: .footnote)
             }
         }
     }

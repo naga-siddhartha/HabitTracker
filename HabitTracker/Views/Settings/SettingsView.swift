@@ -135,14 +135,14 @@ struct SettingsView: View {
     private var removeAdsSection: some View {
         Section {
             if purchases.isAdFree {
-                SettingsRow(icon: "checkmark.seal.fill", iconColor: .green, title: "Ads removed") {
+                SettingsRow(icon: "checkmark.seal.fill", iconColor: .rewardGold, title: "Ads removed") {
                     Text("Thank you!").foregroundStyle(.secondary)
                 }
             } else {
                 Button {
                     Task { await purchases.purchaseRemoveAds() }
                 } label: {
-                    SettingsRow(icon: "sparkles", iconColor: .purple, title: "Remove Ads") {
+                    SettingsRow(icon: "sparkles", iconColor: .accentColor, title: "Remove Ads") {
                         if purchases.isWorking {
                             ProgressView()
                         } else if let price = purchases.removeAdsProduct?.displayPrice {
