@@ -52,7 +52,7 @@ struct ProgressRing: View {
                 .stroke(Color.systemGray5, lineWidth: 6)
             Circle()
                 .trim(from: 0, to: progress)
-                .stroke(isComplete ? Color.rewardGold : Color.accentColor, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                .stroke(isComplete ? Color.rewardGold : Color.brandPurple, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(.spring(duration: 0.5), value: progress)
             center
@@ -72,7 +72,7 @@ struct ProgressRing: View {
         } else if let upNext {
             Text(upNext)
                 .font(.system(size: size * 0.4, weight: .semibold, design: .rounded))
-                .foregroundStyle(Color.accentColor)
+                .foregroundStyle(Color.brandPurple)
                 .id(upNext)
                 .transition(.blurReplace)
         }

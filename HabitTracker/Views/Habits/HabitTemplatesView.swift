@@ -84,7 +84,7 @@ struct TemplateRow: View {
                 Spacer()
                 Image(systemName: "plus.circle.fill")
                     .font(.title2)
-                    .foregroundStyle(Color.accentColor)
+                    .foregroundStyle(Color.brandPurple)
             }
         }
         .buttonStyle(.plain)

@@ -52,8 +52,8 @@ extension View {
 
 struct PillModifier: ViewModifier {
     var isSelected: Bool
-    var selectedColor: Color = .accentColor
-    
+    var selectedColor: Color = .brandPurple
+
     func body(content: Content) -> some View {
         content
             .font(.subheadline)
@@ -66,7 +66,7 @@ struct PillModifier: ViewModifier {
 }
 
 extension View {
-    func pillStyle(isSelected: Bool, selectedColor: Color = .accentColor) -> some View {
+    func pillStyle(isSelected: Bool, selectedColor: Color = .brandPurple) -> some View {
         modifier(PillModifier(isSelected: isSelected, selectedColor: selectedColor))
     }
 }

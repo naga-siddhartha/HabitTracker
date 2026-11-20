@@ -159,6 +159,7 @@ struct ChecklistRow: View {
                     .foregroundStyle(.secondary)
             }
             .menuIndicator(.hidden)
+            .tint(Color.brandPurple)
         }
         .padding(.horizontal, config.spacingL)
         .padding(.vertical, config.spacingL)
@@ -337,6 +338,7 @@ struct AdCardView: View {
                 }
                 .font(.caption.weight(.semibold))
                 .buttonStyle(.borderless)
+                .tint(Color.brandPurple)
             }
             #if os(iOS)
             AdMobBannerView()
@@ -431,6 +433,7 @@ struct ScheduledRow: View {
                     .foregroundStyle(.secondary)
             }
             .menuIndicator(.hidden)
+            .tint(Color.brandPurple)
         }
         .padding(.horizontal, config.spacingL)
         .padding(.vertical, config.spacingM)

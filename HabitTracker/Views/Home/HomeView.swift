@@ -202,10 +202,10 @@ struct HomeView: View {
             .foregroundStyle(.white)
             .frame(width: 56, height: 56)
         if #available(iOS 26.0, macOS 26.0, *) {
-            icon.glassEffect(.regular.tint(.accentColor).interactive(), in: .circle)
+            icon.glassEffect(.regular.tint(Color.brandPurple).interactive(), in: .circle)
         } else {
             icon
-                .background(Color.accentColor, in: Circle())
+                .background(Color.brandPurple, in: Circle())
                 .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 3)
         }
     }
@@ -258,7 +258,7 @@ struct HomeView: View {
             if todayHabits.isEmpty && habitsCompletedToday.isEmpty {
                 HomeEmptyState(
                     icon: "checkmark.circle",
-                    iconColor: .accentColor,
+                    iconColor: .brandPurple,
                     title: habits.isEmpty ? "No habits yet" : "All caught up",
                     message: habits.isEmpty ? "Create your first habit or start from a template." : "No habits due today. Tap + to add one.",
                     primaryButtonTitle: "New habit",

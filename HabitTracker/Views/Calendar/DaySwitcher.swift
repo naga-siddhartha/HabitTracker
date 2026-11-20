@@ -28,7 +28,7 @@ struct DaySwitcher: View {
                 DatePicker("Day", selection: $date, displayedComponents: .date)
                     .datePickerStyle(.graphical)
                     .labelsHidden()
-                    .tint(.accentColor)
+                    .tint(Color.brandPurple)
                     .padding()
                     .frame(minWidth: 300)
                     .presentationCompactAdaptation(.popover)
@@ -40,7 +40,7 @@ struct DaySwitcher: View {
             if !isToday {
                 Button("Today") { withAnimation { date = .now } }
                     .font(.subheadline.weight(.semibold))
-                    .tint(.accentColor)
+                    .tint(Color.brandPurple)
                     .buttonStyle(.bordered)
                     .buttonBorderShape(.capsule)
                     .transition(.opacity)
@@ -71,7 +71,7 @@ struct DaySwitcher: View {
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .foregroundStyle(Color.accentColor)
+        .foregroundStyle(Color.brandPurple)
         .accessibilityLabel(label)
     }
 }

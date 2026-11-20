@@ -133,7 +133,7 @@ struct YearMonthCell: View {
                     .stroke(Color.systemGray4, lineWidth: 4)
                 Circle()
                     .trim(from: 0, to: completionRatio)
-                    .stroke(completionRatio >= 1 ? Color.rewardGold : Color.accentColor, lineWidth: 4)
+                    .stroke(completionRatio >= 1 ? Color.rewardGold : Color.brandPurple, lineWidth: 4)
                     .rotationEffect(.degrees(-90))
                 
                 Text("\(Int(completionRatio * 100))%")

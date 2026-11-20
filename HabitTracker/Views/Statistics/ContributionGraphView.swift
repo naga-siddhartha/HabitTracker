@@ -202,13 +202,13 @@ extension ContributionGraphView {
         case 0:
             return colorScheme == .dark ? Color.systemGray6 : Color(white: 0.88)
         case 1:
-            return Color.accentColor.opacity(colorScheme == .dark ? 0.3 : 0.25)
+            return Color.brandPurple.opacity(colorScheme == .dark ? 0.3 : 0.25)
         case 2:
-            return Color.accentColor.opacity(colorScheme == .dark ? 0.55 : 0.5)
+            return Color.brandPurple.opacity(colorScheme == .dark ? 0.55 : 0.5)
         case 3:
-            return Color.accentColor.opacity(colorScheme == .dark ? 0.8 : 0.75)
+            return Color.brandPurple.opacity(colorScheme == .dark ? 0.8 : 0.75)
         default:
-            return .accentColor
+            return .brandPurple
         }
     }
 }

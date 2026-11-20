@@ -4,6 +4,17 @@ import SwiftUI
 // MARK: - Cross-Platform Colors
 
 extension Color {
+    /// App brand purple — read from the asset catalog directly to bypass the iOS 26 system accent override.
+    static let brandPurple: Color = {
+        #if os(iOS) || os(visionOS)
+        return Color(uiColor: UIColor(named: "AccentColor") ?? .systemPurple)
+        #elseif os(macOS)
+        return Color(nsColor: NSColor(named: "AccentColor") ?? .purple)
+        #else
+        return .accentColor
+        #endif
+    }()
+
     #if os(iOS) || os(visionOS)
     static var systemBackground: Color { Color(uiColor: .systemBackground) }
     static var systemGray6: Color { Color(uiColor: .systemGray6) }

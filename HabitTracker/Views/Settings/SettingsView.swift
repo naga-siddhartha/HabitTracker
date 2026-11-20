@@ -142,7 +142,7 @@ struct SettingsView: View {
                 Button {
                     Task { await purchases.purchaseRemoveAds() }
                 } label: {
-                    SettingsRow(icon: "sparkles", iconColor: .accentColor, title: "Remove Ads") {
+                    SettingsRow(icon: "sparkles", iconColor: .brandPurple, title: "Remove Ads") {
                         if purchases.isWorking {
                             ProgressView()
                         } else if let price = purchases.removeAdsProduct?.displayPrice {

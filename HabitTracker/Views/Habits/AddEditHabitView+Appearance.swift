@@ -168,7 +168,7 @@ extension AddEditHabitView {
                                             .font(.system(size: 28))
                                             .frame(width: 44, height: 44)
                                             .background(
-                                                emoji == resolvedEmoji ? Color.accentColor.opacity(0.2) : .clear,
+                                                emoji == resolvedEmoji ? Color.brandPurple.opacity(0.2) : .clear,
                                                 in: Circle()
                                             )
                                             .contentShape(Rectangle())

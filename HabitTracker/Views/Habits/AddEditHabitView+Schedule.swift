@@ -32,7 +32,7 @@ extension AddEditHabitView {
                         Text(String(day.shortName.prefix(1)))
                             .font(.system(size: 13, weight: .semibold, design: .rounded))
                             .frame(width: 36, height: 36)
-                            .background(isOn ? Color.accentColor : Color.secondary.opacity(0.15), in: Circle())
+                            .background(isOn ? Color.brandPurple : Color.secondary.opacity(0.15), in: Circle())
                             .foregroundStyle(isOn ? .white : .secondary)
                     }
                     .buttonStyle(.plain)
@@ -84,16 +84,16 @@ extension AddEditHabitView {
         Button(action: action) {
             Text(label)
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(isOn ? Color.accentColor : .secondary)
+                .foregroundStyle(isOn ? Color.brandPurple : .secondary)
                 .padding(.horizontal, 14)
                 .padding(.vertical, 7)
                 .background {
                     Capsule()
-                        .fill(isOn ? Color.accentColor.opacity(0.12) : Color.secondary.opacity(0.12))
+                        .fill(isOn ? Color.brandPurple.opacity(0.12) : Color.secondary.opacity(0.12))
                         .overlay {
                             Capsule()
                                 .strokeBorder(
-                                    isOn ? Color.accentColor.opacity(0.5) : Color.clear,
+                                    isOn ? Color.brandPurple.opacity(0.5) : Color.clear,
                                     lineWidth: 1
                                 )
                         }
