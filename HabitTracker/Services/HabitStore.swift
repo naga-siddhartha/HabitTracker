@@ -92,6 +92,7 @@ final class HabitStore {
         habit.updatedAt = .now
         save()
         reloadWidgets()
+        celebrateMilestoneIfReached(habit, on: date)
     }
 
     /// Mark all expected completions as done at once.
@@ -110,6 +111,7 @@ final class HabitStore {
         habit.updatedAt = .now
         save()
         reloadWidgets()
+        celebrateMilestoneIfReached(habit, on: date)
     }
 
     /// Reset all completions for a repeating habit back to zero.
@@ -151,6 +153,7 @@ final class HabitStore {
         habit.updatedAt = .now
         save()
         reloadWidgets()
+        celebrateMilestoneIfReached(habit, on: date)
     }
     
     func skipDay(for habit: Habit, on date: Date, reason: String? = nil) {
@@ -249,6 +252,13 @@ final class HabitStore {
         writeWidgetData()
         if performsSideEffects { WidgetCenter.shared.reloadAllTimelines() }
         rescheduleAllReminders()
+    }
+
+    // MARK: - Milestones
+
+    private func celebrateMilestoneIfReached(_ habit: Habit, on date: Date) {
+        guard performsSideEffects, let event = MilestoneCenter.shared.checkIn(habit, on: date) else { return }
+        Analytics.track(.milestoneReached(days: event.days))
     }
 
     // MARK: - Launch

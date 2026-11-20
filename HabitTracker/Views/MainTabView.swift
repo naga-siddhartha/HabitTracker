@@ -10,6 +10,7 @@ struct MainTabView: View {
     @State private var isPresentingTemplates = false
     @State private var isResetting = false
     @State private var accountMenuState = AccountMenuState()
+    private var milestones = MilestoneCenter.shared
     
     private var showOnboarding: Binding<Bool> {
         Binding(
@@ -60,6 +61,15 @@ struct MainTabView: View {
         #if os(macOS)
         .withAccountToolbar(accountMenuState: accountMenuState)
         #endif
+        .overlay(alignment: .top) {
+            if let event = milestones.current {
+                MilestoneBanner(event: event) {
+                    withAnimation(.smooth) { milestones.current = nil }
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .animation(.spring(duration: 0.45, bounce: 0.3), value: milestones.current)
         .preferredColorScheme(appearanceMode.preferredColorScheme)
         .modifier(ResettingOverlayModifier(isPresented: $isResetting))
         .sheet(isPresented: showOnboarding, onDismiss: { isPresentingTemplates = true }) {

@@ -432,10 +432,10 @@ struct HomeView: View {
                         StreakLabel(text: "\(perfectDayStreak) perfect days in a row", font: .footnote)
                     }
                 } else {
-                    Text("\(completedCount) of \(progressTotal) done")
+                    Text(progressHeadline)
                         .font(.headline.weight(.semibold))
                         .contentTransition(.numericText())
-                    Text(motivationalMessage)
+                    Text(nextUpLine)
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -498,11 +498,23 @@ struct HomeView: View {
         .padding(.horizontal, config.horizontalPadding)
     }
 
-    private var motivationalMessage: String {
-        let total = progressTotal
-        if total == 0 { return "Everything's skipped today" }
-        if completedCount == 0 { return total == 1 ? "1 habit today" : "\(total) habits today" }
-        return "\(total - completedCount) left"
+    private var progressHeadline: String {
+        if completedCount == 0 { return progressTotal == 1 ? "1 habit today" : "\(progressTotal) habits today" }
+        return "\(completedCount) of \(progressTotal) done"
+    }
+
+    /// Names the next habit, so the subtitle adds information instead of restating the count.
+    private var nextUpLine: String {
+        if progressTotal == 0 { return "Everything's skipped today" }
+        if let next = activeHabitsDisplay.first {
+            if completedCount == 0 { return "Start with \(next.name)" }
+            if progressTotal - completedCount == 1 { return "Last one: \(next.name)" }
+            return "Up next: \(next.name)"
+        }
+        if let later = scheduledHabitsDisplay.first, let time = later.reminderTimes.first {
+            return "Next: \(later.name) at \(time.formatted(date: .omitted, time: .shortened))"
+        }
+        return "\(progressTotal - completedCount) to go"
     }
     
     private func deleteHabit(_ habit: Habit) {

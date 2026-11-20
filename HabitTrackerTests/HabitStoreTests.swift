@@ -123,3 +123,27 @@ final class HabitStoreTests: XCTestCase {
         XCTAssertEqual(store.fetchHabits().count, 2)
     }
 }
+
+@MainActor
+final class MilestoneTests: XCTestCase {
+    func testSeventhDayInARowCelebratesOnce() throws {
+        let store = try HabitStore.inMemory()
+        let defaults = UserDefaults(suiteName: "MilestoneTests-\(UUID().uuidString)")!
+        let center = MilestoneCenter(defaults: defaults)
+        let habit = Habit(name: "Read")
+        store.addHabit(habit)
+        habit.createdAt = Calendar.current.date(byAdding: .day, value: -30, to: .now)!
+        for n in 1...6 {
+            store.toggleCompletion(for: habit, on: Calendar.current.date(byAdding: .day, value: -n, to: .now)!)
+        }
+        XCTAssertNil(center.checkIn(habit, on: .now), "today isn't checked in yet")
+
+        store.toggleCompletion(for: habit, on: .now)
+        XCTAssertEqual(center.checkIn(habit, on: .now)?.days, 7)
+
+        // Unchecking and re-checking the same day doesn't celebrate again.
+        store.toggleCompletion(for: habit, on: .now)
+        store.toggleCompletion(for: habit, on: .now)
+        XCTAssertNil(center.checkIn(habit, on: .now))
+    }
+}

@@ -50,6 +50,7 @@ enum Analytics {
         case launchTime(seconds: TimeInterval)
         case removeAdsPurchased
         case removeAdsRestored
+        case milestoneReached(days: Int)
 
         var name: String {
             switch self {
@@ -64,6 +65,7 @@ enum Analytics {
             case .launchTime: "Performance.launch"
             case .removeAdsPurchased: "Purchase.removeAds"
             case .removeAdsRestored: "Purchase.restored"
+            case .milestoneReached: "Streak.milestone"
             }
         }
 
@@ -74,6 +76,8 @@ enum Analytics {
                  "isInterval": "\(isInterval)", "isWeekly": "\(isWeekly)"]
             case let .backupExported(format):
                 ["format": format]
+            case let .milestoneReached(days):
+                ["days": "\(days)"]
             case let .launchTime(seconds):
                 ["launchBucket": Analytics.launchBucket(seconds)]
             default:
