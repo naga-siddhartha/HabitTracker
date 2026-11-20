@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 import SwiftData
 import UniformTypeIdentifiers
 import WidgetKit
@@ -8,6 +9,8 @@ struct SettingsView: View {
     @Query private var habits: [Habit]
     @AppStorage("notificationsEnabled") private var notificationsEnabled = true
     @AppStorage("appearanceMode") private var appearanceMode = AppearanceMode.system
+    @AppStorage(Analytics.enabledKey) private var analyticsEnabled = true
+    private var purchases = PurchaseManager.shared
 
     var onRequestReset: (() -> Void)? = nil
 
@@ -42,7 +45,7 @@ struct SettingsView: View {
                 .alert("Reset All Data?", isPresented: $showingResetAlert) {
                     Button("Cancel", role: .cancel) {}
                     Button("Reset", role: .destructive) {
-                        DispatchQueue.main.async {
+                        Task { @MainActor in
                             onRequestReset?()
                         }
                     }
@@ -102,9 +105,13 @@ struct SettingsView: View {
     private var settingsList: some View {
         List {
             accountSection
+            #if os(iOS)
+            removeAdsSection
+            #endif
             notificationsSection
             appearanceSection
             dataSection
+            privacySection
             supportSection
             aboutSection
         }
@@ -113,7 +120,56 @@ struct SettingsView: View {
         #else
         .listStyle(.inset)
         #endif
+        .alert("App Store", isPresented: Binding(
+            get: { purchases.message != nil },
+            set: { if !$0 { purchases.message = nil } }
+        )) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(purchases.message ?? "")
+        }
     }
+
+    #if os(iOS)
+    @ViewBuilder
+    private var removeAdsSection: some View {
+        Section {
+            if purchases.isAdFree {
+                SettingsRow(icon: "checkmark.seal.fill", iconColor: .rewardGold, title: "Ads removed") {
+                    Text("Thank you!").foregroundStyle(.secondary)
+                }
+            } else {
+                Button {
+                    Task { await purchases.purchaseRemoveAds() }
+                } label: {
+                    SettingsRow(icon: "sparkles", iconColor: .brandPurple, title: "Remove Ads") {
+                        if purchases.isWorking {
+                            ProgressView()
+                        } else if let price = purchases.removeAdsProduct?.displayPrice {
+                            Text(price).foregroundStyle(.secondary)
+                        }
+                    }
+                }
+                .buttonStyle(.plain)
+                .disabled(purchases.isWorking)
+
+                Button {
+                    Task { await purchases.restore() }
+                } label: {
+                    SettingsRow(icon: "arrow.clockwise", iconColor: .gray, title: "Restore Purchases") {
+                        EmptyView()
+                    }
+                }
+                .buttonStyle(.plain)
+                .disabled(purchases.isWorking)
+            }
+        } footer: {
+            if !purchases.isAdFree {
+                Text("One-time purchase. Also removes ads on your other devices signed in to the same Apple Account.")
+            }
+        }
+    }
+    #endif
 
     @ViewBuilder
     private var accountSection: some View {
@@ -145,7 +201,8 @@ struct SettingsView: View {
                     .labelsHidden()
                     .onChange(of: notificationsEnabled) { _, newValue in
                         if newValue {
-                            NotificationService.shared.requestAuthorization()
+                            // Turning reminders back on must restore them, not just ask permission.
+                            HabitStore.shared.rescheduleAllReminders()
                         } else {
                             NotificationService.shared.cancelAllNotifications()
                         }
@@ -169,6 +226,16 @@ struct SettingsView: View {
         }
     }
 
+    private var privacySection: some View {
+        Section {
+            Toggle("Share anonymous usage stats", isOn: $analyticsEnabled)
+        } header: {
+            Text("Privacy")
+        } footer: {
+            Text("Sends one anonymous daily summary, like how many habits you have and whether reminders are on. Never your habit names, notes or history. Turning this off stops it right away.")
+        }
+    }
+
     private var dataSection: some View {
         Section(header: Text("Data")) {
             Menu {
@@ -180,6 +247,7 @@ struct SettingsView: View {
                     chevronAccessory
                 }
             }
+            .menuIndicator(.hidden)
             .buttonStyle(.plain)
 
             Button {
@@ -268,9 +336,12 @@ struct SettingsView: View {
                 await MainActor.run {
                     do {
                         try ImportService.replaceAllAndRestore(from: exportData, context: HabitStore.shared.modelContext)
+                        // Streaks are computed from the restored history; rebuild reminders for the restored habits.
+                        HabitStore.shared.rescheduleAllReminders()
                         HabitStore.shared.writeWidgetData()
                         WidgetKit.WidgetCenter.shared.reloadAllTimelines()
                         importSuccess = true
+                        Analytics.track(.backupRestored)
                     } catch {
                         importError = error.localizedDescription
                         showingImportErrorAlert = true
@@ -313,6 +384,9 @@ struct SettingsView: View {
             filename = "HabitGrabIt-Summary-\(dateStr).csv"
         }
 
+        if data != nil {
+            Analytics.track(.backupExported(format: "\(format)"))
+        }
         guard let data else {
             isExporting = false
             exportError = "Could not prepare export data."

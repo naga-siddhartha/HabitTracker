@@ -4,9 +4,10 @@ import WidgetKit
 
 // MARK: - Toggle Habit Intent
 
+/// Siri and Shortcuts action that completes or un-completes a habit for today.
 struct ToggleHabitIntent: AppIntent {
-    static var title: LocalizedStringResource = "Toggle Habit"
-    static var description = IntentDescription("Mark a habit as complete or incomplete")
+    static let title: LocalizedStringResource = "Toggle Habit"
+    static let description = IntentDescription("Mark a habit as complete or incomplete")
     
     @Parameter(title: "Habit ID")
     var habitId: String
@@ -23,39 +24,31 @@ struct ToggleHabitIntent: AppIntent {
             return .result()
         }
         
-        let container = try await Task.detached(priority: .userInitiated) {
-            try AppConfig.createModelContainer()
-        }.value
-        let context = container.mainContext
-        
-        var descriptor = FetchDescriptor<Habit>()
-        descriptor.predicate = #Predicate { $0.id == uuid }
-        
-        guard let habit = try? context.fetch(descriptor).first else {
+        // Go through the app's store so this behaves exactly like an in-app tap, and never opens
+        // a second container on the same file.
+        let store = HabitStore.shared
+        guard let habit = store.fetchHabits().first(where: { $0.id == uuid }) else {
             return .result()
         }
-        
-        let today = Date.now.startOfDay
-        
-        if let entry = habit.entriesOrEmpty.first(where: { $0.date == today }) {
-            entry.isCompleted.toggle()
-            entry.updatedAt = Date.now
+
+        let today = Date.now
+        if habit.reminderIntervalMinutes > 0 {
+            if habit.isDone(on: today) {
+                store.resetCompletion(for: habit, on: today)
+            } else {
+                store.markAllComplete(for: habit, on: today)
+            }
         } else {
-            let entry = HabitEntry(date: today)
-            habit.entries = (habit.entries ?? []) + [entry]
+            store.toggleCompletion(for: habit, on: today)
         }
-        
-        habit.updatedAt = Date.now
-        try? context.save()
-        
-        WidgetCenter.shared.reloadAllTimelines()
-        
+
         return .result()
     }
 }
 
 // MARK: - App Shortcuts
 
+/// App Shortcuts exposed to Siri and Spotlight.
 struct HabitTrackerShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(

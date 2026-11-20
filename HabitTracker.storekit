@@ -1,0 +1,33 @@
+{
+  "identifier" : "6E1B4C2A",
+  "nonRenewingSubscriptions" : [
+
+  ],
+  "products" : [
+    {
+      "displayPrice" : "2.99",
+      "familyShareable" : true,
+      "internalID" : "6755000001",
+      "localizations" : [
+        {
+          "description" : "Remove all ads from Habit: Grab It. One-time purchase.",
+          "displayName" : "Remove Ads",
+          "locale" : "en_US"
+        }
+      ],
+      "productID" : "com.nagasiddharthadonepudi.HabitTracker.removeads",
+      "referenceName" : "Remove Ads",
+      "type" : "NonConsumable"
+    }
+  ],
+  "settings" : {
+
+  },
+  "subscriptionGroups" : [
+
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

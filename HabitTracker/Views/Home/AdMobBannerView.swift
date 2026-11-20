@@ -40,7 +40,8 @@ private struct AdMobBannerRepresentable: UIViewRepresentable {
         banner.delegate = context.coordinator
         banner.rootViewController = Self.rootViewController
         // Load after a short delay so MobileAds.shared.start() has run and window is ready.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(500))
             banner.rootViewController = Self.rootViewController
             banner.load(Request())
         }

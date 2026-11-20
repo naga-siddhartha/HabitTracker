@@ -25,11 +25,11 @@ struct MonthlyView: View {
             // Fixed calendar block — stays at top
             VStack(spacing: 0) {
                 HStack {
-                    Button { changeMonth(by: -1) } label: { Image(systemName: "chevron.left") }
+                    Button { changeMonth(by: -1) } label: { Image(systemName: "chevron.left").foregroundStyle(.secondary) }
                     Spacer()
                     Text(currentMonth, format: .dateTime.month(.wide).year()).font(.headline)
                     Spacer()
-                    Button { changeMonth(by: 1) } label: { Image(systemName: "chevron.right") }
+                    Button { changeMonth(by: 1) } label: { Image(systemName: "chevron.right").foregroundStyle(.secondary) }
                 }
                 .padding()
                 
@@ -152,13 +152,13 @@ struct MonthDayCell: View {
     
     var body: some View {
         ZStack {
-            Circle().fill(Color.green.opacity(completionRatio * 0.8)).opacity(isCurrentMonth ? 1 : 0.3)
+            Circle().fill(completionRatio >= 1 ? Color.rewardGold.opacity(0.8) : Color.brandPurple.opacity(completionRatio * 0.7)).opacity(isCurrentMonth ? 1 : 0.3)
             Text("\(calendar.component(.day, from: date))")
                 .font(.caption)
                 .foregroundStyle(isCurrentMonth ? .primary : .secondary)
         }
         .frame(height: 36)
-        .background(isSelected ? Color.blue.opacity(0.3) : .clear)
+        .background(isSelected ? Color.brandPurple.opacity(0.3) : .clear)
         .clipShape(Circle())
     }
 }
@@ -263,7 +263,7 @@ struct MonthlyHabitRow: View {
             .buttonStyle(.plain)
             .frame(width: completionButtonSize, height: completionButtonSize)
             .contentShape(Rectangle())
-            .hapticFeedback(.success, trigger: isCompleted)
+            .completionHaptic(isDone: isCompleted)
         }
         .padding(.horizontal, config.spacingL)
         .padding(.vertical, config.cornerRadiusMedium + 2)

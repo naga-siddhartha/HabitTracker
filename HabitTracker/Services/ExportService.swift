@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// Builds JSON backups and CSV exports of all habits.
 struct ExportService {
     
     // MARK: - Export Data Structures
@@ -25,6 +26,14 @@ struct ExportService {
         let currentStreak: Int
         let longestStreak: Int
         let entries: [ExportEntry]
+        // Added in 1.4. Optional so older backups still restore.
+        var emoji: String? = nil
+        var customColorHex: String? = nil
+        var reminderTimes: [Date]? = nil
+        var reminderNames: [String]? = nil
+        var reminderSounds: [String]? = nil
+        var reminderIntervalMinutes: Int? = nil
+        var reminderEndTime: Date? = nil
     }
     
     struct ExportEntry: Codable {
@@ -32,6 +41,8 @@ struct ExportService {
         let isCompleted: Bool
         let isSkipped: Bool
         let skipReason: String?
+        /// Progress for "every few hours" habits. Added in 1.4.
+        var completionCount: Int? = nil
     }
     
     // MARK: - Export to JSON
@@ -48,22 +59,30 @@ struct ExportService {
                 activeDays: habit.activeDays.map { $0.fullName },
                 createdAt: habit.createdAt,
                 isArchived: habit.isArchived,
-                currentStreak: habit.streak?.currentStreak ?? 0,
-                longestStreak: habit.streak?.longestStreak ?? 0,
+                currentStreak: habit.liveStreak.currentStreak,
+                longestStreak: habit.liveStreak.longestStreak,
                 entries: (habit.entries ?? []).map { entry in
                     ExportEntry(
                         date: entry.date,
                         isCompleted: entry.isCompleted,
                         isSkipped: entry.isSkipped,
-                        skipReason: entry.skipReason
+                        skipReason: entry.skipReason,
+                        completionCount: entry.completionCount
                     )
-                }.sorted { $0.date < $1.date }
+                }.sorted { $0.date < $1.date },
+                emoji: habit.emoji,
+                customColorHex: habit.customColorHex,
+                reminderTimes: habit.reminderTimes,
+                reminderNames: habit.reminderNames,
+                reminderSounds: habit.reminderSounds,
+                reminderIntervalMinutes: habit.reminderIntervalMinutes,
+                reminderEndTime: habit.reminderEndTime
             )
         }
         
         let exportData = ExportData(
             exportDate: .now,
-            appVersion: "1.2",
+            appVersion: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "unknown",
             habits: exportHabits
         )
         
@@ -90,7 +109,7 @@ struct ExportService {
                 
                 let dateStr = entry.date.formatted(date: .numeric, time: .omitted)
                 let reason = entry.skipReason ?? ""
-                let streak = habit.streak?.currentStreak ?? 0
+                let streak = habit.liveStreak.currentStreak
                 
                 csv += "\"\(habit.name)\",\(dateStr),\(status),\"\(reason)\",\(streak)\n"
             }
@@ -110,7 +129,7 @@ struct ExportService {
             let created = habit.createdAt.formatted(date: .numeric, time: .omitted)
             
             csv += "\"\(habit.name)\",\(habit.colorName),\(habit.frequencyRaw),\(created),"
-            csv += "\(habit.streak?.currentStreak ?? 0),\(habit.streak?.longestStreak ?? 0),"
+            csv += "\(habit.liveStreak.currentStreak),\(habit.liveStreak.longestStreak),"
             csv += "\(completions),\(skips),\(habit.isArchived)\n"
         }
         
@@ -120,6 +139,7 @@ struct ExportService {
 
 // MARK: - Transferable Documents
 
+/// File wrapper for exporting a JSON backup.
 struct JSONDocument: FileDocument {
     static var readableContentTypes: [UTType] { [.json] }
     
@@ -138,6 +158,7 @@ struct JSONDocument: FileDocument {
     }
 }
 
+/// File wrapper for exporting CSV data.
 struct CSVDocument: FileDocument {
     static var readableContentTypes: [UTType] { [.commaSeparatedText] }
     

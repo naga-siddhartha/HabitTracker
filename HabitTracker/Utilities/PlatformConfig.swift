@@ -2,6 +2,7 @@ import SwiftUI
 
 // MARK: - Platform Configuration
 
+/// Current platform checks.
 enum Platform {
     case iOS, macOS, visionOS
     
@@ -24,6 +25,7 @@ enum Platform {
 
 // MARK: - Layout Configuration
 
+/// Spacing, sizes and corner radii, tuned per platform.
 struct LayoutConfig {
     let contentMaxWidth: CGFloat
     let horizontalPadding: CGFloat
@@ -164,8 +166,8 @@ struct LayoutConfig {
                 cardBottomPaddingSmall: 6,
                 cornerRadiusSmall: 8,
                 cornerRadiusMedium: 12,
-                checkboxSize: 34,
-                iconSizeRow: 28,
+                checkboxSize: 30,
+                iconSizeRow: 16,
                 iconSizeButton: 44,
                 progressRingSize: 72,
                 cardShadowRadius: 8,

@@ -5,8 +5,9 @@ struct HomeView: View {
     var onPresentTemplates: (() -> Void)?
 
     @Environment(\.colorScheme) private var colorScheme
-    @EnvironmentObject private var accountMenuState: AccountMenuState
+    @Environment(AccountMenuState.self) private var accountMenuState
     @Query(sort: \Habit.createdAt, order: .reverse) private var allHabits: [Habit]
+    private var purchases = PurchaseManager.shared
     @State private var showingAddHabit = false
     @State private var showingAddMenuPopover = false
     @State private var editingHabit: Habit?
@@ -15,100 +16,49 @@ struct HomeView: View {
     @State private var skipReasonAlertMessage: String?
 
     private let config = LayoutConfig.current
-    private let calendar = Calendar.current
 
-    private var cardShadowColor: Color { colorScheme == .dark ? .white.opacity(0.04) : .black.opacity(0.05) }
 
     /// Current date/time so Home always reflects "today" when the view is evaluated.
     private var today: Date { Date.now }
     private var habits: [Habit] { allHabits }
-    private var todayHabits: [Habit] { habits.filter { $0.isActive(on: today) } }
-    private var todayIncomplete: [Habit] { todayHabits.filter { !$0.isDone(on: today) } }
-    /// Habits due today that are fully done (for progress ring).
-    private var todayCompleted: [Habit] { todayHabits.filter { $0.isDone(on: today) } }
-    /// All habits fully done today - shown in the Completed card.
-    private var habitsCompletedToday: [Habit] { habits.filter { $0.isDone(on: today) } }
-    private var uniqueNamesActiveToday: Set<String> { Set(todayHabits.map(\.name)) }
-    private var uniqueNamesSkippedToday: Set<String> { Set(todayHabits.filter { $0.isSkipped(on: today) }.map(\.name)) }
-    private var uniqueNamesCompletedToday: Set<String> { Set(habitsCompletedToday.map(\.name)) }
-    private var completedCount: Int { uniqueNamesCompletedToday.count }
-    /// Total habits due today that are not skipped (so progress is "done" out of "actionable").
-    private var progressTotal: Int { max(0, uniqueNamesActiveToday.count - uniqueNamesSkippedToday.count) }
-    private var progress: Double {
-        return progressTotal == 0 ? 0 : Double(completedCount) / Double(progressTotal)
-    }
+    /// All of Home's grouping and progress logic lives in TodaySnapshot (tested). Duplicate habits
+    /// are merged in the data layer now, so there's no more grouping by name here.
+    private var snapshot: TodaySnapshot { TodaySnapshot(habits: allHabits, now: today) }
 
-    /// Due today, not completed, not skipped, doable now.
-    private var activeHabits: [Habit] {
-        let startOfToday = calendar.startOfDay(for: today)
-        return todayIncomplete.filter { habit in
-            guard !habit.isSkipped(on: today) else { return false }
-            if habit.reminderTimes.isEmpty { return true }
-            guard let first = habit.reminderTimes.first else { return true }
-            let scheduledToday = calendar.date(bySettingHour: calendar.component(.hour, from: first), minute: calendar.component(.minute, from: first), second: 0, of: startOfToday)
-            guard let scheduled = scheduledToday else { return true }
-            return today >= scheduled
-        }
-    }
-    /// Due today, not completed, not skipped, scheduled for a later time.
-    private var scheduledHabits: [Habit] {
-        let startOfToday = calendar.startOfDay(for: today)
-        return todayIncomplete.filter { habit in
-            guard !habit.isSkipped(on: today) else { return false }
-            guard let first = habit.reminderTimes.first else { return false }
-            let scheduledToday = calendar.date(bySettingHour: calendar.component(.hour, from: first), minute: calendar.component(.minute, from: first), second: 0, of: startOfToday)
-            guard let scheduled = scheduledToday else { return false }
-            return today < scheduled
-        }
-    }
-    /// Due today and skipped (one per habit name).
-    private var skippedHabitsDisplay: [Habit] {
-        let skipped = todayHabits.filter { $0.isSkipped(on: today) }
-        let grouped = Dictionary(grouping: skipped, by: \.name)
-        return grouped.compactMap { _, group in group.first }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-    }
+    private var todayHabits: [Habit] { snapshot.dueToday }
+    private var habitsCompletedToday: [Habit] { snapshot.completed }
+    private var completedCount: Int { snapshot.doneCount }
+    private var progressTotal: Int { snapshot.actionableCount }
+    private var progress: Double { snapshot.progress }
 
-    /// One row per habit name in Active; exclude names already completed today.
-    private var activeHabitsDisplay: [Habit] {
-        let completedNames = uniqueNamesCompletedToday
-        let grouped = Dictionary(grouping: activeHabits.filter { !completedNames.contains($0.name) }, by: \.name)
-        return grouped.compactMap { _, group in group.first }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-    }
-    /// One row per habit name in Scheduled; exclude names completed today.
-    private var scheduledHabitsDisplay: [Habit] {
-        let completedNames = uniqueNamesCompletedToday
-        let grouped = Dictionary(grouping: scheduledHabits.filter { !completedNames.contains($0.name) }, by: \.name)
-        return grouped.compactMap { _, group in group.first }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-    }
-    /// One row per habit name in Completed.
-    private var habitsCompletedTodayDisplay: [Habit] {
-        let grouped = Dictionary(grouping: habitsCompletedToday, by: \.name)
-        return grouped.compactMap { _, group in group.first }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-    }
+    private var activeHabitsDisplay: [Habit] { snapshot.dueNow }
+    private var scheduledHabitsDisplay: [Habit] { snapshot.later }
+    private var habitsCompletedTodayDisplay: [Habit] { snapshot.completed }
+    private var skippedHabitsDisplay: [Habit] { snapshot.skipped }
 
     /// Show floating + only when there’s no Add habit on the page (i.e. when we have habits and we’re not in empty state).
     private var showFloatingAddButton: Bool { !habits.isEmpty && !isEmptyState }
 
-    private var isEmptyState: Bool {
-        uniqueNamesActiveToday.isEmpty && uniqueNamesCompletedToday.isEmpty
+    private var isEmptyState: Bool { snapshot.isEmpty }
+    /// Emoji (or first letter) of the habit to do next, for the center of the progress ring.
+    private var upNextSymbol: String? {
+        guard let next = activeHabitsDisplay.first ?? scheduledHabitsDisplay.first else { return nil }
+        if let emoji = next.emoji, !emoji.isEmpty { return emoji }
+        return next.name.first.map { String($0).uppercased() }
     }
+    private var perfectDayStreak: Int { TodaySnapshot.perfectDayStreak(habits: allHabits, now: today) }
 
     var body: some View {
         NavigationStack {
             Group {
                 if isEmptyState {
+                    // No ad here: a new or idle user sees just the empty state.
                     VStack(alignment: .leading, spacing: 0) {
                         headerSection
-                        Spacer(minLength: 0).frame(maxHeight: 48)
+                        Spacer(minLength: 0)
                         homeContent
-                            .frame(maxWidth: config.contentMaxWidth)
-                            .padding(.horizontal, config.horizontalPadding)
-                        #if os(iOS)
-                        AdCardView()
-                            .frame(maxWidth: config.contentMaxWidth)
-                            .padding(.horizontal, config.horizontalPadding)
-                            .padding(.top, config.spacingXXL)
-                        #endif
+                            .frame(maxWidth: .infinity)
+                        Spacer(minLength: 0)
                         Spacer(minLength: 0)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -118,22 +68,28 @@ struct HomeView: View {
                             headerSection
                             homeContent
                             #if os(iOS)
-                            AdCardView()
-                                .frame(maxWidth: config.contentMaxWidth)
-                                .padding(.horizontal, config.horizontalPadding)
+                            if !purchases.isAdFree {
+                                AdCardView()
+                                    .frame(maxWidth: config.contentMaxWidth)
+                                    .padding(.horizontal, config.horizontalPadding)
+                            }
                             #endif
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.bottom, config.spacingXXL + config.spacingS)
                     }
+                    .swipeActionsContainerIfAvailable()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.appGroupedBackground)
             .navigationTitle("")
             .inlineNavigationTitle()
-            .sheet(isPresented: $accountMenuState.showingAccountProfile) {
-                AccountProfileView()
+            .sheet(isPresented: Binding(
+                get: { accountMenuState.showingAccountProfile },
+                set: { accountMenuState.showingAccountProfile = $0 }
+            )) {
+                AccountSheet()
             }
             .alert("Sign in", isPresented: Binding(
                 get: { accountMenuState.authError != nil },
@@ -178,7 +134,6 @@ struct HomeView: View {
     }
 
     /// Same blue as iOS so the add button stands out on all platforms.
-    private static let floatingButtonBlue = Color(red: 0.22, green: 0.45, blue: 0.88)
 
     @ViewBuilder
     private var floatingAddButton: some View {
@@ -234,28 +189,25 @@ struct HomeView: View {
         } label: {
             floatingAddButtonLabel
         }
+        .menuIndicator(.hidden)
         .accessibilityLabel("Add habit")
         .accessibilityHint("Double tap to add a new habit or choose from template")
         #endif
     }
 
+    @ViewBuilder
     private var floatingAddButtonLabel: some View {
-        #if os(macOS)
-        Image(systemName: "plus.circle.fill")
-            .font(.system(size: config.iconSizeRow + 2))
+        let icon = Image(systemName: "plus")
+            .font(.title2.weight(.semibold))
             .foregroundStyle(.white)
-            .frame(width: config.iconSizeButton, height: config.iconSizeButton)
-            .background(Self.floatingButtonBlue, in: Circle())
-            .overlay(Circle().strokeBorder(.white.opacity(0.4), lineWidth: 1))
-            .shadow(color: .black.opacity(0.2), radius: 4, x: 0, y: 2)
-        #else
-        Image(systemName: "plus.circle.fill")
-            .font(.system(size: config.iconSizeRow + 4))
-            .foregroundStyle(.white)
-            .frame(width: config.progressRingSize - 16, height: config.progressRingSize - 16)
-            .background(Self.floatingButtonBlue, in: Circle())
-            .shadow(color: .black.opacity(0.2), radius: config.cardShadowRadius, x: 0, y: 4)
-        #endif
+            .frame(width: 56, height: 56)
+        if #available(iOS 26.0, macOS 26.0, *) {
+            icon.glassEffect(.regular.tint(Color.brandPurple).interactive(), in: .circle)
+        } else {
+            icon
+                .background(Color.brandPurple, in: Circle())
+                .shadow(color: .black.opacity(0.2), radius: 6, x: 0, y: 3)
+        }
     }
     
     // MARK: - Header
@@ -293,7 +245,7 @@ struct HomeView: View {
         if habits.isEmpty {
             return "Your day at a glance"
         }
-        if uniqueNamesActiveToday.isEmpty {
+        if todayHabits.isEmpty {
             return "All set for today"
         }
         return "Your habits for today"
@@ -306,17 +258,17 @@ struct HomeView: View {
             if todayHabits.isEmpty && habitsCompletedToday.isEmpty {
                 HomeEmptyState(
                     icon: "checkmark.circle",
-                    iconColor: .green,
+                    iconColor: .brandPurple,
                     title: habits.isEmpty ? "No habits yet" : "All caught up",
                     message: habits.isEmpty ? "Create your first habit or start from a template." : "No habits due today. Tap + to add one.",
-                    primaryButtonTitle: "New",
+                    primaryButtonTitle: "New habit",
                     primaryButtonAction: { showingAddHabit = true },
                     secondaryButtonTitle: "From template",
                     secondaryButtonAction: { onPresentTemplates?() }
                 )
             } else {
                 VStack(spacing: config.spacingL) {
-                    if !uniqueNamesActiveToday.isEmpty {
+                    if !todayHabits.isEmpty {
                         activeCard
                     } else if !habitsCompletedTodayDisplay.isEmpty || !skippedHabitsDisplay.isEmpty {
                         noHabitsDueTodayLine
@@ -342,11 +294,15 @@ struct HomeView: View {
                 .padding(.top, config.progressHeaderTop)
                 .padding(.bottom, config.progressHeaderBottom)
             if activeHabitsDisplay.isEmpty {
-                Text("All done!")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, config.spacingM + 6)
+                // The header already celebrates a finished day; only explain an empty list when
+                // habits are still coming up later.
+                if !scheduledHabitsDisplay.isEmpty {
+                    Text("Nothing due right now")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, config.spacingM)
+                }
             } else {
                 VStack(spacing: 0) {
                     ForEach(Array(activeHabitsDisplay.enumerated()), id: \.element.id) { index, habit in
@@ -373,7 +329,6 @@ struct HomeView: View {
             RoundedRectangle(cornerRadius: config.cardCornerRadius)
                 .stroke(Color.primary.opacity(cardBorderOpacity), lineWidth: 1)
         )
-        .shadow(color: cardShadowColor, radius: config.cardShadowRadius, x: 0, y: 3)
         .frame(maxWidth: config.contentMaxWidth)
         .padding(.horizontal, config.horizontalPadding)
     }
@@ -418,7 +373,6 @@ struct HomeView: View {
             RoundedRectangle(cornerRadius: config.cardCornerRadius)
                 .stroke(Color.primary.opacity(cardBorderOpacity), lineWidth: 1)
         )
-        .shadow(color: cardShadowColor, radius: config.cardShadowRadius, x: 0, y: 3)
         .frame(maxWidth: config.contentMaxWidth)
         .padding(.horizontal, config.horizontalPadding)
     }
@@ -461,20 +415,31 @@ struct HomeView: View {
             RoundedRectangle(cornerRadius: config.cardCornerRadius)
                 .stroke(Color.primary.opacity(cardBorderOpacity), lineWidth: 1)
         )
-        .shadow(color: cardShadowColor, radius: config.cardShadowRadius, x: 0, y: 3)
         .frame(maxWidth: config.contentMaxWidth)
         .padding(.horizontal, config.horizontalPadding)
     }
 
     private var progressHeader: some View {
         HStack(spacing: config.spacingXL) {
-            ProgressRing(progress: progress, count: completedCount, total: progressTotal, size: config.progressRingSize)
+            ProgressRing(progress: progress, count: completedCount, total: progressTotal, size: config.progressRingSize, upNext: upNextSymbol)
             VStack(alignment: .leading, spacing: config.spacingXS) {
-                Text(progressTotal == 0 ? "0 of 0 done" : "\(completedCount) of \(progressTotal) done")
-                    .font(.headline.weight(.semibold))
-                Text(motivationalMessage)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                if snapshot.isPerfectDay {
+                    Text("Perfect day")
+                        .font(.headline.weight(.semibold))
+                    Text(progressTotal == 1 ? "Done for today" : "All \(progressTotal) done")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    if perfectDayStreak >= 2 {
+                        StreakLabel(text: "\(perfectDayStreak) perfect days in a row", font: .footnote)
+                    }
+                } else {
+                    Text(progressHeadline)
+                        .font(.headline.weight(.semibold))
+                        .contentTransition(.numericText())
+                    Text(nextUpLine)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
             Spacer()
         }
@@ -530,21 +495,30 @@ struct HomeView: View {
             RoundedRectangle(cornerRadius: config.cardCornerRadius)
                 .stroke(Color.primary.opacity(cardBorderOpacity), lineWidth: 1)
         )
-        .shadow(color: cardShadowColor, radius: config.cardShadowRadius, x: 0, y: 3)
         .frame(maxWidth: config.contentMaxWidth)
         .padding(.horizontal, config.horizontalPadding)
     }
 
-    private var motivationalMessage: String {
-        let total = progressTotal
-        if completedCount == total && completedCount > 0 { return "All done! 🎉" }
-        if progress >= 0.5 { return "Keep going! 💪" }
-        if completedCount > 0 { return "\(total - completedCount) left" }
-        return "Let's start! 👋"
+    private var progressHeadline: String {
+        if completedCount == 0 { return progressTotal == 1 ? "1 habit today" : "\(progressTotal) habits today" }
+        return "\(completedCount) of \(progressTotal) done"
+    }
+
+    /// Names the next habit, so the subtitle adds information instead of restating the count.
+    private var nextUpLine: String {
+        if progressTotal == 0 { return "Everything's skipped today" }
+        if let next = activeHabitsDisplay.first {
+            if completedCount == 0 { return "Start with \(next.name)" }
+            if progressTotal - completedCount == 1 { return "Last one: \(next.name)" }
+            return "Up next: \(next.name)"
+        }
+        if let later = scheduledHabitsDisplay.first, let time = later.reminderTimes.first {
+            return "Next: \(later.name) at \(time.formatted(date: .omitted, time: .shortened))"
+        }
+        return "\(progressTotal - completedCount) to go"
     }
     
     private func deleteHabit(_ habit: Habit) {
-        NotificationService.shared.removeReminders(for: habit.id)
         HabitStore.shared.deleteHabit(habit)
     }
 }
@@ -553,8 +527,8 @@ struct HomeView: View {
 
 #Preview {
     HomeView()
-        .environmentObject(AccountMenuState())
-        .environmentObject(ModelContainerProvider.shared)
+        .environment(AccountMenuState())
+        .environment(ModelContainerProvider.shared)
         .modelContainer(for: Habit.self, inMemory: true)
 }
 

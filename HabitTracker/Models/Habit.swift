@@ -4,6 +4,9 @@ import SwiftUI
 
 // MARK: - Habit
 
+/// A habit the user tracks: its schedule, reminders and check-in history.
+///
+/// Synced through CloudKit, so every stored property has a default and relationships are optional.
 @available(iOS 17.0, macOS 14.0, *)
 @Model
 final class Habit {
@@ -143,32 +146,50 @@ extension Habit {
         let createdDay = cal.startOfDay(for: createdAt)
         let checkDay = cal.startOfDay(for: date)
         guard checkDay >= createdDay else { return false }
-        
-        if frequency == .weekly && !activeDays.isEmpty {
-            guard let weekday = date.weekday else { return false }
-            return activeDays.contains(weekday)
-        }
-        return true
+        return isScheduledWeekday(date, calendar: cal)
     }
-    
+
+    /// Whether the habit's schedule includes this weekday, ignoring the creation date.
+    /// Streaks use this so imported or backfilled history is judged by the same schedule.
+    func isScheduledWeekday(_ date: Date, calendar: Calendar = .current) -> Bool {
+        guard frequency == .weekly, !activeDays.isEmpty else { return true }
+        guard let weekday = Weekday(rawValue: calendar.component(.weekday, from: date)) else { return false }
+        return activeDays.contains(weekday)
+    }
+
+    /// Single definition of "completed" for an entry. Interval habits count any progress.
+    func countsAsCompleted(_ entry: HabitEntry) -> Bool {
+        if reminderIntervalMinutes > 0 { return entry.completionCount > 0 || entry.isCompleted }
+        return entry.isCompleted
+    }
+
+    @MainActor
     func isCompleted(on date: Date) -> Bool {
         guard let e = entry(for: date) else { return false }
-        // For repeating habits: completed if at least one count recorded, or legacy isCompleted flag
-        if reminderIntervalMinutes > 0 { return e.completionCount > 0 || e.isCompleted }
-        return e.isCompleted
+        return countsAsCompleted(e)
     }
 
+    @MainActor
     func isSkipped(on date: Date) -> Bool {
-        let cal = Calendar.current
-        return entriesOrEmpty.contains { cal.isDate($0.date, inSameDayAs: date) && $0.isSkipped }
+        guard let e = entry(for: date) else { return false }
+        return e.isSkipped && !countsAsCompleted(e)
     }
 
+    /// The entry for a day. If sync left several entries for the same day, returns the most
+    /// complete one (most progress, then most recently updated) so results are deterministic.
+    @MainActor
     func entry(for date: Date) -> HabitEntry? {
-        let cal = Calendar.current
-        return entriesOrEmpty.first { cal.isDate($0.date, inSameDayAs: date) }
+        entries(on: date).max(by: { HabitEntry.isLessComplete($0, than: $1, countsAsCompleted: countsAsCompleted) })
+    }
+
+    /// All entries recorded for the same day (normally one; more only after sync conflicts).
+    @MainActor
+    func entries(on date: Date) -> [HabitEntry] {
+        EntryDayIndex.shared.entries(of: self, on: Calendar.current.dayKey(for: date))
     }
 
     /// How many times this habit was completed on a given day.
+    @MainActor
     func completionCount(on date: Date) -> Int {
         guard let e = entry(for: date) else { return 0 }
         if reminderIntervalMinutes > 0 {
@@ -201,6 +222,7 @@ extension Habit {
     }
 
     /// Whether all expected completions for the day are done.
+    @MainActor
     func isFullyCompleted(on date: Date) -> Bool {
         completionCount(on: date) >= expectedCompletions(on: date)
     }
@@ -208,6 +230,7 @@ extension Habit {
     /// The display-level "done" state used for home page categorization and visual completion.
     /// For repeating habits: requires ALL expected instances done.
     /// For single-completion habits: same as isCompleted.
+    @MainActor
     func isDone(on date: Date) -> Bool {
         reminderIntervalMinutes > 0 ? isFullyCompleted(on: date) : isCompleted(on: date)
     }
@@ -215,6 +238,9 @@ extension Habit {
 
 // MARK: - Habit Entry
 
+/// One day's check-in for a habit: completed, skipped, or partial progress for interval habits.
+///
+/// `date` is local midnight when recorded; compare days with `Calendar.storedDayKey(for:)`.
 @available(iOS 17.0, macOS 14.0, *)
 @Model
 final class HabitEntry {
@@ -242,8 +268,25 @@ final class HabitEntry {
     }
 }
 
+@available(iOS 17.0, macOS 14.0, *)
+extension HabitEntry {
+    /// Ordering used to pick the "best" of several same-day entries.
+    static func isLessComplete(_ a: HabitEntry, than b: HabitEntry, countsAsCompleted: (HabitEntry) -> Bool) -> Bool {
+        let ac = countsAsCompleted(a), bc = countsAsCompleted(b)
+        if ac != bc { return !ac }
+        if a.completionCount != b.completionCount { return a.completionCount < b.completionCount }
+        if a.isSkipped != b.isSkipped { return !a.isSkipped }
+        if a.updatedAt != b.updatedAt { return a.updatedAt < b.updatedAt }
+        // Final tie-break on id so every device picks the same entry when merging after sync.
+        return a.id.uuidString > b.id.uuidString
+    }
+}
+
 // MARK: - Streak
 
+/// Legacy stored streak, kept in the schema for CloudKit compatibility but not written.
+///
+/// Use `Habit.liveStreak` instead.
 @available(iOS 17.0, macOS 14.0, *)
 @Model
 final class Streak {

@@ -1,16 +1,18 @@
 import SwiftUI
+import AuthenticationServices
 
 /// Dedicated account screen: sign in, profile, Sync now, sign out. Presented from Settings.
 @available(iOS 17.0, macOS 14.0, *)
 struct AccountSettingsView: View {
-    @ObservedObject private var authService = AuthService.shared
-    @ObservedObject private var containerProvider = ModelContainerProvider.shared
+    private var authService = AuthService.shared
+    private var containerProvider = ModelContainerProvider.shared
+    private var syncMonitor = SyncMonitor.shared
     @Environment(\.dismiss) private var dismiss
 
     @State private var showingAccountProfile = false
     @State private var authError: String?
     @State private var showingAuthErrorAlert = false
-    @State private var isSigningIn = false
+    @Environment(\.colorScheme) private var colorScheme
 
     private var chevronAccessory: some View {
         Image(systemName: "chevron.right")
@@ -35,15 +37,13 @@ struct AccountSettingsView: View {
                             }
                         }
                         .buttonStyle(.plain)
-                        Button {
-                            HabitStore.shared.syncNow()
-                        } label: {
-                            SettingsRow(icon: "arrow.triangle.2.circlepath", iconColor: .green, title: containerProvider.isSyncing ? "Syncing…" : "Sync now") {
-                                chevronAccessory
-                            }
+                        // Sync runs automatically; this row reports what it is doing.
+                        SettingsRow(icon: "icloud.fill", iconColor: .green, title: "iCloud sync") {
+                            Text(SyncStatus.summary(monitor: syncMonitor, provider: containerProvider))
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
                         }
-                        .buttonStyle(.plain)
-                        .disabled(containerProvider.isSyncing)
+                        .accessibilityElement(children: .combine)
                         Button {
                             authService.signOut()
                         } label: {
@@ -53,25 +53,26 @@ struct AccountSettingsView: View {
                         }
                         .buttonStyle(.plain)
                     } else {
-                        Button {
-                            signInTapped()
-                        } label: {
-                            SettingsRow(icon: "person.crop.circle.badge.plus", iconColor: .blue, title: "Sign in with Apple") {
-                                if isSigningIn {
-                                    ProgressView().scaleEffect(0.8)
-                                } else {
-                                    chevronAccessory
-                                }
+                        // Apple's own button (with the logo), as App Review requires (Guideline 4).
+                        SignInWithAppleButton(.signIn) { request in
+                            request.requestedScopes = [.fullName, .email]
+                        } onCompletion: { result in
+                            do {
+                                try authService.completeSignIn(with: result)
+                            } catch {
+                                authError = error.localizedDescription
+                                showingAuthErrorAlert = true
                             }
                         }
-                        .buttonStyle(.plain)
-                        .disabled(isSigningIn)
+                        .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
+                        .frame(height: 44)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                     }
                 } footer: {
                     if !authService.isSignedIn {
                         Text("Sign in to back up your habits and sync across your devices.")
                     } else {
-                        Text("Sync: Sign in with Apple on both iPhone and Mac. Use the same iCloud account on both. In Xcode, add the iCloud capability with CloudKit for both app targets.")
+                        Text("Habits sync automatically through iCloud. Sign in on each device with the same Apple ID.")
                             .font(.caption)
                     }
                 }
@@ -110,23 +111,6 @@ struct AccountSettingsView: View {
         #if os(macOS)
         .frame(minWidth: 320, minHeight: 280)
         #endif
-    }
-
-    private func signInTapped() {
-        isSigningIn = true
-        authError = nil
-        Task {
-            do {
-                try await authService.signIn()
-                isSigningIn = false
-            } catch {
-                await MainActor.run {
-                    isSigningIn = false
-                    authError = error.localizedDescription
-                    showingAuthErrorAlert = true
-                }
-            }
-        }
     }
 }
 

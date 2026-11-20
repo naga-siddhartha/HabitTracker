@@ -1,23 +1,24 @@
+import Observation
 import SwiftUI
-import Combine
 import WidgetKit
 
 // MARK: - Account menu state (shared across tabs)
 
 @available(iOS 17.0, macOS 14.0, *)
-final class AccountMenuState: ObservableObject {
-    @Published var showingAccountProfile = false
-    @Published var authError: String?
-    @Published var isSigningIn = false
+@Observable
+final class AccountMenuState {
+    var showingAccountProfile = false
+    var authError: String?
 }
 
 // MARK: - Profile icon + menu (toolbar)
 
 @available(iOS 17.0, macOS 14.0, *)
 struct AccountMenuButton: View {
-    @ObservedObject private var authService = AuthService.shared
-    @ObservedObject var accountMenuState: AccountMenuState
-    @EnvironmentObject private var containerProvider: ModelContainerProvider
+    private var authService = AuthService.shared
+    @Bindable var accountMenuState: AccountMenuState
+    @Environment(ModelContainerProvider.self) private var containerProvider
+    private var syncMonitor = SyncMonitor.shared
 
     var body: some View {
         Menu {
@@ -27,12 +28,8 @@ struct AccountMenuButton: View {
                 } label: {
                     Label("Account", systemImage: "person.crop.circle.fill")
                 }
-                Button {
-                    triggerSyncNow()
-                } label: {
-                    Label(containerProvider.isSyncing ? "Syncing…" : "Sync now", systemImage: "arrow.triangle.2.circlepath")
-                }
-                .disabled(containerProvider.isSyncing)
+                // Sync runs automatically; show its status instead of a manual button.
+                Label(SyncStatus.summary(monitor: syncMonitor, provider: containerProvider), systemImage: "icloud")
                 Divider()
                 Button(role: .destructive) {
                     authService.signOut()
@@ -41,45 +38,22 @@ struct AccountMenuButton: View {
                 }
             } else {
                 Button {
-                    signInTapped()
+                    accountMenuState.showingAccountProfile = true
                 } label: {
-                    if accountMenuState.isSigningIn {
-                        Label("Signing in…", systemImage: "person.crop.circle.badge.plus")
-                    } else {
-                        Label("Sign in with Apple", systemImage: "person.crop.circle.badge.plus")
-                    }
+                    Label("Sign in…", systemImage: "person.crop.circle.badge.plus")
                 }
-                .disabled(accountMenuState.isSigningIn)
             }
         } label: {
-            Image(systemName: authService.isSignedIn ? "person.crop.circle.fill" : "person.crop.circle")
+            // A solid filled circle: white figure on brand purple (gray when signed out).
+            Image(systemName: "person.crop.circle.fill")
                 .font(.system(size: 28))
-                .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(authService.isSignedIn ? Color(red: 0.35, green: 0.51, blue: 0.88) : Color.gray)
+                .symbolRenderingMode(.palette)
+                .foregroundStyle(.white, authService.isSignedIn ? Color.brandPurple : Color.gray)
         }
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
         .accessibilityLabel(authService.isSignedIn ? "Account menu" : "Sign in")
         .accessibilityHint(authService.isSignedIn ? "Open account, sync, or sign out" : "Sign in with Apple to sync across devices")
-    }
-
-    private func signInTapped() {
-        accountMenuState.isSigningIn = true
-        accountMenuState.authError = nil
-        Task {
-            do {
-                try await authService.signIn()
-                await MainActor.run { accountMenuState.isSigningIn = false }
-            } catch {
-                await MainActor.run {
-                    accountMenuState.isSigningIn = false
-                    accountMenuState.authError = error.localizedDescription
-                }
-            }
-        }
-    }
-
-    private func triggerSyncNow() {
-        SyncLogger.syncNowTapped()
-        HabitStore.shared.syncNow()
     }
 }
 
@@ -87,7 +61,7 @@ struct AccountMenuButton: View {
 
 @available(iOS 17.0, macOS 14.0, *)
 struct AccountToolbarModifier: ViewModifier {
-    @ObservedObject var accountMenuState: AccountMenuState
+    @Bindable var accountMenuState: AccountMenuState
 
     private var toolbarAccountPlacement: ToolbarItemPlacement {
         #if os(iOS)
@@ -97,15 +71,29 @@ struct AccountToolbarModifier: ViewModifier {
         #endif
     }
 
-    func body(content: Content) -> some View {
-        content
-            .toolbar {
+    @ViewBuilder
+    private func withAccountToolbarItem(_ content: Content) -> some View {
+        if #available(iOS 26.0, macOS 26.0, *) {
+            content.toolbar {
+                // The icon is its own circle; no glass capsule around it.
+                ToolbarItem(placement: toolbarAccountPlacement) {
+                    AccountMenuButton(accountMenuState: accountMenuState)
+                }
+                .sharedBackgroundVisibility(.hidden)
+            }
+        } else {
+            content.toolbar {
                 ToolbarItem(placement: toolbarAccountPlacement) {
                     AccountMenuButton(accountMenuState: accountMenuState)
                 }
             }
+        }
+    }
+
+    func body(content: Content) -> some View {
+        withAccountToolbarItem(content)
             .sheet(isPresented: $accountMenuState.showingAccountProfile) {
-                AccountProfileView()
+                AccountSheet()
             }
             .alert("Sign in", isPresented: Binding(
                 get: { accountMenuState.authError != nil },
@@ -122,5 +110,18 @@ struct AccountToolbarModifier: ViewModifier {
 extension View {
     func withAccountToolbar(accountMenuState: AccountMenuState) -> some View {
         modifier(AccountToolbarModifier(accountMenuState: accountMenuState))
+    }
+}
+
+/// Profile when signed in, otherwise the account screen with the Sign in with Apple button.
+struct AccountSheet: View {
+    private var authService = AuthService.shared
+
+    var body: some View {
+        if authService.isSignedIn {
+            AccountProfileView()
+        } else {
+            AccountSettingsView()
+        }
     }
 }

@@ -1,5 +1,5 @@
 import Foundation
-import Combine
+import Observation
 import AuthenticationServices
 #if os(iOS)
 import UIKit
@@ -9,15 +9,16 @@ import AppKit
 
 /// Sign in with Apple only. Stores user identifier and optional display name in Keychain. No custom backend.
 @MainActor
-final class AuthService: NSObject, ObservableObject {
+@Observable
+final class AuthService: NSObject {
 
     // MARK: - Public state
 
     static let shared = AuthService()
-    @Published private(set) var isSignedIn: Bool = false
-    @Published private(set) var currentUserId: String? = nil
+    private(set) var isSignedIn: Bool = false
+    private(set) var currentUserId: String? = nil
     /// Display name or email from Sign in with Apple (only provided on first sign-in).
-    @Published private(set) var userDisplayName: String? = nil
+    private(set) var userDisplayName: String? = nil
 
     // MARK: - Private state
 
@@ -62,6 +63,25 @@ final class AuthService: NSObject, ObservableObject {
         }
     }
 
+    /// Completes sign-in from SwiftUI's `SignInWithAppleButton`.
+    func completeSignIn(with result: Result<ASAuthorization, Error>) throws {
+        switch result {
+        case .success(let authorization):
+            guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential else { return }
+            guard KeychainHelper.save(userId: credential.user, displayName: Self.formatDisplayName(from: credential)) else {
+                throw AuthError.keychainSaveFailed
+            }
+            currentUserId = credential.user
+            userDisplayName = KeychainHelper.loadUserDisplayName()
+            isSignedIn = true
+            NotificationCenter.default.post(name: .userDidSignIn, object: nil)
+            Analytics.track(.signedIn)
+        case .failure(let error):
+            if (error as? ASAuthorizationError)?.code == .canceled { return }
+            throw error
+        }
+    }
+
     private func currentPresentationAnchor() -> ASPresentationAnchor {
         #if os(iOS)
         let scene = UIApplication.shared.connectedScenes
@@ -75,17 +95,32 @@ final class AuthService: NSObject, ObservableObject {
         #endif
     }
 
+    /// Signs out and stops iCloud sync. Habits stay on this device.
     func signOut() {
         _ = KeychainHelper.deleteUserId()
         currentUserId = nil
         userDisplayName = nil
         isSignedIn = false
+        NotificationCenter.default.post(name: .userDidSignOut, object: nil)
     }
 
-    /// Removes account data from this device (Keychain + in-memory). Required for App Store Guideline 5.1.1(v).
-    /// When we add a backend/CloudKit, this should also delete or disassociate data there.
-    func deleteAccount() {
+    /// Deletes the account (App Store Guideline 5.1.1(v)): removes the copy of the user's habits
+    /// stored in iCloud, then the sign-in. Habits stay on this device.
+    ///
+    /// Sync is switched off first so nothing re-uploads while the iCloud data is being deleted. If
+    /// the deletion fails (offline, iCloud unavailable) sync is switched back on and the user stays
+    /// signed in, so they can try again.
+    func deleteAccount() async throws {
+        let provider = ModelContainerProvider.shared
+        provider.setCloudSync(enabled: false)
+        do {
+            try await CloudDataEraser.deleteSyncedData()
+        } catch {
+            provider.setCloudSync(enabled: true)
+            throw error
+        }
         signOut()
+        Analytics.track(.accountDeleted)
     }
 }
 
@@ -98,20 +133,19 @@ extension AuthService: ASAuthorizationControllerDelegate {
         let displayName = Self.formatDisplayName(from: credential)
         let cont = AuthService.sharedContinuation
         AuthService.sharedContinuation = nil
-        // Keychain I/O off the delegate (often Default QoS); resume continuation on main to avoid priority inversion.
         guard let service = Self._sharedRef else { return }
-        DispatchQueue.global(qos: .userInitiated).async {
+        Task { @MainActor in
+            // A single small Keychain write; fine on the main actor.
             let success = KeychainHelper.save(userId: userId, displayName: displayName)
-            DispatchQueue.main.async {
-                if success {
-                    cont?.resume()
-                    service.currentUserId = userId
-                    service.userDisplayName = KeychainHelper.loadUserDisplayName()
-                    service.isSignedIn = true
-                    NotificationCenter.default.post(name: .userDidSignIn, object: nil)
-                } else {
-                    cont?.resume(throwing: AuthError.keychainSaveFailed)
-                }
+            if success {
+                cont?.resume()
+                service.currentUserId = userId
+                service.userDisplayName = KeychainHelper.loadUserDisplayName()
+                service.isSignedIn = true
+                NotificationCenter.default.post(name: .userDidSignIn, object: nil)
+                Analytics.track(.signedIn)
+            } else {
+                cont?.resume(throwing: AuthError.keychainSaveFailed)
             }
         }
     }
@@ -132,9 +166,7 @@ extension AuthService: ASAuthorizationControllerDelegate {
         AuthService.sharedContinuation = nil
         let authError = error as? ASAuthorizationError
         let toThrow = authError?.code == .canceled ? AuthError.canceled : error
-        DispatchQueue.main.async {
-            cont?.resume(throwing: toThrow)
-        }
+        cont?.resume(throwing: toThrow)
     }
 }
 
@@ -162,6 +194,7 @@ extension AuthService: ASAuthorizationControllerPresentationContextProviding {
 
 // MARK: - AuthError
 
+/// Errors from Sign in with Apple.
 enum AuthError: LocalizedError {
     case canceled
     case keychainSaveFailed

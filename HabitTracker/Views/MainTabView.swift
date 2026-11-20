@@ -9,12 +9,18 @@ struct MainTabView: View {
     @State private var selectedTab = 0
     @State private var isPresentingTemplates = false
     @State private var isResetting = false
-    @StateObject private var accountMenuState = AccountMenuState()
+    @State private var accountMenuState = AccountMenuState()
+    private var milestones = MilestoneCenter.shared
     
     private var showOnboarding: Binding<Bool> {
         Binding(
             get: { !hasCompletedOnboarding },
-            set: { if !$0 { hasCompletedOnboarding = true } }
+            set: {
+                if !$0 && !hasCompletedOnboarding {
+                    hasCompletedOnboarding = true
+                    Analytics.track(.onboardingCompleted)
+                }
+            }
         )
     }
 
@@ -51,17 +57,27 @@ struct MainTabView: View {
                 }
             .accessibilityHint("Notifications, appearance, and data")
         }
-        .environmentObject(accountMenuState)
+        .tint(Color.brandPurple)
+        .environment(accountMenuState)
         #if os(macOS)
         .withAccountToolbar(accountMenuState: accountMenuState)
         #endif
+        .overlay(alignment: .top) {
+            if let event = milestones.current {
+                MilestoneBanner(event: event) {
+                    withAnimation(.smooth) { milestones.current = nil }
+                }
+                .transition(.move(edge: .top).combined(with: .opacity))
+            }
+        }
+        .animation(.spring(duration: 0.45, bounce: 0.3), value: milestones.current)
         .preferredColorScheme(appearanceMode.preferredColorScheme)
         .modifier(ResettingOverlayModifier(isPresented: $isResetting))
-        .modifier(OnboardingOverlayModifier(showOnboarding: showOnboarding) {
-            OnboardingView(onGetStarted: {
-                isPresentingTemplates = true
-            })
-        })
+        .sheet(isPresented: showOnboarding, onDismiss: { isPresentingTemplates = true }) {
+            OnboardingView()
+                .presentationDetents([.medium])
+                .interactiveDismissDisabled()
+        }
     }
 
     private func performReset() {
@@ -72,31 +88,6 @@ struct MainTabView: View {
             selectedTab = 0
             isResetting = false
         }
-    }
-}
-
-// MARK: - Onboarding overlay (translucent over Home on iOS, sheet on macOS)
-
-private struct OnboardingOverlayModifier<OverlayContent: View>: ViewModifier {
-    @Binding var showOnboarding: Bool
-    @ViewBuilder let overlayContent: () -> OverlayContent
-
-    func body(content: Content) -> some View {
-        #if os(iOS)
-        content
-            .overlay {
-                if showOnboarding {
-                    overlayContent()
-                        .transition(.opacity)
-                }
-            }
-            .animation(.easeInOut(duration: 0.25), value: showOnboarding)
-        #else
-        content
-            .sheet(isPresented: $showOnboarding) {
-                overlayContent()
-            }
-        #endif
     }
 }
 

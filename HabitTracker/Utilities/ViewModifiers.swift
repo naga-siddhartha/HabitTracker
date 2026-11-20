@@ -17,14 +17,43 @@ extension View {
     }
 }
 
+extension View {
+    /// Success haptic when a habit becomes done, a light tap when it's undone.
+    @ViewBuilder
+    func completionHaptic(isDone: Bool) -> some View {
+        #if os(iOS)
+        self.sensoryFeedback(trigger: isDone) { wasDone, nowDone in
+            nowDone && !wasDone ? .success : .impact(weight: .light)
+        }
+        #else
+        self
+        #endif
+    }
+}
+
+/// Haptic feedback kinds used by controls.
 enum HapticStyle { case light, success, selection }
+
+// MARK: - Swipe actions outside List
+
+extension View {
+    /// Makes `swipeActions` work on rows inside this scroll view. No-op before iOS/macOS 27.
+    @ViewBuilder
+    func swipeActionsContainerIfAvailable() -> some View {
+        if #available(iOS 27.0, macOS 27.0, *) {
+            self.swipeActionsContainer()
+        } else {
+            self
+        }
+    }
+}
 
 // MARK: - Pill Style
 
 struct PillModifier: ViewModifier {
     var isSelected: Bool
-    var selectedColor: Color = .accentColor
-    
+    var selectedColor: Color = .brandPurple
+
     func body(content: Content) -> some View {
         content
             .font(.subheadline)
@@ -37,7 +66,7 @@ struct PillModifier: ViewModifier {
 }
 
 extension View {
-    func pillStyle(isSelected: Bool, selectedColor: Color = .accentColor) -> some View {
+    func pillStyle(isSelected: Bool, selectedColor: Color = .brandPurple) -> some View {
         modifier(PillModifier(isSelected: isSelected, selectedColor: selectedColor))
     }
 }

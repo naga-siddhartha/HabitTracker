@@ -4,6 +4,17 @@ import SwiftUI
 // MARK: - Cross-Platform Colors
 
 extension Color {
+    /// App brand purple — read from the asset catalog directly to bypass the iOS 26 system accent override.
+    static let brandPurple: Color = {
+        #if os(iOS) || os(visionOS)
+        return Color(uiColor: UIColor(named: "AccentColor") ?? .systemPurple)
+        #elseif os(macOS)
+        return Color(nsColor: NSColor(named: "AccentColor") ?? .purple)
+        #else
+        return .accentColor
+        #endif
+    }()
+
     #if os(iOS) || os(visionOS)
     static var systemBackground: Color { Color(uiColor: .systemBackground) }
     static var systemGray6: Color { Color(uiColor: .systemGray6) }
@@ -11,15 +22,7 @@ extension Color {
     static var systemGray4: Color { Color(uiColor: .systemGray4) }
     static var systemGroupedBackground: Color { Color(uiColor: .systemGroupedBackground) }
     static var secondarySystemGroupedBackground: Color { Color(uiColor: .secondarySystemGroupedBackground) }
-    /// Softer background in light mode (reduces harsh white); unchanged in dark.
-    static var appGroupedBackground: Color {
-        Color(uiColor: UIColor { traitCollection in
-            if traitCollection.userInterfaceStyle == .dark {
-                return .systemGroupedBackground
-            }
-            return UIColor(red: 0.94, green: 0.94, blue: 0.96, alpha: 1)
-        })
-    }
+    static var appGroupedBackground: Color { systemGroupedBackground }
     #elseif os(macOS)
     static var systemBackground: Color { Color(nsColor: .windowBackgroundColor) }
     static var systemGray6: Color { Color(nsColor: .controlBackgroundColor) }
@@ -33,7 +36,8 @@ extension Color {
 
 // MARK: - Date Extensions
 
-extension Date {
+/// Pure date helpers, usable from the nonisolated @Model types.
+nonisolated extension Date {
     var startOfDay: Date { Calendar.current.startOfDay(for: self) }
     
     var startOfWeek: Date? { Calendar.current.dateInterval(of: .weekOfYear, for: self)?.start }

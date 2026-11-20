@@ -9,6 +9,7 @@ import AppKit
 
 // MARK: - Home Empty State
 
+/// Centered empty state with two actions.
 struct HomeEmptyState: View {
     let icon: String
     let iconColor: Color
@@ -19,79 +20,39 @@ struct HomeEmptyState: View {
     let secondaryButtonTitle: String
     let secondaryButtonAction: () -> Void
 
-    private let config = LayoutConfig.current
-
-    private var secondaryButtonBackground: Color {
-        #if os(iOS)
-        Color(uiColor: .quaternarySystemFill)
-        #elseif os(macOS)
-        Color(nsColor: .quaternarySystemFill)
-        #else
-        Color.primary.opacity(0.06)
-        #endif
-    }
-
-    private var primaryButtonBackground: Color {
-        Color.accentColor.opacity(0.15)
-    }
-
     var body: some View {
-        VStack(spacing: 0) {
-            // Message block: icon + copy grouped together
-            VStack(alignment: .center, spacing: config.spacingM + 6) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: config.cardCornerRadius + 12)
-                        .fill(iconColor.opacity(0.12))
-                        .frame(width: 96, height: 96)
-                    Image(systemName: icon)
-                        .font(.system(size: 40, weight: .medium))
-                        .foregroundStyle(iconColor)
-                }
-
-                VStack(alignment: .center, spacing: config.spacingS) {
-                    Text(title)
-                        .font(.title2.weight(.bold))
-                        .multilineTextAlignment(.center)
-                    Text(message)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
+        VStack(spacing: 16) {
+            Image(systemName: icon)
+                .font(.system(size: 52, weight: .medium))
+                .foregroundStyle(iconColor)
+                .symbolRenderingMode(.hierarchical)
+            VStack(spacing: 6) {
+                Text(title)
+                    .font(.title2.weight(.bold))
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.top, config.spacingXXL + 4)
-            .padding(.horizontal, config.spacingXXL)
-            .padding(.bottom, config.spacingXXL)
-
-            // Separator so the button reads as the card’s action, not another line of text
-            Divider()
-                .padding(.horizontal, config.spacingXXL)
-
-            VStack(spacing: config.spacingM) {
+            .multilineTextAlignment(.center)
+            VStack(spacing: 10) {
                 Button(action: primaryButtonAction) {
-                    Label(primaryButtonTitle, systemImage: "plus.circle")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(.primary)
+                    Label(primaryButtonTitle, systemImage: "plus")
+                        .font(.headline)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, config.spacingL)
-                        .background(primaryButtonBackground, in: RoundedRectangle(cornerRadius: config.cornerRadiusMedium + 2))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderedProminent)
                 Button(action: secondaryButtonAction) {
                     Label(secondaryButtonTitle, systemImage: "square.grid.2x2")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(.primary)
+                        .font(.headline)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, config.spacingL)
-                        .background(secondaryButtonBackground, in: RoundedRectangle(cornerRadius: config.cornerRadiusMedium + 2))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
             }
-            .padding(config.spacingXL)
+            .controlSize(.large)
+            .padding(.top, 8)
         }
-        .background(Color.secondarySystemGroupedBackground)
-        .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius + 2))
-        .padding(.horizontal, config.spacingXL)
+        .frame(maxWidth: 360)
+        .padding(.horizontal, 24)
     }
 }
 
@@ -160,7 +121,7 @@ struct ChecklistRow: View {
             .buttonStyle(.plain)
             .frame(minWidth: 44, minHeight: 44)
             .contentShape(Rectangle())
-            .hapticFeedback(.light, trigger: isCompleted)
+            .completionHaptic(isDone: isCompleted)
 
             Button {
                 onViewDescription?()
@@ -197,6 +158,8 @@ struct ChecklistRow: View {
                     .font(.system(size: config.iconSizeRow + 2))
                     .foregroundStyle(.secondary)
             }
+            .menuIndicator(.hidden)
+            .tint(Color.brandPurple)
         }
         .padding(.horizontal, config.spacingL)
         .padding(.vertical, config.spacingL)
@@ -227,48 +190,49 @@ struct ChecklistRow: View {
                 } : nil
             )
         }
+        // Active on iOS/macOS 27+, where Home's scroll view is a swipe actions container.
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            Button {
+                withAnimation(.spring(duration: 0.25)) {
+                    if isRepeating && !isCompleted {
+                        HabitStore.shared.markAllComplete(for: habit, on: date)
+                    } else {
+                        HabitStore.shared.toggleCompletion(for: habit, on: date)
+                    }
+                }
+            } label: {
+                Label(isCompleted ? "Undo" : "Done", systemImage: isCompleted ? "arrow.uturn.backward" : "checkmark")
+            }
+            .tint(isCompleted ? .gray : .green)
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            if isSkipped {
+                Button {
+                    withAnimation { onUnskip?() }
+                } label: {
+                    Label("Unskip", systemImage: "arrow.uturn.backward")
+                }
+                .tint(.gray)
+            } else if !isCompleted {
+                Button {
+                    withAnimation { HabitStore.shared.skipDay(for: habit, on: date) }
+                } label: {
+                    Label("Skip", systemImage: "forward")
+                }
+                .tint(.orange)
+            }
+        }
     }
 
     @ViewBuilder
     private var completionButton: some View {
         VStack(spacing: 3) {
-            ZStack {
-                // Background ring
-                Circle()
-                    .stroke(
-                        isSkipped ? Color.orange : (isCompleted ? habit.displayColor : Color.secondary.opacity(0.25)),
-                        lineWidth: 2
-                    )
-                    .frame(width: config.checkboxSize, height: config.checkboxSize)
+            #if os(macOS)
+            macCompletionIcon
+            #else
+            iOSCompletionIcon
+            #endif
 
-                if isSkipped {
-                    Image(systemName: "pause.fill")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(.orange)
-                } else if let emoji = habit.emoji, !emoji.isEmpty {
-                    // Emoji as the completion indicator
-                    Text(emoji)
-                        .font(.system(size: config.checkboxSize * 0.55))
-                        .opacity(isCompleted ? 1.0 : 0.3)
-                        .scaleEffect(isCompleted ? 1.0 : 0.85)
-                        .animation(.spring(duration: 0.25, bounce: 0.4), value: isCompleted)
-                } else {
-                    // Fallback: filled circle with checkmark
-                    if isCompleted {
-                        Circle()
-                            .fill(habit.displayColor)
-                            .frame(width: config.checkboxSize, height: config.checkboxSize)
-                        Image(systemName: "checkmark")
-                            .font(.system(size: config.spacingL, weight: .bold))
-                            .foregroundStyle(.white)
-                    }
-                }
-            }
-            .frame(width: config.checkboxSize, height: config.checkboxSize)
-            .animation(.spring(duration: 0.25), value: isCompleted)
-            .animation(.spring(duration: 0.25), value: isSkipped)
-
-            // Subtle count badge for repeating habits
             if isRepeating && !isSkipped {
                 Text("\(count)/\(expected)")
                     .font(.system(size: 9, weight: .semibold, design: .rounded))
@@ -277,6 +241,71 @@ struct ChecklistRow: View {
                     .animation(.spring(duration: 0.2), value: count)
             }
         }
+    }
+
+    // macOS: filled circle, no stroke ring — emoji fills the space naturally
+    @ViewBuilder
+    private var macCompletionIcon: some View {
+        ZStack {
+            Circle()
+                .fill(isSkipped ? Color.orange.opacity(0.15)
+                      : isCompleted ? habit.displayColor.opacity(0.85)
+                      : habit.displayColor.opacity(0.12))
+            if isSkipped {
+                Image(systemName: "pause.fill")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.orange)
+            } else if let emoji = habit.emoji, !emoji.isEmpty {
+                Text(emoji)
+                    .font(.system(size: config.checkboxSize * 0.72))
+                    .opacity(isCompleted ? 1.0 : 0.45)
+                    .scaleEffect(isCompleted ? 1.0 : 0.88)
+                    .animation(.spring(duration: 0.25, bounce: 0.3), value: isCompleted)
+            } else {
+                Image(systemName: isCompleted ? "checkmark" : (habit.iconName ?? "circle.fill"))
+                    .font(.system(size: config.checkboxSize * 0.45, weight: .bold))
+                    .foregroundStyle(isCompleted ? .white : habit.displayColor.opacity(0.6))
+            }
+        }
+        .frame(width: config.checkboxSize, height: config.checkboxSize)
+        .animation(.spring(duration: 0.25), value: isCompleted)
+        .animation(.spring(duration: 0.25), value: isSkipped)
+    }
+
+    // iOS: stroke ring with emoji inside
+    @ViewBuilder
+    private var iOSCompletionIcon: some View {
+        ZStack {
+            Circle()
+                .stroke(
+                    isSkipped ? Color.orange : (isCompleted ? habit.displayColor : Color.secondary.opacity(0.25)),
+                    lineWidth: 2
+                )
+                .frame(width: config.checkboxSize, height: config.checkboxSize)
+            if isSkipped {
+                Image(systemName: "pause.fill")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.orange)
+            } else if let emoji = habit.emoji, !emoji.isEmpty {
+                Text(emoji)
+                    .font(.system(size: config.checkboxSize * 0.55))
+                    .opacity(isCompleted ? 1.0 : 0.3)
+                    .scaleEffect(isCompleted ? 1.0 : 0.85)
+                    .animation(.spring(duration: 0.25, bounce: 0.4), value: isCompleted)
+            } else {
+                if isCompleted {
+                    Circle()
+                        .fill(habit.displayColor)
+                        .frame(width: config.checkboxSize, height: config.checkboxSize)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: config.spacingL, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+            }
+        }
+        .frame(width: config.checkboxSize, height: config.checkboxSize)
+        .animation(.spring(duration: 0.25), value: isCompleted)
+        .animation(.spring(duration: 0.25), value: isSkipped)
     }
 
     private var skipReasonDisplayText: String {
@@ -290,39 +319,51 @@ struct ChecklistRow: View {
                 .font(.system(size: config.spacingM + 6, weight: .semibold))
                 .foregroundStyle(isCompleted || isSkipped ? .secondary : .primary)
                 .strikethrough(isCompleted)
-            Group {
-                if isSkipped, skipReason != nil, !(skipReason?.isEmpty ?? true) {
-                    Button {
-                        onTapSkipReason?(skipReasonDisplayText)
-                    } label: {
+            if isSkipped {
+                Group {
+                    if skipReason != nil, !(skipReason?.isEmpty ?? true) {
+                        Button {
+                            onTapSkipReason?(skipReasonDisplayText)
+                        } label: {
+                            Text(skipReasonDisplayText)
+                                .font(.footnote)
+                                .foregroundStyle(.orange)
+                                .lineLimit(2)
+                                .truncationMode(.tail)
+                                .multilineTextAlignment(.leading)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("Double tap to show full reason")
+                    } else {
                         Text(skipReasonDisplayText)
                             .font(.footnote)
                             .foregroundStyle(.orange)
                             .lineLimit(2)
                             .truncationMode(.tail)
-                            .multilineTextAlignment(.leading)
-                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    .buttonStyle(.plain)
-                    .accessibilityHint("Double tap to show full reason")
-                } else {
+                }
+            } else {
+                HStack(spacing: 4) {
                     Text(skipReasonDisplayText)
                         .font(.footnote)
-                        .foregroundStyle(isSkipped ? .orange : .secondary)
-                        .lineLimit(isSkipped ? 2 : 1)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
                         .truncationMode(.tail)
+                    if isCompleted, let streak = habit.streakIfStarted, streak.currentStreak > 0 {
+                        Text("·")
+                            .font(.footnote)
+                            .foregroundStyle(.tertiary)
+                        Text("\(streak.currentStreak)d streak")
+                            .font(.footnote.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             if let window = windowLabel {
                 Text(window)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
-            }
-            if isCompleted, let streak = habit.streak, streak.currentStreak > 0 {
-                HStack(spacing: 4) {
-                    Image(systemName: "flame.fill").font(.system(size: 10))
-                    Text("\(streak.currentStreak) day streak").font(.footnote).foregroundStyle(.orange)
-                }
             }
         }
     }
@@ -336,9 +377,18 @@ struct AdCardView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: config.cardRowPaddingVertical) {
-            Text("Advertisement".uppercased().map { String($0) }.joined(separator: " "))
-                .font(.caption2.weight(.medium))
-                .foregroundStyle(.tertiary)
+            HStack {
+                Text("Advertisement".uppercased().map { String($0) }.joined(separator: " "))
+                    .font(.caption2.weight(.medium))
+                    .foregroundStyle(.tertiary)
+                Spacer()
+                Button("Remove ads") {
+                    Task { await PurchaseManager.shared.purchaseRemoveAds() }
+                }
+                .font(.caption.weight(.semibold))
+                .buttonStyle(.borderless)
+                .tint(Color.brandPurple)
+            }
             #if os(iOS)
             AdMobBannerView()
             #endif
@@ -350,12 +400,6 @@ struct AdCardView: View {
         .overlay(
             RoundedRectangle(cornerRadius: config.cardCornerRadius)
                 .stroke(Color.primary.opacity(colorScheme == .dark ? 0.08 : 0.05), lineWidth: 1)
-        )
-        .shadow(
-            color: colorScheme == .dark ? .white.opacity(0.04) : .black.opacity(0.05),
-            radius: config.cardShadowRadius,
-            x: 0,
-            y: 3
         )
     }
 }
@@ -437,6 +481,8 @@ struct ScheduledRow: View {
                     .font(.system(size: config.iconSizeRow + 2))
                     .foregroundStyle(.secondary)
             }
+            .menuIndicator(.hidden)
+            .tint(Color.brandPurple)
         }
         .padding(.horizontal, config.spacingL)
         .padding(.vertical, config.spacingM)

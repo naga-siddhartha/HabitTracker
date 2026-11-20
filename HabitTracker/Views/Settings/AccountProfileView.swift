@@ -5,11 +5,28 @@ import AppKit
 
 /// Account profile when signed in with Apple: display info, sign out, delete account (Guideline 5.1.1(v)).
 struct AccountProfileView: View {
-    @ObservedObject private var authService = AuthService.shared
+    private var authService = AuthService.shared
     @Environment(\.dismiss) private var dismiss
     @State private var showingDeleteAccountConfirmation = false
+    @State private var isDeleting = false
+    @State private var deleteError: String?
 
-    private var appAccent: Color { Color(red: 0.35, green: 0.51, blue: 0.88) }
+    private static let deleteAccountMessage = "This deletes the copy of your habits stored in iCloud and signs you out. Your habits stay on this device. Other devices keep their own copies until you delete them there.\n\nTo revoke this app’s access to your Apple ID, go to Settings → your name → Sign-In & Security → Sign in with Apple."
+
+    private func deleteAccount() {
+        isDeleting = true
+        Task {
+            do {
+                try await authService.deleteAccount()
+                isDeleting = false
+                dismiss()
+            } catch {
+                isDeleting = false
+                deleteError = error.localizedDescription
+            }
+        }
+    }
+
 
     var body: some View {
         #if os(macOS)
@@ -28,7 +45,7 @@ struct AccountProfileView: View {
                     HStack(spacing: 14) {
                         Image(systemName: "person.crop.circle.fill")
                             .font(.system(size: 44))
-                            .foregroundStyle(appAccent)
+                            .foregroundStyle(Color.brandPurple)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Signed in with Apple")
                                 .font(.headline)
@@ -79,12 +96,27 @@ struct AccountProfileView: View {
             .alert("Delete account?", isPresented: $showingDeleteAccountConfirmation) {
                 Button("Cancel", role: .cancel) {}
                 Button("Delete", role: .destructive) {
-                    authService.deleteAccount()
-                    dismiss()
+                    deleteAccount()
                 }
             } message: {
-                Text("Sign-in and account data will be removed from this device. Your habits and data will remain on this device unless you use Reset All Data. To revoke this app’s access to your Apple ID, go to Settings → Apple ID → Password & Security → Apps Using Your Apple ID.")
+                Text(Self.deleteAccountMessage)
             }
+            .alert("Couldn't delete account", isPresented: Binding(
+                get: { deleteError != nil },
+                set: { if !$0 { deleteError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Your iCloud data couldn't be deleted, so you're still signed in. Check your internet connection and iCloud settings, then try again.\n\n\(deleteError ?? "")")
+            }
+            .overlay {
+                if isDeleting {
+                    ProgressView("Deleting…")
+                        .padding(24)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                }
+            }
+            .disabled(isDeleting)
         }
     }
 
@@ -96,7 +128,7 @@ struct AccountProfileView: View {
                 HStack(spacing: 16) {
                     Image(systemName: "person.crop.circle.fill")
                         .font(.system(size: 40))
-                        .foregroundStyle(appAccent)
+                        .foregroundStyle(Color.brandPurple)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Signed in with Apple")
                             .font(.headline)
@@ -156,12 +188,27 @@ struct AccountProfileView: View {
             .alert("Delete account?", isPresented: $showingDeleteAccountConfirmation) {
                 Button("Cancel", role: .cancel) {}
                 Button("Delete", role: .destructive) {
-                    authService.deleteAccount()
-                    dismiss()
+                    deleteAccount()
                 }
             } message: {
-                Text("Sign-in and account data will be removed from this device. Your habits and data will remain on this device unless you use Reset All Data. To revoke this app’s access to your Apple ID, go to Settings → Apple ID → Password & Security → Apps Using Your Apple ID.")
+                Text(Self.deleteAccountMessage)
             }
+            .alert("Couldn't delete account", isPresented: Binding(
+                get: { deleteError != nil },
+                set: { if !$0 { deleteError = nil } }
+            )) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("Your iCloud data couldn't be deleted, so you're still signed in. Check your internet connection and iCloud settings, then try again.\n\n\(deleteError ?? "")")
+            }
+            .overlay {
+                if isDeleting {
+                    ProgressView("Deleting…")
+                        .padding(24)
+                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                }
+            }
+            .disabled(isDeleting)
         }
         .frame(minWidth: 320, minHeight: 260)
     }

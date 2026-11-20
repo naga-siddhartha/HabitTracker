@@ -23,11 +23,11 @@ struct YearlyView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button { changeYear(by: -1) } label: { Image(systemName: "chevron.left") }
+                Button { changeYear(by: -1) } label: { Image(systemName: "chevron.left").foregroundStyle(.secondary) }
                 Spacer()
                 Text(currentYear, format: .dateTime.year()).font(.headline)
                 Spacer()
-                Button { changeYear(by: 1) } label: { Image(systemName: "chevron.right") }
+                Button { changeYear(by: 1) } label: { Image(systemName: "chevron.right").foregroundStyle(.secondary) }
             }
             .padding()
             
@@ -120,6 +120,8 @@ struct YearMonthCell: View {
     }
     
     var body: some View {
+        // Read twice below; compute once.
+        let completionRatio = self.completionRatio
         VStack(spacing: 8) {
             Text(month, format: .dateTime.month(.abbreviated))
                 .font(.caption.weight(.medium))
@@ -131,7 +133,7 @@ struct YearMonthCell: View {
                     .stroke(Color.systemGray4, lineWidth: 4)
                 Circle()
                     .trim(from: 0, to: completionRatio)
-                    .stroke(Color.green, lineWidth: 4)
+                    .stroke(completionRatio >= 1 ? Color.rewardGold : Color.brandPurple, lineWidth: 4)
                     .rotationEffect(.degrees(-90))
                 
                 Text("\(Int(completionRatio * 100))%")

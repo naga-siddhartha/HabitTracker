@@ -1,6 +1,7 @@
 import Foundation
 import SwiftData
 
+/// SwiftData schema and store setup.
 @available(iOS 17.0, macOS 14.0, *)
 enum AppConfig {
     static var schema: Schema {
@@ -35,6 +36,7 @@ enum AppConfig {
 
 // MARK: - App Store / Support URLs (Info.plist: PrivacyPolicyURL, SupportURL)
 
+/// Privacy policy and support URLs from Info.plist.
 enum AppLinks {
     /// Read from Info.plist PrivacyPolicyURL. Canonical live policy: naga-siddhartha.github.io/Habit-GrabIt/privacy.html (GitHub Pages from repo naga-siddhartha/Habit-GrabIt).
     static var privacyPolicyURL: URL? {
