@@ -5,7 +5,8 @@ import UIKit
 import AppKit
 #endif
 
-extension Color {
+/// Pure conversions, usable from the nonisolated @Model types.
+nonisolated extension Color {
     /// Creates a Color from a hex string (e.g. "#FF5733" or "FF5733").
     init?(hex: String?) {
         guard let hex = hex?.trimmingCharacters(in: .whitespacesAndNewlines),

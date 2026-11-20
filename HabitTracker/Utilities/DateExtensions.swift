@@ -33,7 +33,8 @@ extension Color {
 
 // MARK: - Date Extensions
 
-extension Date {
+/// Pure date helpers, usable from the nonisolated @Model types.
+nonisolated extension Date {
     var startOfDay: Date { Calendar.current.startOfDay(for: self) }
     
     var startOfWeek: Date? { Calendar.current.dateInterval(of: .weekOfYear, for: self)?.start }
