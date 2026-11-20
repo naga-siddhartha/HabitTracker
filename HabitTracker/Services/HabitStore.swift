@@ -280,6 +280,9 @@ final class HabitStore {
     /// their reminder settings, and on launch so lost or stale reminders heal themselves.
     func rescheduleAllReminders() {
         guard performsSideEffects else { return }
+        #if DEBUG
+        if MarketingDemoSeeder.isActive { return }
+        #endif
         let habits = fetchHabits()
             .filter { !$0.isArchived }
             .map {

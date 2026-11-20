@@ -17,6 +17,8 @@ enum MarketingDemoSeeder {
     /// Call once at launch. No-ops when demo is not active or already seeded.
     static func seedIfNeeded(store: HabitStore) {
         guard isActive else { return }
+        // Always suppress onboarding and notifications in demo mode.
+        UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
         guard store.fetchHabits().isEmpty else { return }   // idempotent
         guard !UserDefaults.standard.bool(forKey: seededKey) else { return }
         seed(store: store)

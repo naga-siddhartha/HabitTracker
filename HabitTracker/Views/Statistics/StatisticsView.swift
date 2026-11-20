@@ -121,7 +121,15 @@ struct StatisticsView: View {
             .sheet(isPresented: $showingCompletionsDetail) { CompletionsDetailView(habits: habits, dateRange: dateRange) }
             .sheet(isPresented: $showingStreaksDetail) { StreaksDetailView(habits: habits) }
             .sheet(isPresented: $showingHabitsDetail) { HabitsDetailView(habits: habits) }
-            .onAppear { computeStats() }
+            .onAppear {
+                computeStats()
+                #if DEBUG
+                if MarketingDemoSeeder.isActive,
+                   CommandLine.arguments.contains("-demoStreaks") {
+                    showingStreaksDetail = true
+                }
+                #endif
+            }
             .onChange(of: selectedTimeframe) { computeStats() }
             .onChange(of: habits.count) { computeStats() }
         }

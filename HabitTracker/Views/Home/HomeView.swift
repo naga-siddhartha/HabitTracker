@@ -112,6 +112,16 @@ struct HomeView: View {
             }
             .sheet(isPresented: $showingAddHabit) { AddEditHabitView() }
             .habitSheets(details: $habitForDetailsSheet, editing: $editingHabit)
+            #if DEBUG
+            .onAppear {
+                guard MarketingDemoSeeder.isActive,
+                      CommandLine.arguments.contains("-demoDetail") else { return }
+                // Open the detail sheet for the first non-repeating habit (Exercise)
+                if let habit = allHabits.first(where: { $0.reminderIntervalMinutes == 0 }) {
+                    habitForDetailsSheet = habit
+                }
+            }
+            #endif
             .sheet(item: homeSkipReasonBinding) { pair in
                 SkipReasonSheetView(habit: pair.habit, date: pair.date) { skipReasonTarget = nil }
             }

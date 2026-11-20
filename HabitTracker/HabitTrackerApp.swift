@@ -16,6 +16,12 @@ struct HabitTrackerApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
     init() {
+        #if DEBUG
+        // Set demo defaults before @AppStorage reads them so no dialogs appear.
+        if CommandLine.arguments.contains("-marketingDemo") {
+            UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+        }
+        #endif
         Analytics.start()
         SyncMonitor.shared.start()
         PurchaseManager.shared.start()

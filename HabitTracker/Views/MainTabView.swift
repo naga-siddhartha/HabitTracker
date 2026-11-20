@@ -59,6 +59,20 @@ struct MainTabView: View {
         }
         .tint(Color.brandPurple)
         .environment(accountMenuState)
+        #if DEBUG
+        .onAppear {
+            guard MarketingDemoSeeder.isActive else { return }
+            let args = CommandLine.arguments
+            if let idx = args.firstIndex(of: "-demoTab"),
+               idx + 1 < args.count,
+               let tab = Int(args[idx + 1]) {
+                selectedTab = tab
+            }
+            if args.contains("-demoTemplates") {
+                isPresentingTemplates = true
+            }
+        }
+        #endif
         #if os(macOS)
         .withAccountToolbar(accountMenuState: accountMenuState)
         #endif

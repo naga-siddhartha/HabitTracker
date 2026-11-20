@@ -41,6 +41,9 @@ final class NotificationService {
     /// limit fairly: fixed-time reminders first, then interval slots round-robin across habits.
     func rescheduleAll(_ habits: [NotificationHabit]) {
         #if canImport(UserNotifications)
+        #if DEBUG
+        if CommandLine.arguments.contains("-marketingDemo") { return }
+        #endif
         let center = UNUserNotificationCenter.current()
         // Respect the app's Notifications toggle (defaults to true when unset).
         if UserDefaults.standard.object(forKey: "notificationsEnabled") as? Bool == false {

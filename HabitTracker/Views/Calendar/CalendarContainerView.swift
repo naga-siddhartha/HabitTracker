@@ -38,6 +38,14 @@ struct CalendarContainerView: View {
             .inlineNavigationTitle()
             #endif
         }
+        #if DEBUG
+        .onAppear {
+            if MarketingDemoSeeder.isActive,
+               CommandLine.arguments.contains("-demoWeekly") {
+                selectedView = .weekly
+            }
+        }
+        #endif
     }
 }
 
