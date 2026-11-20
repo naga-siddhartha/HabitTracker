@@ -18,10 +18,6 @@ struct HabitTrackerApp: App {
     init() {
         Analytics.start()
         SyncMonitor.shared.start()
-        store.mergeDuplicates()
-        store.updateAllStreaks()
-        store.writeWidgetData()
-        store.rescheduleAllReminders()
         PurchaseManager.shared.start()
         #if os(iOS)
         configureTabBarAppearance()
@@ -54,6 +50,11 @@ struct HabitTrackerApp: App {
                 .onAppear {
                     showingStoreError = containerProvider.storeLoadError != nil
                     Analytics.trackLaunchTimeOnce()
+                    // Let the first frame render, then do housekeeping.
+                    Task { @MainActor in
+                        await Task.yield()
+                        store.performLaunchMaintenance()
+                    }
                 }
                 .onChange(of: scenePhase, initial: true) { _, phase in
                     guard phase == .active else { return }

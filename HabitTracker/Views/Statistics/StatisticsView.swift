@@ -138,7 +138,7 @@ struct StatisticsView: View {
                 $0.isCompleted && $0.date >= range.start && $0.date <= range.end
             }.count
         }
-        let namesWithStreak = Set(habits.filter { ($0.streak?.currentStreak ?? 0) > 0 }.map(\.name))
+        let namesWithStreak = Set(habits.filter { ($0.liveStreak.currentStreak) > 0 }.map(\.name))
         cachedCompletions = completions
         cachedActiveStreaks = namesWithStreak.count
     }
@@ -159,10 +159,10 @@ struct StatisticsView: View {
     
     /// One per habit name (duplicates merged), sorted by longest streak.
     private var habitsWithStreaks: [Habit] {
-        let grouped = Dictionary(grouping: habits.filter { ($0.streak?.longestStreak ?? 0) > 0 }, by: \.name)
+        let grouped = Dictionary(grouping: habits.filter { ($0.liveStreak.longestStreak) > 0 }, by: \.name)
         return grouped.compactMap { _, group in
-            group.max(by: { ($0.streak?.longestStreak ?? 0) < ($1.streak?.longestStreak ?? 0) })
-        }.sorted { ($0.streak?.longestStreak ?? 0) > ($1.streak?.longestStreak ?? 0) }
+            group.max(by: { ($0.liveStreak.longestStreak) < ($1.liveStreak.longestStreak) })
+        }.sorted { ($0.liveStreak.longestStreak) > ($1.liveStreak.longestStreak) }
     }
 }
 
@@ -211,10 +211,10 @@ struct StreaksDetailView: View {
     private var habitsByBestStreak: [(habit: Habit, current: Int, longest: Int)] {
         let grouped = Dictionary(grouping: habits, by: \.name)
         return grouped.compactMap { name, group in
-            guard let best = group.max(by: { ($0.streak?.longestStreak ?? 0) < ($1.streak?.longestStreak ?? 0) }),
-                  let streak = best.streak, streak.longestStreak > 0 else { return nil }
-            let bestCurrent = group.map { $0.streak?.currentStreak ?? 0 }.max() ?? 0
-            let bestLongest = group.map { $0.streak?.longestStreak ?? 0 }.max() ?? 0
+            guard let best = group.max(by: { ($0.liveStreak.longestStreak) < ($1.liveStreak.longestStreak) }),
+                  best.liveStreak.longestStreak > 0 else { return nil }
+            let bestCurrent = group.map { $0.liveStreak.currentStreak }.max() ?? 0
+            let bestLongest = group.map { $0.liveStreak.longestStreak }.max() ?? 0
             return (best, bestCurrent, bestLongest)
         }.sorted { $0.longest > $1.longest }
     }
@@ -267,7 +267,7 @@ struct HabitsDetailView: View {
                         Text(habit.name).font(.headline).foregroundStyle(habit.displayColor)
                     }
                     Text("Frequency: \(habit.frequency.rawValue.capitalized)").font(.caption).foregroundStyle(.secondary)
-                    if let streak = habit.streak {
+                    if let streak = habit.streakIfStarted {
                         Text("Current streak: \(streak.currentStreak) days").font(.caption).foregroundStyle(.orange)
                     }
                     Text("Created: \(habit.createdAt.mediumDateString)").font(.caption2).foregroundStyle(.secondary)
@@ -347,7 +347,7 @@ struct StreakRow: View {
             }
             Text(habit.name).font(.subheadline)
             Spacer()
-            Label("\(habit.streak?.longestStreak ?? 0) days", systemImage: "flame.fill")
+            Label("\(habit.liveStreak.longestStreak) days", systemImage: "flame.fill")
                 .font(.caption).foregroundStyle(.orange)
         }
         .padding(.horizontal)

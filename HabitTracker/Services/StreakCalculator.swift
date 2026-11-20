@@ -1,4 +1,5 @@
 import Foundation
+import SwiftData
 
 // MARK: - Streak Engine (pure, no SwiftData)
 
@@ -107,5 +108,56 @@ struct StreakCalculator {
             result.lastCompleted.map { calendar.startOfDay(of: $0) },
             result.streakStart.map { calendar.startOfDay(of: $0) }
         )
+    }
+}
+
+// MARK: - Live streaks (computed when shown)
+
+/// Streak values for display. Same field names as the stored `Streak` model, which is no longer
+/// written: stored streaks went stale overnight (they only refreshed on launch or a tap) and
+/// every check-in had to sync an extra record.
+struct HabitStreak: Equatable {
+    var currentStreak: Int
+    var longestStreak: Int
+    var lastCompletedDate: Date?
+    var streakStartDate: Date?
+}
+
+/// Memoizes streaks per habit. The key is cheap to compute (no calendar math) and changes whenever
+/// an entry is added, edited or synced, the schedule changes, or the day rolls over.
+@available(iOS 17.0, macOS 14.0, *)
+@MainActor
+final class StreakCache {
+    static let shared = StreakCache()
+    private var cache: [PersistentIdentifier: (key: Int, value: HabitStreak)] = [:]
+
+    func streak(for habit: Habit, now: Date = .now) -> HabitStreak {
+        let entries = habit.entriesOrEmpty
+        var hasher = Hasher()
+        hasher.combine(entries.count)
+        hasher.combine(entries.lazy.map(\.updatedAt).max())
+        hasher.combine(habit.frequencyRaw)
+        hasher.combine(habit.activeDaysRaw.sorted())
+        hasher.combine(habit.reminderIntervalMinutes)
+        hasher.combine(Calendar.current.dayKey(for: now))
+        let key = hasher.finalize()
+
+        let id = habit.persistentModelID
+        if let hit = cache[id], hit.key == key { return hit.value }
+        let r = StreakCalculator().calculate(for: habit, now: now)
+        let value = HabitStreak(currentStreak: r.current, longestStreak: r.longest,
+                                lastCompletedDate: r.lastCompleted, streakStartDate: r.streakStart)
+        cache[id] = (key, value)
+        return value
+    }
+}
+
+@available(iOS 17.0, macOS 14.0, *)
+extension Habit {
+    var liveStreak: HabitStreak { StreakCache.shared.streak(for: self) }
+    /// Nil until the habit has been completed at least once.
+    var streakIfStarted: HabitStreak? {
+        let s = liveStreak
+        return s.longestStreak > 0 ? s : nil
     }
 }

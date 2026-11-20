@@ -146,7 +146,7 @@ struct HabitDetailsSheetView: View {
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
-                    if let streak = habit.streak {
+                    if let streak = habit.streakIfStarted {
                         sectionCard(title: "Streaks", systemImage: "flame.fill") {
                             VStack(alignment: .leading, spacing: config.spacingM) {
                                 HStack {

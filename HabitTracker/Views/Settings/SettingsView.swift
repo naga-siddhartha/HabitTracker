@@ -334,9 +334,7 @@ struct SettingsView: View {
                 await MainActor.run {
                     do {
                         try ImportService.replaceAllAndRestore(from: exportData, context: HabitStore.shared.modelContext)
-                        // Recompute streaks from the restored history instead of trusting the backup's numbers,
-                        // and drop reminders for habits that no longer exist.
-                        HabitStore.shared.updateAllStreaks()
+                        // Streaks are computed from the restored history; rebuild reminders for the restored habits.
                         HabitStore.shared.rescheduleAllReminders()
                         HabitStore.shared.writeWidgetData()
                         WidgetKit.WidgetCenter.shared.reloadAllTimelines()

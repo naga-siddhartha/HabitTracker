@@ -90,10 +90,7 @@ struct ImportService {
         habit.createdAt = export.createdAt
         habit.updatedAt = export.createdAt
         
-        let streak = Streak(currentStreak: export.currentStreak, longestStreak: export.longestStreak)
-        streak.habit = habit
-        habit.streak = streak
-        
+        // Streaks are computed from the restored entries, so the backup's numbers aren't imported.
         for exportEntry in export.entries {
             let entry = HabitEntry(
                 date: exportEntry.date,
@@ -106,7 +103,6 @@ struct ImportService {
             context.insert(entry)
         }
         context.insert(habit)
-        context.insert(streak)
         return habit
     }
 }

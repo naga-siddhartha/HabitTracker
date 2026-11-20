@@ -318,7 +318,7 @@ struct ChecklistRow: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
-            if isCompleted, let streak = habit.streak, streak.currentStreak > 0 {
+            if isCompleted, let streak = habit.streakIfStarted, streak.currentStreak > 0 {
                 HStack(spacing: 4) {
                     Image(systemName: "flame.fill").font(.system(size: 10))
                     Text("\(streak.currentStreak) day streak").font(.footnote).foregroundStyle(.orange)

@@ -30,7 +30,6 @@ final class HabitRepository: HabitRepositoryProtocol {
     
     func add(_ habit: Habit) {
         modelContext.insert(habit)
-        habit.streak = Streak()
         save()
     }
     

@@ -58,8 +58,8 @@ struct ExportService {
                 activeDays: habit.activeDays.map { $0.fullName },
                 createdAt: habit.createdAt,
                 isArchived: habit.isArchived,
-                currentStreak: habit.streak?.currentStreak ?? 0,
-                longestStreak: habit.streak?.longestStreak ?? 0,
+                currentStreak: habit.liveStreak.currentStreak,
+                longestStreak: habit.liveStreak.longestStreak,
                 entries: (habit.entries ?? []).map { entry in
                     ExportEntry(
                         date: entry.date,
@@ -108,7 +108,7 @@ struct ExportService {
                 
                 let dateStr = entry.date.formatted(date: .numeric, time: .omitted)
                 let reason = entry.skipReason ?? ""
-                let streak = habit.streak?.currentStreak ?? 0
+                let streak = habit.liveStreak.currentStreak
                 
                 csv += "\"\(habit.name)\",\(dateStr),\(status),\"\(reason)\",\(streak)\n"
             }
@@ -128,7 +128,7 @@ struct ExportService {
             let created = habit.createdAt.formatted(date: .numeric, time: .omitted)
             
             csv += "\"\(habit.name)\",\(habit.colorName),\(habit.frequencyRaw),\(created),"
-            csv += "\(habit.streak?.currentStreak ?? 0),\(habit.streak?.longestStreak ?? 0),"
+            csv += "\(habit.liveStreak.currentStreak),\(habit.liveStreak.longestStreak),"
             csv += "\(completions),\(skips),\(habit.isArchived)\n"
         }
         

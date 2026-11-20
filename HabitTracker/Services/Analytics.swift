@@ -114,7 +114,7 @@ enum Analytics {
         let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: now) ?? now
         let dueYesterday = active.filter { $0.isActive(on: yesterday) && !$0.isSkipped(on: yesterday) }
         let doneYesterday = dueYesterday.filter { $0.isCompleted(on: yesterday) }
-        let bestStreak = active.map { $0.streak?.currentStreak ?? 0 }.max() ?? 0
+        let bestStreak = active.map { $0.liveStreak.currentStreak }.max() ?? 0
 
         let params: [String: String] = [
             "habits": bucket(active.count),

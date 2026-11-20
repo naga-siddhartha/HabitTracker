@@ -11,7 +11,7 @@ struct HabitDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 headerSection
-                if let streak = habit.streak { streakSection(streak) }
+                if let streak = habit.streakIfStarted { streakSection(streak) }
                 todaySection
                 calendarSection
                 activitySection
@@ -45,7 +45,7 @@ struct HabitDetailView: View {
         }
     }
     
-    private func streakSection(_ streak: Streak) -> some View {
+    private func streakSection(_ streak: HabitStreak) -> some View {
         HStack {
             VStack(alignment: .leading) {
                 Text("Current").font(.caption).foregroundStyle(.secondary)

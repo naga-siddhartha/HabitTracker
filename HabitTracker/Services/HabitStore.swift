@@ -18,7 +18,6 @@ final class HabitStore {
     }
 
     private var repository: HabitRepository { HabitRepository(modelContext: modelContext) }
-    private let streakCalculator = StreakCalculator()
 
     private init() {}
     
@@ -70,7 +69,6 @@ final class HabitStore {
         }
         
         habit.updatedAt = .now
-        updateStreak(for: habit)
         save()
         reloadWidgets()
     }
@@ -89,7 +87,6 @@ final class HabitStore {
             habit.entries = (habit.entries ?? []) + [newEntry]
         }
         habit.updatedAt = .now
-        updateStreak(for: habit)
         save()
         reloadWidgets()
     }
@@ -103,7 +100,6 @@ final class HabitStore {
         entry.skipReason = nil
         entry.updatedAt = .now
         habit.updatedAt = .now
-        updateStreak(for: habit)
         save()
         reloadWidgets()
     }
@@ -132,7 +128,6 @@ final class HabitStore {
             habit.entries = (habit.entries ?? []) + [newEntry]
         }
         habit.updatedAt = .now
-        updateStreak(for: habit)
         save()
         reloadWidgets()
     }
@@ -148,7 +143,6 @@ final class HabitStore {
         }
         
         habit.updatedAt = .now
-        updateStreak(for: habit)
         save()
         reloadWidgets()
     }
@@ -161,7 +155,6 @@ final class HabitStore {
         }
         
         habit.updatedAt = .now
-        updateStreak(for: habit)
         save()
         reloadWidgets()
     }
@@ -234,31 +227,25 @@ final class HabitStore {
     /// Called after CloudKit imports changes from another device.
     func handleRemoteChanges() {
         mergeDuplicates()
-        updateAllStreaks()
         writeWidgetData()
         WidgetCenter.shared.reloadAllTimelines()
         rescheduleAllReminders()
     }
 
-    // MARK: - Streaks
-    
-    func updateStreak(for habit: Habit) {
-        let result = streakCalculator.calculate(for: habit)
-        
-        if habit.streak == nil { habit.streak = Streak() }
-        
-        habit.streak?.currentStreak = result.current
-        habit.streak?.longestStreak = result.longest
-        habit.streak?.lastCompletedDate = result.lastCompleted
-        habit.streak?.streakStartDate = result.streakStart
-        habit.streak?.updatedAt = .now
+    // MARK: - Launch
+
+    private var didRunLaunchMaintenance = false
+
+    /// Housekeeping that used to run in `App.init` and delay the first frame. Call once after the
+    /// first screen is up.
+    func performLaunchMaintenance() {
+        guard !didRunLaunchMaintenance else { return }
+        didRunLaunchMaintenance = true
+        mergeDuplicates()
+        writeWidgetData()
+        rescheduleAllReminders()
     }
-    
-    func updateAllStreaks() {
-        fetchHabits().forEach { updateStreak(for: $0) }
-        save()
-    }
-    
+
     // MARK: - Reminders
 
     /// Rebuild all pending reminders from the current habits. Call after any change to habits or
