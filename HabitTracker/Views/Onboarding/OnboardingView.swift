@@ -1,69 +1,40 @@
 import SwiftUI
 
+/// First-launch welcome, shown as a sheet over Home.
 struct OnboardingView: View {
-    var onGetStarted: () -> Void
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.colorScheme) private var colorScheme
-    
+
     var body: some View {
-        ZStack {
-            // Very light tint so home screen is almost fully visible
-            Rectangle()
-                .fill(colorScheme == .dark ? Color.black.opacity(0.12) : Color.white.opacity(0.15))
-                .ignoresSafeArea()
-            
-            VStack(spacing: 0) {
-                Spacer()
-                VStack(spacing: 24) {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 72))
-                        .foregroundStyle(.green)
-                    Text("Track habits daily")
-                        .font(.title.weight(.bold))
-                        .multilineTextAlignment(.center)
-                    Text("Build streaks and stay consistent. Skip a day when you need to—your streak stays intact.")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
-                    Text("Start with a template or create your first habit.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 32)
-                }
-                .padding(28)
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 20))
-                .padding(.horizontal, 24)
-                .padding(.bottom, 48)
-                
-                Button {
-                    UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
-                    #if os(macOS)
-                    dismiss()
-                    #endif
-                    Task { @MainActor in
-                        try? await Task.sleep(for: .milliseconds(250))
-                        onGetStarted()
-                    }
-                } label: {
-                    Text("Get started")
-                        .font(.headline.weight(.semibold))
-                        .foregroundStyle(.white)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 16)
-                        .background(Color.accentColor, in: RoundedRectangle(cornerRadius: 14))
-                }
-                .padding(.horizontal, 24)
-                .padding(.bottom, 48)
+        VStack(spacing: 20) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 64))
+                .foregroundStyle(.green)
+                .symbolRenderingMode(.hierarchical)
+                .padding(.top, 8)
+            Text("Track habits daily")
+                .font(.title.weight(.bold))
+            Text("Build streaks and stay consistent. Skip a day when you need to; your streak stays intact.")
+                .font(.body)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+            Spacer(minLength: 0)
+            Button {
+                dismiss()
+            } label: {
+                Text("Get started")
+                    .font(.headline)
+                    .frame(maxWidth: .infinity)
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
         }
-        .accessibilityElement(children: .contain)
-        .accessibilityLabel("Onboarding. Track habits daily. Get started.")
+        .padding(28)
+        #if os(macOS)
+        .frame(width: 380, height: 320)
+        #endif
     }
 }
 
 #Preview {
-    OnboardingView(onGetStarted: {})
+    OnboardingView()
 }

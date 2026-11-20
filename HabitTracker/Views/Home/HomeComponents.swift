@@ -9,6 +9,7 @@ import AppKit
 
 // MARK: - Home Empty State
 
+/// Centered empty state with two actions.
 struct HomeEmptyState: View {
     let icon: String
     let iconColor: Color
@@ -19,79 +20,39 @@ struct HomeEmptyState: View {
     let secondaryButtonTitle: String
     let secondaryButtonAction: () -> Void
 
-    private let config = LayoutConfig.current
-
-    private var secondaryButtonBackground: Color {
-        #if os(iOS)
-        Color(uiColor: .quaternarySystemFill)
-        #elseif os(macOS)
-        Color(nsColor: .quaternarySystemFill)
-        #else
-        Color.primary.opacity(0.06)
-        #endif
-    }
-
-    private var primaryButtonBackground: Color {
-        Color.accentColor.opacity(0.15)
-    }
-
     var body: some View {
-        VStack(spacing: 0) {
-            // Message block: icon + copy grouped together
-            VStack(alignment: .center, spacing: config.spacingM + 6) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: config.cardCornerRadius + 12)
-                        .fill(iconColor.opacity(0.12))
-                        .frame(width: 96, height: 96)
-                    Image(systemName: icon)
-                        .font(.system(size: 40, weight: .medium))
-                        .foregroundStyle(iconColor)
-                }
-
-                VStack(alignment: .center, spacing: config.spacingS) {
-                    Text(title)
-                        .font(.title2.weight(.bold))
-                        .multilineTextAlignment(.center)
-                    Text(message)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                }
+        VStack(spacing: 16) {
+            Image(systemName: icon)
+                .font(.system(size: 52, weight: .medium))
+                .foregroundStyle(iconColor)
+                .symbolRenderingMode(.hierarchical)
+            VStack(spacing: 6) {
+                Text(title)
+                    .font(.title2.weight(.bold))
+                Text(message)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
             }
-            .frame(maxWidth: .infinity)
-            .padding(.top, config.spacingXXL + 4)
-            .padding(.horizontal, config.spacingXXL)
-            .padding(.bottom, config.spacingXXL)
-
-            // Separator so the button reads as the card’s action, not another line of text
-            Divider()
-                .padding(.horizontal, config.spacingXXL)
-
-            VStack(spacing: config.spacingM) {
+            .multilineTextAlignment(.center)
+            VStack(spacing: 10) {
                 Button(action: primaryButtonAction) {
-                    Label(primaryButtonTitle, systemImage: "plus.circle")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(.primary)
+                    Label(primaryButtonTitle, systemImage: "plus")
+                        .font(.headline)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, config.spacingL)
-                        .background(primaryButtonBackground, in: RoundedRectangle(cornerRadius: config.cornerRadiusMedium + 2))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.borderedProminent)
                 Button(action: secondaryButtonAction) {
                     Label(secondaryButtonTitle, systemImage: "square.grid.2x2")
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundStyle(.primary)
+                        .font(.headline)
                         .frame(maxWidth: .infinity)
-                        .padding(.vertical, config.spacingL)
-                        .background(secondaryButtonBackground, in: RoundedRectangle(cornerRadius: config.cornerRadiusMedium + 2))
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.bordered)
             }
-            .padding(config.spacingXL)
+            .controlSize(.large)
+            .padding(.top, 8)
         }
-        .background(Color.secondarySystemGroupedBackground)
-        .clipShape(RoundedRectangle(cornerRadius: config.cardCornerRadius + 2))
-        .padding(.horizontal, config.spacingXL)
+        .frame(maxWidth: 360)
+        .padding(.horizontal, 24)
     }
 }
 

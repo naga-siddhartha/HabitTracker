@@ -45,20 +45,13 @@ struct HomeView: View {
         NavigationStack {
             Group {
                 if isEmptyState {
+                    // No ad here: a new or idle user sees just the empty state.
                     VStack(alignment: .leading, spacing: 0) {
                         headerSection
-                        Spacer(minLength: 0).frame(maxHeight: 48)
+                        Spacer(minLength: 0)
                         homeContent
-                            .frame(maxWidth: config.contentMaxWidth)
-                            .padding(.horizontal, config.horizontalPadding)
-                        #if os(iOS)
-                        if !purchases.isAdFree {
-                            AdCardView()
-                                .frame(maxWidth: config.contentMaxWidth)
-                                .padding(.horizontal, config.horizontalPadding)
-                                .padding(.top, config.spacingXXL)
-                        }
-                        #endif
+                            .frame(maxWidth: .infinity)
+                        Spacer(minLength: 0)
                         Spacer(minLength: 0)
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -260,7 +253,7 @@ struct HomeView: View {
                     iconColor: .green,
                     title: habits.isEmpty ? "No habits yet" : "All caught up",
                     message: habits.isEmpty ? "Create your first habit or start from a template." : "No habits due today. Tap + to add one.",
-                    primaryButtonTitle: "New",
+                    primaryButtonTitle: "New habit",
                     primaryButtonAction: { showingAddHabit = true },
                     secondaryButtonTitle: "From template",
                     secondaryButtonAction: { onPresentTemplates?() }

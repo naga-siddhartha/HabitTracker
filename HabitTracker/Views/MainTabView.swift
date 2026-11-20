@@ -62,11 +62,11 @@ struct MainTabView: View {
         #endif
         .preferredColorScheme(appearanceMode.preferredColorScheme)
         .modifier(ResettingOverlayModifier(isPresented: $isResetting))
-        .modifier(OnboardingOverlayModifier(showOnboarding: showOnboarding) {
-            OnboardingView(onGetStarted: {
-                isPresentingTemplates = true
-            })
-        })
+        .sheet(isPresented: showOnboarding, onDismiss: { isPresentingTemplates = true }) {
+            OnboardingView()
+                .presentationDetents([.medium])
+                .interactiveDismissDisabled()
+        }
     }
 
     private func performReset() {
@@ -77,31 +77,6 @@ struct MainTabView: View {
             selectedTab = 0
             isResetting = false
         }
-    }
-}
-
-// MARK: - Onboarding overlay (translucent over Home on iOS, sheet on macOS)
-
-private struct OnboardingOverlayModifier<OverlayContent: View>: ViewModifier {
-    @Binding var showOnboarding: Bool
-    @ViewBuilder let overlayContent: () -> OverlayContent
-
-    func body(content: Content) -> some View {
-        #if os(iOS)
-        content
-            .overlay {
-                if showOnboarding {
-                    overlayContent()
-                        .transition(.opacity)
-                }
-            }
-            .animation(.easeInOut(duration: 0.25), value: showOnboarding)
-        #else
-        content
-            .sheet(isPresented: $showOnboarding) {
-                overlayContent()
-            }
-        #endif
     }
 }
 
