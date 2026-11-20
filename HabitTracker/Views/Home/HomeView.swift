@@ -89,7 +89,7 @@ struct HomeView: View {
                 get: { accountMenuState.showingAccountProfile },
                 set: { accountMenuState.showingAccountProfile = $0 }
             )) {
-                AccountProfileView()
+                AccountSheet()
             }
             .alert("Sign in", isPresented: Binding(
                 get: { accountMenuState.authError != nil },

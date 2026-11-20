@@ -63,6 +63,25 @@ final class AuthService: NSObject {
         }
     }
 
+    /// Completes sign-in from SwiftUI's `SignInWithAppleButton`.
+    func completeSignIn(with result: Result<ASAuthorization, Error>) throws {
+        switch result {
+        case .success(let authorization):
+            guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential else { return }
+            guard KeychainHelper.save(userId: credential.user, displayName: Self.formatDisplayName(from: credential)) else {
+                throw AuthError.keychainSaveFailed
+            }
+            currentUserId = credential.user
+            userDisplayName = KeychainHelper.loadUserDisplayName()
+            isSignedIn = true
+            NotificationCenter.default.post(name: .userDidSignIn, object: nil)
+            Analytics.track(.signedIn)
+        case .failure(let error):
+            if (error as? ASAuthorizationError)?.code == .canceled { return }
+            throw error
+        }
+    }
+
     private func currentPresentationAnchor() -> ASPresentationAnchor {
         #if os(iOS)
         let scene = UIApplication.shared.connectedScenes

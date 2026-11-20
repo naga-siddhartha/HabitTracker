@@ -1,4 +1,5 @@
 import SwiftUI
+import AuthenticationServices
 
 /// Dedicated account screen: sign in, profile, Sync now, sign out. Presented from Settings.
 @available(iOS 17.0, macOS 14.0, *)
@@ -11,7 +12,7 @@ struct AccountSettingsView: View {
     @State private var showingAccountProfile = false
     @State private var authError: String?
     @State private var showingAuthErrorAlert = false
-    @State private var isSigningIn = false
+    @Environment(\.colorScheme) private var colorScheme
 
     private var chevronAccessory: some View {
         Image(systemName: "chevron.right")
@@ -52,19 +53,20 @@ struct AccountSettingsView: View {
                         }
                         .buttonStyle(.plain)
                     } else {
-                        Button {
-                            signInTapped()
-                        } label: {
-                            SettingsRow(icon: "person.crop.circle.badge.plus", iconColor: .blue, title: "Sign in with Apple") {
-                                if isSigningIn {
-                                    ProgressView().scaleEffect(0.8)
-                                } else {
-                                    chevronAccessory
-                                }
+                        // Apple's own button (with the logo), as App Review requires (Guideline 4).
+                        SignInWithAppleButton(.signIn) { request in
+                            request.requestedScopes = [.fullName, .email]
+                        } onCompletion: { result in
+                            do {
+                                try authService.completeSignIn(with: result)
+                            } catch {
+                                authError = error.localizedDescription
+                                showingAuthErrorAlert = true
                             }
                         }
-                        .buttonStyle(.plain)
-                        .disabled(isSigningIn)
+                        .signInWithAppleButtonStyle(colorScheme == .dark ? .white : .black)
+                        .frame(height: 44)
+                        .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 16))
                     }
                 } footer: {
                     if !authService.isSignedIn {
@@ -109,23 +111,6 @@ struct AccountSettingsView: View {
         #if os(macOS)
         .frame(minWidth: 320, minHeight: 280)
         #endif
-    }
-
-    private func signInTapped() {
-        isSigningIn = true
-        authError = nil
-        Task {
-            do {
-                try await authService.signIn()
-                isSigningIn = false
-            } catch {
-                await MainActor.run {
-                    isSigningIn = false
-                    authError = error.localizedDescription
-                    showingAuthErrorAlert = true
-                }
-            }
-        }
     }
 }
 

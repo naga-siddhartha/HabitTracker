@@ -9,7 +9,6 @@ import WidgetKit
 final class AccountMenuState {
     var showingAccountProfile = false
     var authError: String?
-    var isSigningIn = false
 }
 
 // MARK: - Profile icon + menu (toolbar)
@@ -39,15 +38,10 @@ struct AccountMenuButton: View {
                 }
             } else {
                 Button {
-                    signInTapped()
+                    accountMenuState.showingAccountProfile = true
                 } label: {
-                    if accountMenuState.isSigningIn {
-                        Label("Signing in…", systemImage: "person.crop.circle.badge.plus")
-                    } else {
-                        Label("Sign in with Apple", systemImage: "person.crop.circle.badge.plus")
-                    }
+                    Label("Sign in…", systemImage: "person.crop.circle.badge.plus")
                 }
-                .disabled(accountMenuState.isSigningIn)
             }
         } label: {
             Image(systemName: authService.isSignedIn ? "person.crop.circle.fill" : "person.crop.circle")
@@ -57,22 +51,6 @@ struct AccountMenuButton: View {
         }
         .accessibilityLabel(authService.isSignedIn ? "Account menu" : "Sign in")
         .accessibilityHint(authService.isSignedIn ? "Open account, sync, or sign out" : "Sign in with Apple to sync across devices")
-    }
-
-    private func signInTapped() {
-        accountMenuState.isSigningIn = true
-        accountMenuState.authError = nil
-        Task {
-            do {
-                try await authService.signIn()
-                await MainActor.run { accountMenuState.isSigningIn = false }
-            } catch {
-                await MainActor.run {
-                    accountMenuState.isSigningIn = false
-                    accountMenuState.authError = error.localizedDescription
-                }
-            }
-        }
     }
 }
 
@@ -98,7 +76,7 @@ struct AccountToolbarModifier: ViewModifier {
                 }
             }
             .sheet(isPresented: $accountMenuState.showingAccountProfile) {
-                AccountProfileView()
+                AccountSheet()
             }
             .alert("Sign in", isPresented: Binding(
                 get: { accountMenuState.authError != nil },
@@ -115,5 +93,18 @@ struct AccountToolbarModifier: ViewModifier {
 extension View {
     func withAccountToolbar(accountMenuState: AccountMenuState) -> some View {
         modifier(AccountToolbarModifier(accountMenuState: accountMenuState))
+    }
+}
+
+/// Profile when signed in, otherwise the account screen with the Sign in with Apple button.
+struct AccountSheet: View {
+    private var authService = AuthService.shared
+
+    var body: some View {
+        if authService.isSignedIn {
+            AccountProfileView()
+        } else {
+            AccountSettingsView()
+        }
     }
 }
