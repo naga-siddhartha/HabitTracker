@@ -32,33 +32,62 @@ struct IconCircle: View {
 
 // MARK: - Progress Ring
 
+/// Today's progress ring.
+///
+/// The center shows the next habit's emoji (or initial) while in progress, and a gold checkmark
+/// that draws itself in on a perfect day. The numbers live in the text beside the ring.
 struct ProgressRing: View {
     let progress: Double
     let count: Int
     let total: Int
     var size: CGFloat = 56
-    
+    /// The next habit's emoji or initial.
+    var upNext: String? = nil
+
+    private var isComplete: Bool { progress >= 1 }
+
     var body: some View {
         ZStack {
             Circle()
                 .stroke(Color.systemGray5, lineWidth: 6)
             Circle()
                 .trim(from: 0, to: progress)
-                .stroke(progress >= 1 ? Color.rewardGold : Color.accentColor, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                .stroke(isComplete ? Color.rewardGold : Color.accentColor, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(.spring(duration: 0.5), value: progress)
-            // Visual only: the numbers are in the text beside the ring.
-            if progress >= 1 {
-                Image(systemName: "checkmark")
-                    .font(.system(size: size * 0.36, weight: .bold))
-                    .foregroundStyle(Color.rewardGold)
-                    .transition(.scale.combined(with: .opacity))
-            }
+            center
         }
         .frame(width: size, height: size)
+        .animation(.smooth(duration: 0.35), value: upNext)
+        .animation(.smooth(duration: 0.35), value: isComplete)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Today's progress")
         .accessibilityValue("\(count) of \(total) habits completed")
+    }
+
+    @ViewBuilder
+    private var center: some View {
+        if isComplete {
+            completionCheck
+        } else if let upNext {
+            Text(upNext)
+                .font(.system(size: size * 0.4, weight: .semibold, design: .rounded))
+                .foregroundStyle(Color.accentColor)
+                .id(upNext)
+                .transition(.blurReplace)
+        }
+    }
+
+    @ViewBuilder
+    private var completionCheck: some View {
+        let check = Image(systemName: "checkmark")
+            .font(.system(size: size * 0.36, weight: .bold))
+            .foregroundStyle(Color.rewardGold)
+        if #available(iOS 26.0, macOS 26.0, *) {
+            check.transition(.symbolEffect(.drawOn))
+        } else {
+            check.transition(.scale(scale: 0.6).combined(with: .opacity))
+        }
     }
 }
 

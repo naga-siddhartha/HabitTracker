@@ -40,6 +40,12 @@ struct HomeView: View {
     private var showFloatingAddButton: Bool { !habits.isEmpty && !isEmptyState }
 
     private var isEmptyState: Bool { snapshot.isEmpty }
+    /// Emoji (or first letter) of the habit to do next, for the center of the progress ring.
+    private var upNextSymbol: String? {
+        guard let next = activeHabitsDisplay.first ?? scheduledHabitsDisplay.first else { return nil }
+        if let emoji = next.emoji, !emoji.isEmpty { return emoji }
+        return next.name.first.map { String($0).uppercased() }
+    }
     private var perfectDayStreak: Int { TodaySnapshot.perfectDayStreak(habits: allHabits, now: today) }
 
     var body: some View {
@@ -414,7 +420,7 @@ struct HomeView: View {
 
     private var progressHeader: some View {
         HStack(spacing: config.spacingXL) {
-            ProgressRing(progress: progress, count: completedCount, total: progressTotal, size: config.progressRingSize)
+            ProgressRing(progress: progress, count: completedCount, total: progressTotal, size: config.progressRingSize, upNext: upNextSymbol)
             VStack(alignment: .leading, spacing: config.spacingXS) {
                 if snapshot.isPerfectDay {
                     Text("Perfect day")
