@@ -1,14 +1,10 @@
 import Foundation
 import SwiftData
 
-/// Per-habit index from day to that day's entries, so `Habit.entry(for:)` is a dictionary lookup
-/// instead of a scan of the habit's whole history. Calendar, stats and the activity graph call it
-/// once per day per habit, which used to make them slow down as history grew.
+/// Per-habit index from day to that day's entries, so `Habit.entry(for:)` is a dictionary lookup.
 ///
-/// The index is rebuilt when the habit's entry count changes (an entry added, deleted or merged)
-/// or the time zone changes. Entry dates never change after creation, and other edits (completing,
-/// skipping) change the entry objects themselves, which the index points at, so they show up
-/// without a rebuild.
+/// Rebuilt when a habit's entry count or the time zone changes. Entry dates never change, and
+/// other edits mutate the indexed entry objects in place, so they don't need a rebuild.
 @available(iOS 17.0, macOS 14.0, *)
 @MainActor
 final class EntryDayIndex {

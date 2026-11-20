@@ -4,6 +4,10 @@ import WidgetKit
 
 // MARK: - Habit Store (Facade)
 
+/// Single entry point for reading and changing habits and check-ins.
+///
+/// Views go through this instead of SwiftData directly, so side effects (widget data, reminders,
+/// analytics) stay in one place.
 @available(iOS 17.0, macOS 14.0, *)
 @MainActor
 final class HabitStore {
@@ -202,12 +206,10 @@ final class HabitStore {
 
     // MARK: - Duplicate cleanup
 
-    /// Merge habits that share a name, and same-day entries inside each habit.
+    /// Merges habits that share a name, and same-day entries within each habit.
     ///
-    /// Duplicates come from sync: the same habit set up on two devices before signing in, or a
-    /// template added on each. The app has always treated a name as one habit (Home and Stats
-    /// grouped by name), so this makes the data match. The surviving habit is the one with the
-    /// lowest id, which every device agrees on, so merges on two devices never fight.
+    /// Duplicates come from sync. The surviving habit has the lowest id, so every device makes
+    /// the same choice.
     @discardableResult
     func mergeDuplicates() -> Int {
         var removed = 0
@@ -253,8 +255,7 @@ final class HabitStore {
 
     private var didRunLaunchMaintenance = false
 
-    /// Housekeeping that used to run in `App.init` and delay the first frame. Call once after the
-    /// first screen is up.
+    /// Runs launch housekeeping (merge duplicates, widget data, reminders) once, after the first frame.
     func performLaunchMaintenance() {
         guard !didRunLaunchMaintenance else { return }
         didRunLaunchMaintenance = true

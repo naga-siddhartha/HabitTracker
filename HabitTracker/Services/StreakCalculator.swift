@@ -72,6 +72,7 @@ nonisolated struct StreakEngine {
 
 // MARK: - Streak Calculator (SwiftData adapter)
 
+/// Computes a habit's streaks from its entries using `StreakEngine`.
 @available(iOS 17.0, macOS 14.0, *)
 struct StreakCalculator {
     private let calendar: Calendar
@@ -113,9 +114,10 @@ struct StreakCalculator {
 
 // MARK: - Live streaks (computed when shown)
 
-/// Streak values for display. Same field names as the stored `Streak` model, which is no longer
-/// written: stored streaks went stale overnight (they only refreshed on launch or a tap) and
-/// every check-in had to sync an extra record.
+/// Streak values for display, computed from entry history.
+///
+/// Field names match the legacy `Streak` model, which stays in the schema for CloudKit but isn't
+/// written.
 struct HabitStreak: Equatable {
     var currentStreak: Int
     var longestStreak: Int

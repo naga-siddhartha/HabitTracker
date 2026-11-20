@@ -3,6 +3,7 @@ import SwiftUI
 
 // MARK: - Reminder Sound
 
+/// Sound played by a reminder notification.
 nonisolated enum ReminderSound: String, Codable, CaseIterable, Sendable {
     case `default` = "Default"
     case chime = "Chime"
@@ -13,6 +14,7 @@ nonisolated enum ReminderSound: String, Codable, CaseIterable, Sendable {
 
 // MARK: - Habit Color
 
+/// Preset habit color; `.custom` uses `Habit.customColorHex`.
 nonisolated enum HabitColor: String, Codable, CaseIterable, Sendable {
     case red, orange, yellow, green, blue, purple, pink, indigo, teal, custom
 
@@ -34,12 +36,14 @@ nonisolated enum HabitColor: String, Codable, CaseIterable, Sendable {
 
 // MARK: - Habit Frequency
 
+/// How often a habit repeats. Weekly habits run on `Habit.activeDays`.
 nonisolated enum HabitFrequency: String, Codable, Sendable {
     case daily, weekly
 }
 
 // MARK: - Weekday
 
+/// Day of the week; raw values match `Calendar` weekday numbers (Sunday = 1).
 nonisolated enum Weekday: Int, Codable, CaseIterable, Hashable, Sendable {
     case sunday = 1, monday, tuesday, wednesday, thursday, friday, saturday
     

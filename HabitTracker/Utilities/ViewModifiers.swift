@@ -17,6 +17,7 @@ extension View {
     }
 }
 
+/// Haptic feedback kinds used by controls.
 enum HapticStyle { case light, success, selection }
 
 // MARK: - Pill Style

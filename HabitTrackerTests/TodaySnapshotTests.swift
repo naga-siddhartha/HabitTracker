@@ -48,7 +48,7 @@ final class TodaySnapshotTests: XCTestCase {
         XCTAssertEqual(s.progress, 0.25, accuracy: 0.0001)
     }
 
-    /// Regression: a bonus completion of a habit not due today used to push progress past 100%.
+    /// A bonus completion of a habit not due today counts as done but not toward progress.
     func testBonusCompletionDoesNotInflateProgress() {
         let today = Weekday(rawValue: calendar.component(.weekday, from: noon))!
         let otherDay = Weekday.allCases.first { $0 != today }!
@@ -64,7 +64,6 @@ final class TodaySnapshotTests: XCTestCase {
         XCTAssertEqual(s.progress, 1)
     }
 
-    /// Archived habits used to show up on Home.
     func testArchivedHabitsAreHidden() {
         _ = add("Old habit", archived: true)
         let s = TodaySnapshot(habits: store.fetchHabits(), now: noon)

@@ -37,7 +37,7 @@ final class StreakEngineTests: XCTestCase {
         XCTAssertEqual(r.streakStart, newYork.dayKey(byAdding: -2, to: thursday))
     }
 
-    /// Regression: the old calculator showed 2 here until today was checked off.
+    /// Today isn't a miss until it ends.
     func testRunEndingYesterdayIsStillAlive() {
         let r = engine.compute(completed: days(thursday, 1, 2, 3), skipped: [], today: thursday, isScheduled: everyDay)
         XCTAssertEqual(r.current, 3)
@@ -60,7 +60,7 @@ final class StreakEngineTests: XCTestCase {
         XCTAssertEqual(r.current, 2)
     }
 
-    /// Regression: Mon/Wed/Fri habits used to lose their streak on every off day.
+    /// Unscheduled days neither add to nor break a streak.
     func testWeeklyScheduleIgnoresOffDays() {
         let mwf: Set<Int> = [2, 4, 6] // Calendar weekday numbers
         let isScheduled: (DayKey) -> Bool = { mwf.contains(newYork.component(.weekday, from: newYork.noon(of: $0))) }
@@ -85,7 +85,7 @@ final class StreakEngineTests: XCTestCase {
         XCTAssertEqual(r.current, 6)
     }
 
-    /// Regression: longest streak used to be max(stored, current) and could never go down.
+    /// Longest streak follows the history, so unchecking a day can lower it.
     func testLongestIsRecomputedFromHistory() {
         let r = engine.compute(completed: days(thursday, 0, 1, 5, 6, 7, 8, 9), skipped: [], today: thursday, isScheduled: everyDay)
         XCTAssertEqual(r.current, 2)

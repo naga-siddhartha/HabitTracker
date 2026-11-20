@@ -2,6 +2,7 @@ import SwiftUI
 
 // MARK: - Appearance (light / dark / system)
 
+/// Light, dark or system appearance, stored in user defaults.
 enum AppearanceMode: String, CaseIterable {
     case light = "light"
     case dark = "dark"
@@ -27,6 +28,7 @@ enum AppearanceMode: String, CaseIterable {
 
 // MARK: - App Theme (single source of truth for headings and shared UI)
 
+/// Shared fonts and heading layout values.
 enum AppTheme {
 
     // MARK: - Headings (system font, modern)

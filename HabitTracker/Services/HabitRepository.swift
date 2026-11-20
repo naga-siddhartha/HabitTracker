@@ -3,6 +3,7 @@ import SwiftData
 
 // MARK: - Repository Protocol
 
+/// Basic habit persistence used by `HabitStore`.
 @available(iOS 17.0, macOS 14.0, *)
 protocol HabitRepositoryProtocol {
     func fetchAll() -> [Habit]
@@ -14,6 +15,7 @@ protocol HabitRepositoryProtocol {
 
 // MARK: - Habit Repository
 
+/// SwiftData implementation of `HabitRepositoryProtocol`.
 @available(iOS 17.0, macOS 14.0, *)
 @MainActor
 final class HabitRepository: HabitRepositoryProtocol {

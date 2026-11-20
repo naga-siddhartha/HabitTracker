@@ -3,7 +3,7 @@ import Foundation
 import UserNotifications
 #endif
 
-// Lightweight struct for notifications (doesn't need SwiftData)
+/// Snapshot of a habit's reminder settings, decoupled from SwiftData.
 struct NotificationHabit {
     let id: UUID
     let name: String
@@ -18,6 +18,7 @@ struct NotificationHabit {
     let activeDays: Set<Weekday>
 }
 
+/// Schedules local reminder notifications.
 final class NotificationService {
     static let shared = NotificationService()
     
@@ -34,14 +35,10 @@ final class NotificationService {
     /// iOS keeps at most 64 pending local notifications per app and silently drops the rest.
     static let maxPendingRequests = 64
 
-    /// Replace every pending reminder with a fresh set built from `habits`.
+    /// Replaces every pending reminder with a fresh set built from `habits`.
     ///
-    /// Rebuilding the whole set in one place fixes two problems with per-habit scheduling:
-    /// 1. Removing a habit's old reminders was asynchronous, so it could run after the new ones
-    ///    were added and delete them.
-    /// 2. With several "every N hours" or weekly habits, the total went past iOS's 64 limit and
-    ///    reminders vanished at random. Here fixed-time reminders win, then interval slots are
-    ///    shared round-robin so every habit keeps its earliest reminders.
+    /// Rebuilding the whole set keeps removal and scheduling ordered and shares iOS's 64-request
+    /// limit fairly: fixed-time reminders first, then interval slots round-robin across habits.
     func rescheduleAll(_ habits: [NotificationHabit]) {
         #if canImport(UserNotifications)
         let center = UNUserNotificationCenter.current()

@@ -2,6 +2,7 @@ import Foundation
 import SwiftUI
 import UniformTypeIdentifiers
 
+/// Builds JSON backups and CSV exports of all habits.
 struct ExportService {
     
     // MARK: - Export Data Structures
@@ -138,6 +139,7 @@ struct ExportService {
 
 // MARK: - Transferable Documents
 
+/// File wrapper for exporting a JSON backup.
 struct JSONDocument: FileDocument {
     static var readableContentTypes: [UTType] { [.json] }
     
@@ -156,6 +158,7 @@ struct JSONDocument: FileDocument {
     }
 }
 
+/// File wrapper for exporting CSV data.
 struct CSVDocument: FileDocument {
     static var readableContentTypes: [UTType] { [.commaSeparatedText] }
     

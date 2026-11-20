@@ -2,6 +2,7 @@ import SwiftUI
 
 // MARK: - Platform Configuration
 
+/// Current platform checks.
 enum Platform {
     case iOS, macOS, visionOS
     
@@ -24,6 +25,7 @@ enum Platform {
 
 // MARK: - Layout Configuration
 
+/// Spacing, sizes and corner radii, tuned per platform.
 struct LayoutConfig {
     let contentMaxWidth: CGFloat
     let horizontalPadding: CGFloat

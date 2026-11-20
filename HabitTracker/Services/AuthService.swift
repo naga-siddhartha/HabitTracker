@@ -175,6 +175,7 @@ extension AuthService: ASAuthorizationControllerPresentationContextProviding {
 
 // MARK: - AuthError
 
+/// Errors from Sign in with Apple.
 enum AuthError: LocalizedError {
     case canceled
     case keychainSaveFailed

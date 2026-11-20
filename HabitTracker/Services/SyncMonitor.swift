@@ -76,6 +76,7 @@ final class SyncMonitor {
 
 // MARK: - Status text
 
+/// Short user-facing sync status.
 @available(iOS 17.0, macOS 14.0, *)
 @MainActor
 enum SyncStatus {

@@ -5,16 +5,11 @@ import WidgetKit
 import TelemetryDeck
 #endif
 
-/// Anonymous usage metrics (see docs/METRICS.md for the KPI list).
+/// Anonymous usage metrics; KPI definitions are in docs/METRICS.md.
 ///
-/// Rules that keep this lightweight and privacy-safe:
-/// - Nothing about habit content is ever sent: no names, notes, emoji or skip reasons. Only
-///   counts (bucketed so they can't fingerprint anyone), booleans and app state.
-/// - Product state goes out as ONE daily summary per device, not an event per tap. That keeps
-///   the event budget tiny and avoids building a behavioral log.
-/// - Users can turn it off in Settings. Debug builds are tagged as test data by TelemetryDeck.
-/// - Until the TelemetryDeck package is added and `TelemetryDeckAppID` is set in Info.plist,
-///   every call is a no-op.
+/// Never sends habit content, only bucketed counts and flags, as one daily summary plus a few
+/// lifecycle events. No-op until the TelemetryDeck package and `TelemetryDeckAppID` are set up,
+/// or when the user turns it off in Settings.
 @MainActor
 enum Analytics {
     static let enabledKey = "analyticsEnabled"
@@ -143,7 +138,7 @@ enum Analytics {
         }
     }
 
-    /// Callback API instead of the async `currentConfigurations()`, which needs iOS 18.
+    /// Whether any of the app's widgets is installed. Uses the callback API; the async one needs iOS 18.
     private static func hasInstalledWidget() async -> Bool {
         await withCheckedContinuation { continuation in
             WidgetCenter.shared.getCurrentConfigurations { result in

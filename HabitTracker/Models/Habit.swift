@@ -4,6 +4,9 @@ import SwiftUI
 
 // MARK: - Habit
 
+/// A habit the user tracks: its schedule, reminders and check-in history.
+///
+/// Synced through CloudKit, so every stored property has a default and relationships are optional.
 @available(iOS 17.0, macOS 14.0, *)
 @Model
 final class Habit {
@@ -235,6 +238,9 @@ extension Habit {
 
 // MARK: - Habit Entry
 
+/// One day's check-in for a habit: completed, skipped, or partial progress for interval habits.
+///
+/// `date` is local midnight when recorded; compare days with `Calendar.storedDayKey(for:)`.
 @available(iOS 17.0, macOS 14.0, *)
 @Model
 final class HabitEntry {
@@ -278,6 +284,9 @@ extension HabitEntry {
 
 // MARK: - Streak
 
+/// Legacy stored streak, kept in the schema for CloudKit compatibility but not written.
+///
+/// Use `Habit.liveStreak` instead.
 @available(iOS 17.0, macOS 14.0, *)
 @Model
 final class Streak {

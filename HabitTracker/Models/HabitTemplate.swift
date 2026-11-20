@@ -1,5 +1,6 @@
 import Foundation
 
+/// A predefined habit offered in the template picker.
 struct HabitTemplate: Identifiable, Equatable {
     let id: String
     let name: String

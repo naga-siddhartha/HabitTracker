@@ -102,8 +102,7 @@ struct ContributionGraphView: View {
             }
             .frame(maxWidth: .infinity, alignment: .center)
         }
-        // Recompute when any entry changes, not just when the habit count does (checking a habit
-        // off used to leave the graph stale until relaunch).
+        // Keyed on entry edits, not just habit count, so check-ins redraw the graph.
         .task(id: activitySignature) { computeLevels() }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Activity graph, past \(weeks) weeks")

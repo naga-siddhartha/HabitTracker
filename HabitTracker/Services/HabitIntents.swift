@@ -4,6 +4,7 @@ import WidgetKit
 
 // MARK: - Toggle Habit Intent
 
+/// Siri and Shortcuts action that completes or un-completes a habit for today.
 struct ToggleHabitIntent: AppIntent {
     static let title: LocalizedStringResource = "Toggle Habit"
     static let description = IntentDescription("Mark a habit as complete or incomplete")
@@ -23,9 +24,8 @@ struct ToggleHabitIntent: AppIntent {
             return .result()
         }
         
-        // Use the app's own store (CloudKit-backed when signed in) rather than opening a second
-        // container on the same file, and go through HabitStore so day matching, interval habits,
-        // streaks and widget data all stay consistent with in-app taps.
+        // Go through the app's store so this behaves exactly like an in-app tap, and never opens
+        // a second container on the same file.
         let store = HabitStore.shared
         guard let habit = store.fetchHabits().first(where: { $0.id == uuid }) else {
             return .result()
@@ -48,6 +48,7 @@ struct ToggleHabitIntent: AppIntent {
 
 // MARK: - App Shortcuts
 
+/// App Shortcuts exposed to Siri and Spotlight.
 struct HabitTrackerShortcuts: AppShortcutsProvider {
     static var appShortcuts: [AppShortcut] {
         AppShortcut(
