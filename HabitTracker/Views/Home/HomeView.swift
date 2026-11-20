@@ -40,6 +40,7 @@ struct HomeView: View {
     private var showFloatingAddButton: Bool { !habits.isEmpty && !isEmptyState }
 
     private var isEmptyState: Bool { snapshot.isEmpty }
+    private var perfectDayStreak: Int { TodaySnapshot.perfectDayStreak(habits: allHabits, now: today) }
 
     var body: some View {
         NavigationStack {
@@ -415,12 +416,23 @@ struct HomeView: View {
         HStack(spacing: config.spacingXL) {
             ProgressRing(progress: progress, count: completedCount, total: progressTotal, size: config.progressRingSize)
             VStack(alignment: .leading, spacing: config.spacingXS) {
-                Text(progressTotal == 0 ? "0 of 0 done" : "\(completedCount) of \(progressTotal) done")
-                    .font(.headline.weight(.semibold))
-                    .contentTransition(.numericText())
-                Text(motivationalMessage)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                if snapshot.isPerfectDay {
+                    Text("Perfect day")
+                        .font(.headline.weight(.semibold))
+                    Text(progressTotal == 1 ? "Your habit is done" : "All \(progressTotal) done")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    if perfectDayStreak >= 2 {
+                        StreakLabel(text: "\(perfectDayStreak) perfect days in a row", font: .footnote)
+                    }
+                } else {
+                    Text("\(completedCount) of \(progressTotal) done")
+                        .font(.headline.weight(.semibold))
+                        .contentTransition(.numericText())
+                    Text(motivationalMessage)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
             }
             Spacer()
         }
@@ -482,10 +494,9 @@ struct HomeView: View {
 
     private var motivationalMessage: String {
         let total = progressTotal
-        if completedCount == total && completedCount > 0 { return "Perfect day" }
-        if progress >= 0.5 { return "Keep going" }
-        if completedCount > 0 { return "\(total - completedCount) left" }
-        return "Let's start"
+        if total == 0 { return "Everything's skipped today" }
+        if completedCount == 0 { return total == 1 ? "1 habit today" : "\(total) habits today" }
+        return "\(total - completedCount) left"
     }
     
     private func deleteHabit(_ habit: Habit) {

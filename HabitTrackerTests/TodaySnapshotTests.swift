@@ -80,3 +80,44 @@ final class TodaySnapshotTests: XCTestCase {
         XCTAssertFalse(s.isEmpty)
     }
 }
+
+@MainActor
+final class PerfectDayStreakTests: XCTestCase {
+    private var store: HabitStore!
+    private let calendar = Calendar.current
+
+    override func setUp() async throws {
+        store = try HabitStore.inMemory()
+    }
+
+    private func daysAgo(_ n: Int) -> Date {
+        calendar.date(byAdding: .day, value: -n, to: calendar.date(bySettingHour: 12, minute: 0, second: 0, of: .now)!)!
+    }
+
+    private func add(_ name: String) -> Habit {
+        let habit = Habit(name: name)
+        store.addHabit(habit)
+        habit.createdAt = daysAgo(10)
+        return habit
+    }
+
+    func testCountsBackFromYesterdayUntilTodayIsDone() {
+        let a = add("Read")
+        let b = add("Walk")
+        for n in 1...3 { store.toggleCompletion(for: a, on: daysAgo(n)); store.toggleCompletion(for: b, on: daysAgo(n)) }
+        store.toggleCompletion(for: a, on: daysAgo(4)) // day 4 only half done
+
+        XCTAssertEqual(TodaySnapshot.perfectDayStreak(habits: store.fetchHabits(), now: daysAgo(0)), 3)
+        store.toggleCompletion(for: a, on: daysAgo(0))
+        store.toggleCompletion(for: b, on: daysAgo(0))
+        XCTAssertEqual(TodaySnapshot.perfectDayStreak(habits: store.fetchHabits(), now: daysAgo(0)), 4)
+    }
+
+    func testSkippedHabitDoesNotBreakAPerfectDay() {
+        let a = add("Read")
+        let b = add("Run")
+        store.toggleCompletion(for: a, on: daysAgo(1))
+        store.skipDay(for: b, on: daysAgo(1))
+        XCTAssertEqual(TodaySnapshot.perfectDayStreak(habits: store.fetchHabits(), now: daysAgo(0)), 1)
+    }
+}

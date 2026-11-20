@@ -28,6 +28,31 @@ struct TodaySnapshot {
     /// Nothing due and nothing done: Home shows its empty state.
     var isEmpty: Bool { dueToday.isEmpty && completed.isEmpty }
 
+    /// Whether every habit due today (and not skipped) is done.
+    var isPerfectDay: Bool { actionableCount > 0 && doneCount >= actionableCount }
+
+    /// Consecutive perfect days ending today, or yesterday if today isn't finished yet.
+    /// Days with nothing due neither count nor break the run.
+    static func perfectDayStreak(habits: [Habit], now: Date = .now, calendar: Calendar = .current) -> Int {
+        let earliest = habits.map(\.createdAt).min() ?? now
+        var day = now
+        if !TodaySnapshot(habits: habits, now: day, calendar: calendar).isPerfectDay {
+            day = calendar.date(byAdding: .day, value: -1, to: day) ?? day
+        }
+        var streak = 0
+        for _ in 0..<366 {
+            guard calendar.startOfDay(for: day) >= calendar.startOfDay(for: earliest) else { break }
+            let snapshot = TodaySnapshot(habits: habits, now: calendar.date(bySettingHour: 23, minute: 59, second: 0, of: day) ?? day, calendar: calendar)
+            if snapshot.isPerfectDay {
+                streak += 1
+            } else if snapshot.actionableCount > 0 {
+                break
+            }
+            day = calendar.date(byAdding: .day, value: -1, to: day) ?? day
+        }
+        return streak
+    }
+
     init(habits: [Habit], now: Date = .now, calendar: Calendar = .current) {
         let visible = habits.filter { !$0.isArchived }
         let byName: (Habit, Habit) -> Bool = {

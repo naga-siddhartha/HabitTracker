@@ -47,17 +47,12 @@ struct ProgressRing: View {
                 .stroke(progress >= 1 ? Color.rewardGold : Color.accentColor, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(.spring(duration: 0.5), value: progress)
-            // The label beside the ring already says "x of y", so the ring shows a percentage,
-            // then a gold checkmark for a perfect day.
+            // Visual only: the numbers are in the text beside the ring.
             if progress >= 1 {
                 Image(systemName: "checkmark")
                     .font(.system(size: size * 0.36, weight: .bold))
                     .foregroundStyle(Color.rewardGold)
                     .transition(.scale.combined(with: .opacity))
-            } else {
-                Text("\(Int((progress * 100).rounded()))%")
-                    .font(.system(size: size * 0.26, weight: .semibold, design: .rounded))
-                    .contentTransition(.numericText())
             }
         }
         .frame(width: size, height: size)
