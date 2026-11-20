@@ -419,7 +419,7 @@ struct HomeView: View {
                 if snapshot.isPerfectDay {
                     Text("Perfect day")
                         .font(.headline.weight(.semibold))
-                    Text(progressTotal == 1 ? "Your habit is done" : "All \(progressTotal) done")
+                    Text(progressTotal == 1 ? "Done for today" : "All \(progressTotal) done")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                     if perfectDayStreak >= 2 {
