@@ -28,7 +28,6 @@ struct AddEditHabitView: View {
     @State var selectedCustomColor = Color.blue
     @State var selectedEmoji: String? = nil
     @State var showingEmojiPickerSheet = false
-    @State var showingColorPickerSheet = false
     @State var anyEmojiText = ""
     @State var frequency: HabitFrequency = .daily
     @State var selectedDays: Set<Weekday> = []
@@ -64,9 +63,8 @@ struct AddEditHabitView: View {
         .onAppear { loadHabit() }
         .sheet(isPresented: $showingEmojiPickerSheet) {
             emojiPickerSheet
-        }
-        .sheet(isPresented: $showingColorPickerSheet) {
-            colorPickerSheet
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
     }
     
@@ -91,8 +89,8 @@ struct AddEditHabitView: View {
         #endif
 
         Section("Appearance") {
-            colorRow
             emojiRow
+            colorRow
         }
         #if os(macOS)
         .padding(.bottom, LayoutConfig.current.formSectionSpacing)

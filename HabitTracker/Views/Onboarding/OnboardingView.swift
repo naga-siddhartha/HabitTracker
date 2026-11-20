@@ -8,7 +8,7 @@ struct OnboardingView: View {
         VStack(spacing: 20) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 64))
-                .foregroundStyle(.green)
+                .foregroundStyle(Color.accentColor)
                 .symbolRenderingMode(.hierarchical)
                 .padding(.top, 8)
             Text("Track habits daily")

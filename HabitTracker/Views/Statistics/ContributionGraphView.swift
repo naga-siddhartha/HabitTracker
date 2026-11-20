@@ -106,7 +106,7 @@ struct ContributionGraphView: View {
         .task(id: activitySignature) { computeLevels() }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Activity graph, past \(weeks) weeks")
-        .accessibilityHint("Each cell is a day; darker green means more habits completed. Swipe horizontally to see more.")
+        .accessibilityHint("Each cell is a day; darker means more habits completed. Swipe horizontally to see more.")
     }
     
     private var activitySignature: Int {
@@ -202,13 +202,13 @@ extension ContributionGraphView {
         case 0:
             return colorScheme == .dark ? Color.systemGray6 : Color(white: 0.88)
         case 1:
-            return colorScheme == .dark ? .green.opacity(0.25) : .green.opacity(0.42)
+            return Color.accentColor.opacity(colorScheme == .dark ? 0.3 : 0.25)
         case 2:
-            return colorScheme == .dark ? .green.opacity(0.5) : .green.opacity(0.6)
+            return Color.accentColor.opacity(colorScheme == .dark ? 0.55 : 0.5)
         case 3:
-            return colorScheme == .dark ? .green.opacity(0.75) : .green.opacity(0.82)
+            return Color.accentColor.opacity(colorScheme == .dark ? 0.8 : 0.75)
         default:
-            return .green
+            return .accentColor
         }
     }
 }

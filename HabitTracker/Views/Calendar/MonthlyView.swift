@@ -152,7 +152,7 @@ struct MonthDayCell: View {
     
     var body: some View {
         ZStack {
-            Circle().fill(Color.green.opacity(completionRatio * 0.8)).opacity(isCurrentMonth ? 1 : 0.3)
+            Circle().fill(completionRatio >= 1 ? Color.rewardGold.opacity(0.8) : Color.accentColor.opacity(completionRatio * 0.7)).opacity(isCurrentMonth ? 1 : 0.3)
             Text("\(calendar.component(.day, from: date))")
                 .font(.caption)
                 .foregroundStyle(isCurrentMonth ? .primary : .secondary)

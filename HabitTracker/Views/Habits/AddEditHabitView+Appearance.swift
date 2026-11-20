@@ -13,134 +13,59 @@ extension AddEditHabitView {
         selectedColor == .custom ? selectedCustomColor : selectedColor.color
     }
 
-    @ViewBuilder
+    /// Swatches shown inline in the form: nine presets plus a custom color, in two rows.
     var colorRow: some View {
-        Button {
-            Task { @MainActor in showingColorPickerSheet = true }
-        } label: {
-            HStack {
-                Text("Color")
-                Spacer()
-                Circle()
-                    .fill(currentDisplayColor)
-                    .frame(width: 28, height: 28)
-                    .overlay(
-                        Circle()
-                            .strokeBorder(.secondary.opacity(0.5), lineWidth: 1)
-                    )
-                Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
+        LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 5), spacing: 12) {
+            ForEach(presetColors, id: \.rawValue) { color in
+                colorChip(color)
             }
+            customColorChip
         }
-        .buttonStyle(.plain)
-    }
-
-    @ViewBuilder
-    var colorPickerSheet: some View {
-        #if os(macOS)
-        let config = LayoutConfig.current
-        VStack(alignment: .leading, spacing: 0) {
-            HStack {
-                Text("Choose color")
-                    .font(.headline)
-                Spacer()
-                Button("Done") { showingColorPickerSheet = false }
-                    .keyboardShortcut(.defaultAction)
-            }
-            .padding(.horizontal, config.sheetHeaderPaddingHorizontal)
-            .padding(.top, config.sheetHeaderPaddingTop)
-            .padding(.bottom, config.sheetHeaderPaddingBottom)
-            Divider()
-            ScrollView {
-                VStack(alignment: .leading, spacing: config.spacingL) {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: config.emojiGridSpacing), count: config.colorGridColumns), spacing: config.emojiGridSpacing) {
-                        ForEach(presetColors, id: \.rawValue) { color in
-                            colorChip(color)
-                        }
-                        customColorChip
-                    }
-                }
-                .padding()
-            }
-        }
-        .frame(minWidth: config.colorPickerMinWidth, minHeight: config.colorPickerMinHeight)
-        #else
-        NavigationView {
-            ScrollView {
-                VStack(alignment: .leading, spacing: LayoutConfig.current.spacingL) {
-                    LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: LayoutConfig.current.emojiGridSpacing), count: LayoutConfig.current.colorGridColumns), spacing: LayoutConfig.current.emojiGridSpacing) {
-                        ForEach(presetColors, id: \.rawValue) { color in
-                            colorChip(color)
-                        }
-                        customColorChip
-                    }
-                }
-                .padding()
-            }
-            .navigationTitle("Choose color")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { showingColorPickerSheet = false }
-                }
-            }
-        }
-        .navigationViewStyle(.stack)
-        #endif
+        .padding(.vertical, 6)
     }
 
     func colorChip(_ color: HabitColor) -> some View {
         let isSelected = selectedColor == color
         return Button {
-            selectedColor = color
+            withAnimation(.snappy(duration: 0.2)) { selectedColor = color }
         } label: {
-            ZStack {
-                Circle()
-                    .fill(color.color)
-                    .frame(width: LayoutConfig.current.colorChipSize, height: LayoutConfig.current.colorChipSize)
-                if isSelected {
-                    Circle()
-                        .strokeBorder(.white, lineWidth: 2.5)
-                        .frame(width: LayoutConfig.current.colorChipSize, height: LayoutConfig.current.colorChipSize)
-                    Circle()
-                        .strokeBorder(color.color.opacity(0.6), lineWidth: 1)
-                        .frame(width: LayoutConfig.current.colorChipSize + 4, height: LayoutConfig.current.colorChipSize + 4)
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundStyle(.white)
-                        .shadow(color: .black.opacity(0.3), radius: 0, x: 0, y: 1)
+            Circle()
+                .fill(color.color)
+                .frame(width: 32, height: 32)
+                .overlay {
+                    if isSelected {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 13, weight: .bold))
+                            .foregroundStyle(.white)
+                    }
                 }
-            }
+                .padding(3)
+                .overlay(Circle().strokeBorder(isSelected ? color.color : .clear, lineWidth: 2))
         }
         .buttonStyle(.plain)
+        .sensoryFeedback(.selection, trigger: isSelected)
+        .accessibilityLabel(color.rawValue.capitalized)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     var customColorChip: some View {
         let isSelected = selectedColor == .custom
-        return ZStack {
-            ColorPicker("", selection: Binding(
-                get: { selectedCustomColor },
-                set: { new in
-                    selectedCustomColor = new
-                    selectedColor = .custom
-                }
-            ))
-            .labelsHidden()
-            .frame(width: LayoutConfig.current.colorChipSize, height: LayoutConfig.current.colorChipSize)
-            .opacity(isSelected ? 1 : 0.6)
-            if isSelected {
-                Circle()
-                    .strokeBorder(.white, lineWidth: 2.5)
-                    .frame(width: LayoutConfig.current.colorChipSize, height: LayoutConfig.current.colorChipSize)
-                Circle()
-                    .strokeBorder(selectedCustomColor.opacity(0.8), lineWidth: 1)
-                    .frame(width: LayoutConfig.current.colorChipSize + 4, height: LayoutConfig.current.colorChipSize + 4)
+        return ColorPicker("Custom color", selection: Binding(
+            get: { selectedCustomColor },
+            set: { new in
+                selectedCustomColor = new
+                selectedColor = .custom
             }
-        }
+        ))
+        .labelsHidden()
+        .frame(width: 32, height: 32)
+        .padding(3)
+        .overlay(Circle().strokeBorder(isSelected ? selectedCustomColor : .clear, lineWidth: 2))
     }
 
-    @ViewBuilder
+    // MARK: - Emoji
+
+    /// Form row previewing the emoji on the habit's color.
     var emojiRow: some View {
         Button {
             Task { @MainActor in showingEmojiPickerSheet = true }
@@ -149,11 +74,14 @@ extension AddEditHabitView {
                 Text("Emoji")
                 Spacer()
                 Text(resolvedEmoji)
-                    .font(.title2)
+                    .font(.title3)
+                    .frame(width: 40, height: 40)
+                    .background(currentDisplayColor.opacity(0.18), in: Circle())
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(.tertiary)
             }
+            .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
     }
@@ -165,19 +93,25 @@ extension AddEditHabitView {
             .frame(minWidth: LayoutConfig.current.emojiPickerMinWidth, minHeight: LayoutConfig.current.emojiPickerMinHeight)
             .onAppear { anyEmojiText = "" }
         #else
-        NavigationView {
+        NavigationStack {
             emojiPickerContent
-                .navigationTitle("Choose emoji")
+                .navigationTitle("Emoji")
+                .navigationBarTitleDisplayMode(.inline)
                 .onAppear { anyEmojiText = "" }
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("Cancel") { showingEmojiPickerSheet = false }
                     }
                 }
-                .navigationBarTitleDisplayMode(.inline)
         }
-        .navigationViewStyle(.stack)
         #endif
+    }
+
+    private var typedEmoji: String? { HabitEmoji.firstEmoji(from: anyEmojiText) }
+
+    private func pickEmoji(_ emoji: String?) {
+        selectedEmoji = emoji
+        showingEmojiPickerSheet = false
     }
 
     @ViewBuilder
@@ -191,79 +125,52 @@ extension AddEditHabitView {
                 Button("Cancel") { showingEmojiPickerSheet = false }
                     .keyboardShortcut(.cancelAction)
             }
-            .padding(.horizontal, LayoutConfig.current.sheetHeaderPaddingHorizontal)
-            .padding(.top, LayoutConfig.current.sheetHeaderPaddingTop)
-            .padding(.bottom, LayoutConfig.current.sheetHeaderPaddingBottom)
+            .padding()
             Divider()
             #endif
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    HStack(spacing: 0) {
+                VStack(alignment: .leading, spacing: 18) {
+                    HStack(spacing: 10) {
                         Button {
-                            selectedEmoji = nil
-                            showingEmojiPickerSheet = false
+                            pickEmoji(nil)
                         } label: {
-                            HStack(spacing: 10) {
-                                Text(suggestedEmoji)
-                                    .font(.title2)
+                            Label {
                                 Text("Suggested")
-                                    .font(.subheadline.weight(.medium))
-                                    .foregroundStyle(.secondary)
+                            } icon: {
+                                Text(suggestedEmoji)
                             }
-                            .frame(maxWidth: .infinity)
-                            .padding(.vertical, 14)
+                            .font(.subheadline.weight(.medium))
                         }
-                        .buttonStyle(.plain)
+                        .buttonStyle(.bordered)
                         .disabled(name.isEmpty)
 
-                        Rectangle()
-                            .fill(Color.primary.opacity(0.12))
-                            .frame(width: 1)
-                            .padding(.vertical, 8)
-
-                        HStack(spacing: 10) {
-                            TextField("Any emoji", text: $anyEmojiText)
-                                .textFieldStyle(.plain)
-                                .font(.title2)
-                                .multilineTextAlignment(.center)
-                                .frame(maxWidth: .infinity)
-                            Button {
-                                if let emoji = HabitEmoji.firstEmoji(from: anyEmojiText) {
-                                    selectedEmoji = emoji
-                                    showingEmojiPickerSheet = false
-                                }
-                            } label: {
-                                Image(systemName: "checkmark.circle.fill")
-                                    .font(.title2)
-                                    .foregroundStyle(HabitEmoji.firstEmoji(from: anyEmojiText) != nil ? Color.accentColor : Color.secondary.opacity(0.4))
-                            }
-                            .disabled(HabitEmoji.firstEmoji(from: anyEmojiText) == nil)
+                        TextField("Type any emoji", text: $anyEmojiText)
+                            .textFieldStyle(.roundedBorder)
+                            .onSubmit { if let typedEmoji { pickEmoji(typedEmoji) } }
+                        if let typedEmoji {
+                            Button("Use \(typedEmoji)") { pickEmoji(typedEmoji) }
+                                .buttonStyle(.borderedProminent)
                         }
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 14)
-                        .frame(maxWidth: .infinity)
                     }
-                    .background(.fill.tertiary, in: RoundedRectangle(cornerRadius: 12))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 12)
-                            .strokeBorder(Color.primary.opacity(0.06), lineWidth: 1)
-                    )
 
                     ForEach(HabitEmoji.gridEmojis, id: \.category) { group in
-                        VStack(alignment: .leading, spacing: LayoutConfig.current.spacingS) {
+                        VStack(alignment: .leading, spacing: 6) {
                             Text(group.category)
-                                .font(.subheadline.weight(.semibold))
+                                .font(.footnote.weight(.semibold))
                                 .foregroundStyle(.secondary)
-                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: LayoutConfig.current.emojiGridSpacing), count: LayoutConfig.current.emojiGridColumns), spacing: LayoutConfig.current.emojiGridSpacing) {
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 44), spacing: 4)], spacing: 4) {
                                 ForEach(group.emojis, id: \.self) { emoji in
                                     Button {
-                                        selectedEmoji = emoji
-                                        showingEmojiPickerSheet = false
+                                        pickEmoji(emoji)
                                     } label: {
                                         Text(emoji)
-                                            .font(.system(size: LayoutConfig.current.emojiCellSize - 16))
-                                            .frame(width: LayoutConfig.current.emojiCellSize, height: LayoutConfig.current.emojiCellSize)
+                                            .font(.system(size: 28))
+                                            .frame(width: 44, height: 44)
+                                            .background(
+                                                emoji == resolvedEmoji ? Color.accentColor.opacity(0.2) : .clear,
+                                                in: Circle()
+                                            )
                                             .contentShape(Rectangle())
                                     }
                                     .buttonStyle(.plain)

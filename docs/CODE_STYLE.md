@@ -36,3 +36,11 @@ func mergeDuplicates() -> Int
 
 - `// MARK: - Section` to group files longer than about 100 lines.
 - Full sentences with normal punctuation; US English.
+
+## Color
+
+- `Color.accentColor` (violet): brand, selection and progress (rings, activity graph, buttons, tabs).
+- `Color.rewardGold`: achievements only: perfect days, streak flames, trophies, purchase thank-you. Fills and icons only, never text (fails contrast on white).
+- Green: a single habit is done (checkmarks, the "Done" swipe).
+- Orange: skipped.
+- Use system styles (`.borderedProminent`, `.bordered`, materials) over hand-drawn backgrounds and shadows.

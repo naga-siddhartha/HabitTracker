@@ -250,7 +250,7 @@ struct HomeView: View {
             if todayHabits.isEmpty && habitsCompletedToday.isEmpty {
                 HomeEmptyState(
                     icon: "checkmark.circle",
-                    iconColor: .green,
+                    iconColor: .accentColor,
                     title: habits.isEmpty ? "No habits yet" : "All caught up",
                     message: habits.isEmpty ? "Create your first habit or start from a template." : "No habits due today. Tap + to add one.",
                     primaryButtonTitle: "New habit",

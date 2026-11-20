@@ -44,7 +44,7 @@ struct ProgressRing: View {
                 .stroke(Color.systemGray5, lineWidth: 6)
             Circle()
                 .trim(from: 0, to: progress)
-                .stroke(progress == 1 ? Color.green : Color.accentColor, style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                .stroke(progress >= 1 ? Color.rewardGold : Color.accentColor, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                 .rotationEffect(.degrees(-90))
                 .animation(.spring(duration: 0.5), value: progress)
             VStack(spacing: 0) {
