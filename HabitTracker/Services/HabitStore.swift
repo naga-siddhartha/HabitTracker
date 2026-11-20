@@ -307,7 +307,7 @@ final class HabitStore {
         WidgetCenter.shared.reloadAllTimelines()
     }
 
-    /// Write today's habit counts to shared UserDefaults for the widget. Call on launch and when data changes.
+    /// Write today's habit counts and per-habit data to shared UserDefaults for the widget.
     func writeWidgetData() {
         guard performsSideEffects else { return }
         let habits = fetchHabits().filter { !$0.isArchived }
@@ -315,5 +315,30 @@ final class HabitStore {
         let todayHabits = habits.filter { $0.isActive(on: today) }
         let completed = todayHabits.filter { $0.isCompleted(on: today) }.count
         WidgetDataStore.write(completedCount: completed, totalCount: todayHabits.count)
+        let widgetHabits = todayHabits.map { habit in
+            WidgetHabit(
+                id: habit.id.uuidString,
+                name: habit.name,
+                emoji: habit.emoji,
+                colorName: habit.colorName,
+                isCompleted: habit.isCompleted(on: today),
+                isSkipped: habit.isSkipped(on: today),
+                completionCount: habit.completionCount(on: today),
+                expectedCount: habit.expectedCompletions(on: today)
+            )
+        }
+        WidgetDataStore.writeHabits(widgetHabits)
+    }
+
+    func processPendingWidgetToggles() {
+        guard performsSideEffects else { return }
+        let ids = WidgetDataStore.readAndClearPendingToggles()
+        guard !ids.isEmpty else { return }
+        let today = Date.now
+        let habits = fetchHabits().filter { !$0.isArchived }
+        for idString in ids {
+            guard let habit = habits.first(where: { $0.id.uuidString == idString }) else { continue }
+            toggleCompletion(for: habit, on: today)
+        }
     }
 }

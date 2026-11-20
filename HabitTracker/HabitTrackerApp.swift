@@ -50,6 +50,7 @@ struct HabitTrackerApp: App {
                 }
                 .onChange(of: scenePhase, initial: true) { _, phase in
                     guard phase == .active else { return }
+                    store.processPendingWidgetToggles()
                     Analytics.sendDailySummaryIfNeeded(
                         habits: store.fetchHabits(),
                         cloudSyncOn: containerProvider.isCloudSyncEnabled
