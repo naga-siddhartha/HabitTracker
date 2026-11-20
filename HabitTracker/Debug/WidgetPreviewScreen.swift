@@ -1,4 +1,4 @@
-#if DEBUG
+#if DEBUG && canImport(UIKit)
 import SwiftUI
 
 // MARK: - Widget preview screen for marketing screenshots

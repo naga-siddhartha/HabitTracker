@@ -11,14 +11,31 @@ import Foundation
 enum MarketingDemoSeeder {
 
     static let isActive: Bool = CommandLine.arguments.contains("-marketingDemo")
+    static let shouldReset: Bool = CommandLine.arguments.contains("-marketingDemoReset")
 
     private static let seededKey = "marketing.demo.seeded.v1"
 
     /// Call once at launch. No-ops when demo is not active or already seeded.
+    /// Pass -marketingDemoReset to wipe existing habits and reseed from scratch.
     static func seedIfNeeded(store: HabitStore) {
         guard isActive else { return }
         // Always suppress onboarding and notifications in demo mode.
         UserDefaults.standard.set(true, forKey: "hasCompletedOnboarding")
+
+        // Apply forced appearance if requested (macOS: sets AppStorage key directly).
+        let args = CommandLine.arguments
+        if args.contains("-demoAppearanceDark") {
+            UserDefaults.standard.set("dark", forKey: "appearanceMode")
+        } else if args.contains("-demoAppearanceLight") {
+            UserDefaults.standard.set("light", forKey: "appearanceMode")
+        }
+
+        // -marketingDemoReset: wipe store so we always seed fresh demo data.
+        if shouldReset {
+            UserDefaults.standard.removeObject(forKey: seededKey)
+            store.deleteAllHabitsImmediate()
+        }
+
         guard store.fetchHabits().isEmpty else { return }   // idempotent
         guard !UserDefaults.standard.bool(forKey: seededKey) else { return }
         seed(store: store)
