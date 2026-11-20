@@ -72,6 +72,11 @@ struct MainTabView: View {
                 isPresentingTemplates = true
             }
         }
+        .fullScreenCover(isPresented: .constant(
+            MarketingDemoSeeder.isActive && CommandLine.arguments.contains("-demoWidgetPreview")
+        )) {
+            WidgetPreviewScreen()
+        }
         #endif
         #if os(macOS)
         .withAccountToolbar(accountMenuState: accountMenuState)
