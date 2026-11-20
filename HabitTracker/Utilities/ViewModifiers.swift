@@ -34,6 +34,20 @@ extension View {
 /// Haptic feedback kinds used by controls.
 enum HapticStyle { case light, success, selection }
 
+// MARK: - Swipe actions outside List
+
+extension View {
+    /// Makes `swipeActions` work on rows inside this scroll view. No-op before iOS/macOS 27.
+    @ViewBuilder
+    func swipeActionsContainerIfAvailable() -> some View {
+        if #available(iOS 27.0, macOS 27.0, *) {
+            self.swipeActionsContainer()
+        } else {
+            self
+        }
+    }
+}
+
 // MARK: - Pill Style
 
 struct PillModifier: ViewModifier {

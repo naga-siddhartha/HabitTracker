@@ -227,6 +227,38 @@ struct ChecklistRow: View {
                 } : nil
             )
         }
+        // Active on iOS/macOS 27+, where Home's scroll view is a swipe actions container.
+        .swipeActions(edge: .leading, allowsFullSwipe: true) {
+            Button {
+                withAnimation(.spring(duration: 0.25)) {
+                    if isRepeating && !isCompleted {
+                        HabitStore.shared.markAllComplete(for: habit, on: date)
+                    } else {
+                        HabitStore.shared.toggleCompletion(for: habit, on: date)
+                    }
+                }
+            } label: {
+                Label(isCompleted ? "Undo" : "Done", systemImage: isCompleted ? "arrow.uturn.backward" : "checkmark")
+            }
+            .tint(isCompleted ? .gray : .green)
+        }
+        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+            if isSkipped {
+                Button {
+                    withAnimation { onUnskip?() }
+                } label: {
+                    Label("Unskip", systemImage: "arrow.uturn.backward")
+                }
+                .tint(.gray)
+            } else if !isCompleted {
+                Button {
+                    withAnimation { HabitStore.shared.skipDay(for: habit, on: date) }
+                } label: {
+                    Label("Skip", systemImage: "forward")
+                }
+                .tint(.orange)
+            }
+        }
     }
 
     @ViewBuilder

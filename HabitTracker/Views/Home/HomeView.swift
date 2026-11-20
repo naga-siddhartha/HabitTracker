@@ -78,6 +78,7 @@ struct HomeView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.bottom, config.spacingXXL + config.spacingS)
                     }
+                    .swipeActionsContainerIfAvailable()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
