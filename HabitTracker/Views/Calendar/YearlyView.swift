@@ -23,11 +23,11 @@ struct YearlyView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button { changeYear(by: -1) } label: { Image(systemName: "chevron.left") }
+                Button { changeYear(by: -1) } label: { Image(systemName: "chevron.left").foregroundStyle(.secondary) }
                 Spacer()
                 Text(currentYear, format: .dateTime.year()).font(.headline)
                 Spacer()
-                Button { changeYear(by: 1) } label: { Image(systemName: "chevron.right") }
+                Button { changeYear(by: 1) } label: { Image(systemName: "chevron.right").foregroundStyle(.secondary) }
             }
             .padding()
             

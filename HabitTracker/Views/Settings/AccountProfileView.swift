@@ -45,7 +45,7 @@ struct AccountProfileView: View {
                     HStack(spacing: 14) {
                         Image(systemName: "person.crop.circle.fill")
                             .font(.system(size: 44))
-                            .foregroundStyle(Color.accentColor)
+                            .foregroundStyle(Color.brandPurple)
                         VStack(alignment: .leading, spacing: 2) {
                             Text("Signed in with Apple")
                                 .font(.headline)
@@ -128,7 +128,7 @@ struct AccountProfileView: View {
                 HStack(spacing: 16) {
                     Image(systemName: "person.crop.circle.fill")
                         .font(.system(size: 40))
-                        .foregroundStyle(Color.accentColor)
+                        .foregroundStyle(Color.brandPurple)
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Signed in with Apple")
                             .font(.headline)

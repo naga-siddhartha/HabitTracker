@@ -57,6 +57,7 @@ struct MainTabView: View {
                 }
             .accessibilityHint("Notifications, appearance, and data")
         }
+        .tint(Color.brandPurple)
         .environment(accountMenuState)
         #if os(macOS)
         .withAccountToolbar(accountMenuState: accountMenuState)

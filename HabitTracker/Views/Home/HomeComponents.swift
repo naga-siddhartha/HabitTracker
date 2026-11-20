@@ -227,43 +227,12 @@ struct ChecklistRow: View {
     @ViewBuilder
     private var completionButton: some View {
         VStack(spacing: 3) {
-            ZStack {
-                // Background ring
-                Circle()
-                    .stroke(
-                        isSkipped ? Color.orange : (isCompleted ? habit.displayColor : Color.secondary.opacity(0.25)),
-                        lineWidth: 2
-                    )
-                    .frame(width: config.checkboxSize, height: config.checkboxSize)
+            #if os(macOS)
+            macCompletionIcon
+            #else
+            iOSCompletionIcon
+            #endif
 
-                if isSkipped {
-                    Image(systemName: "pause.fill")
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(.orange)
-                } else if let emoji = habit.emoji, !emoji.isEmpty {
-                    // Emoji as the completion indicator
-                    Text(emoji)
-                        .font(.system(size: config.checkboxSize * 0.55))
-                        .opacity(isCompleted ? 1.0 : 0.3)
-                        .scaleEffect(isCompleted ? 1.0 : 0.85)
-                        .animation(.spring(duration: 0.25, bounce: 0.4), value: isCompleted)
-                } else {
-                    // Fallback: filled circle with checkmark
-                    if isCompleted {
-                        Circle()
-                            .fill(habit.displayColor)
-                            .frame(width: config.checkboxSize, height: config.checkboxSize)
-                        Image(systemName: "checkmark")
-                            .font(.system(size: config.spacingL, weight: .bold))
-                            .foregroundStyle(.white)
-                    }
-                }
-            }
-            .frame(width: config.checkboxSize, height: config.checkboxSize)
-            .animation(.spring(duration: 0.25), value: isCompleted)
-            .animation(.spring(duration: 0.25), value: isSkipped)
-
-            // Subtle count badge for repeating habits
             if isRepeating && !isSkipped {
                 Text("\(count)/\(expected)")
                     .font(.system(size: 9, weight: .semibold, design: .rounded))
@@ -272,6 +241,71 @@ struct ChecklistRow: View {
                     .animation(.spring(duration: 0.2), value: count)
             }
         }
+    }
+
+    // macOS: filled circle, no stroke ring — emoji fills the space naturally
+    @ViewBuilder
+    private var macCompletionIcon: some View {
+        ZStack {
+            Circle()
+                .fill(isSkipped ? Color.orange.opacity(0.15)
+                      : isCompleted ? habit.displayColor.opacity(0.85)
+                      : habit.displayColor.opacity(0.12))
+            if isSkipped {
+                Image(systemName: "pause.fill")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.orange)
+            } else if let emoji = habit.emoji, !emoji.isEmpty {
+                Text(emoji)
+                    .font(.system(size: config.checkboxSize * 0.72))
+                    .opacity(isCompleted ? 1.0 : 0.45)
+                    .scaleEffect(isCompleted ? 1.0 : 0.88)
+                    .animation(.spring(duration: 0.25, bounce: 0.3), value: isCompleted)
+            } else {
+                Image(systemName: isCompleted ? "checkmark" : (habit.iconName ?? "circle.fill"))
+                    .font(.system(size: config.checkboxSize * 0.45, weight: .bold))
+                    .foregroundStyle(isCompleted ? .white : habit.displayColor.opacity(0.6))
+            }
+        }
+        .frame(width: config.checkboxSize, height: config.checkboxSize)
+        .animation(.spring(duration: 0.25), value: isCompleted)
+        .animation(.spring(duration: 0.25), value: isSkipped)
+    }
+
+    // iOS: stroke ring with emoji inside
+    @ViewBuilder
+    private var iOSCompletionIcon: some View {
+        ZStack {
+            Circle()
+                .stroke(
+                    isSkipped ? Color.orange : (isCompleted ? habit.displayColor : Color.secondary.opacity(0.25)),
+                    lineWidth: 2
+                )
+                .frame(width: config.checkboxSize, height: config.checkboxSize)
+            if isSkipped {
+                Image(systemName: "pause.fill")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(.orange)
+            } else if let emoji = habit.emoji, !emoji.isEmpty {
+                Text(emoji)
+                    .font(.system(size: config.checkboxSize * 0.55))
+                    .opacity(isCompleted ? 1.0 : 0.3)
+                    .scaleEffect(isCompleted ? 1.0 : 0.85)
+                    .animation(.spring(duration: 0.25, bounce: 0.4), value: isCompleted)
+            } else {
+                if isCompleted {
+                    Circle()
+                        .fill(habit.displayColor)
+                        .frame(width: config.checkboxSize, height: config.checkboxSize)
+                    Image(systemName: "checkmark")
+                        .font(.system(size: config.spacingL, weight: .bold))
+                        .foregroundStyle(.white)
+                }
+            }
+        }
+        .frame(width: config.checkboxSize, height: config.checkboxSize)
+        .animation(.spring(duration: 0.25), value: isCompleted)
+        .animation(.spring(duration: 0.25), value: isSkipped)
     }
 
     private var skipReasonDisplayText: String {
@@ -320,7 +354,7 @@ struct ChecklistRow: View {
                         Text("·")
                             .font(.footnote)
                             .foregroundStyle(.tertiary)
-                        Text("🔥 \(streak.currentStreak)")
+                        Text("\(streak.currentStreak)d streak")
                             .font(.footnote.monospacedDigit())
                             .foregroundStyle(.secondary)
                     }

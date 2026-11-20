@@ -72,7 +72,7 @@ struct StatisticsView: View {
                         Button {
                             showingStreaksDetail = true
                         } label: {
-                            StatCard(title: "Current Streaks", value: "\(cachedActiveStreaks)", icon: "flame.fill", color: .rewardGold)
+                            StatCard(title: "Current Streaks", value: "\(cachedActiveStreaks)", icon: "bolt.fill", color: .rewardGold)
                         }
                         .buttonStyle(.plain)
                     }
@@ -99,7 +99,7 @@ struct StatisticsView: View {
                     // Streaks
                     StatsSectionCard(
                         title: "Longest Streaks",
-                        icon: "flame.fill",
+                        icon: "bolt.fill",
                         iconColor: .rewardGold,
                         isEmpty: habitsWithStreaks.isEmpty
                     ) {
@@ -108,7 +108,7 @@ struct StatisticsView: View {
                         }
                     } emptyContent: {
                         StatsEmptyState(
-                            icon: "flame",
+                            icon: "bolt",
                             title: "No streaks yet",
                             message: "Keep completing habits on consecutive days to build streaks."
                         )

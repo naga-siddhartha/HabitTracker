@@ -93,14 +93,14 @@ struct ProgressRing: View {
 
 // MARK: - Streak Label
 
-/// Streak count with a gold flame. Gold is the reward color; the text stays readable gray.
+/// Streak count with a gold bolt. Gold is the reward color; the text stays readable gray.
 struct StreakLabel: View {
     let text: String
     var font: Font = .caption
 
     var body: some View {
         HStack(spacing: 4) {
-            Image(systemName: "flame.fill")
+            Image(systemName: "bolt.fill")
                 .foregroundStyle(Color.rewardGold)
             Text(text)
                 .foregroundStyle(.secondary)
@@ -193,14 +193,14 @@ struct HabitDetailsSheetView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     if let streak = habit.streakIfStarted {
-                        sectionCard(title: "Streaks", systemImage: "flame.fill") {
+                        sectionCard(title: "Streaks", systemImage: "bolt.fill") {
                             VStack(spacing: config.spacingL) {
                                 HStack(spacing: config.spacingM) {
                                     streakStatBox(
                                         value: streak.currentStreak,
                                         label: "Current",
-                                        icon: "flame.fill",
-                                        iconColor: streak.currentStreak > 0 ? .orange : .secondary
+                                        icon: "bolt.fill",
+                                        iconColor: streak.currentStreak > 0 ? Color.rewardGold : .secondary
                                     )
                                     streakStatBox(
                                         value: streak.longestStreak,
@@ -406,7 +406,7 @@ struct SkipReasonSheetView: View {
                         .padding(.horizontal, config.horizontalPadding)
 
                     HStack(spacing: config.spacingS) {
-                        Image(systemName: "flame.fill")
+                        Image(systemName: "bolt.fill")
                             .font(.caption)
                             .foregroundStyle(Color.rewardGold)
                         Text("Skipping doesn’t break your streak. Your progress is preserved.")

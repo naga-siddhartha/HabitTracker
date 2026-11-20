@@ -25,11 +25,11 @@ struct MonthlyView: View {
             // Fixed calendar block — stays at top
             VStack(spacing: 0) {
                 HStack {
-                    Button { changeMonth(by: -1) } label: { Image(systemName: "chevron.left") }
+                    Button { changeMonth(by: -1) } label: { Image(systemName: "chevron.left").foregroundStyle(.secondary) }
                     Spacer()
                     Text(currentMonth, format: .dateTime.month(.wide).year()).font(.headline)
                     Spacer()
-                    Button { changeMonth(by: 1) } label: { Image(systemName: "chevron.right") }
+                    Button { changeMonth(by: 1) } label: { Image(systemName: "chevron.right").foregroundStyle(.secondary) }
                 }
                 .padding()
                 
