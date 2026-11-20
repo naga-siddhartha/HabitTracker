@@ -16,83 +16,31 @@ struct HomeView: View {
     @State private var skipReasonAlertMessage: String?
 
     private let config = LayoutConfig.current
-    private let calendar = Calendar.current
 
     private var cardShadowColor: Color { colorScheme == .dark ? .white.opacity(0.04) : .black.opacity(0.05) }
 
     /// Current date/time so Home always reflects "today" when the view is evaluated.
     private var today: Date { Date.now }
     private var habits: [Habit] { allHabits }
-    private var todayHabits: [Habit] { habits.filter { $0.isActive(on: today) } }
-    private var todayIncomplete: [Habit] { todayHabits.filter { !$0.isDone(on: today) } }
-    /// Habits due today that are fully done (for progress ring).
-    private var todayCompleted: [Habit] { todayHabits.filter { $0.isDone(on: today) } }
-    /// All habits fully done today - shown in the Completed card.
-    private var habitsCompletedToday: [Habit] { habits.filter { $0.isDone(on: today) } }
-    private var uniqueNamesActiveToday: Set<String> { Set(todayHabits.map(\.name)) }
-    private var uniqueNamesSkippedToday: Set<String> { Set(todayHabits.filter { $0.isSkipped(on: today) }.map(\.name)) }
-    private var uniqueNamesCompletedToday: Set<String> { Set(habitsCompletedToday.map(\.name)) }
-    private var completedCount: Int { uniqueNamesCompletedToday.count }
-    /// Total habits due today that are not skipped (so progress is "done" out of "actionable").
-    private var progressTotal: Int { max(0, uniqueNamesActiveToday.count - uniqueNamesSkippedToday.count) }
-    private var progress: Double {
-        return progressTotal == 0 ? 0 : Double(completedCount) / Double(progressTotal)
-    }
+    /// All of Home's grouping and progress logic lives in TodaySnapshot (tested). Duplicate habits
+    /// are merged in the data layer now, so there's no more grouping by name here.
+    private var snapshot: TodaySnapshot { TodaySnapshot(habits: allHabits, now: today) }
 
-    /// Due today, not completed, not skipped, doable now.
-    private var activeHabits: [Habit] {
-        let startOfToday = calendar.startOfDay(for: today)
-        return todayIncomplete.filter { habit in
-            guard !habit.isSkipped(on: today) else { return false }
-            if habit.reminderTimes.isEmpty { return true }
-            guard let first = habit.reminderTimes.first else { return true }
-            let scheduledToday = calendar.date(bySettingHour: calendar.component(.hour, from: first), minute: calendar.component(.minute, from: first), second: 0, of: startOfToday)
-            guard let scheduled = scheduledToday else { return true }
-            return today >= scheduled
-        }
-    }
-    /// Due today, not completed, not skipped, scheduled for a later time.
-    private var scheduledHabits: [Habit] {
-        let startOfToday = calendar.startOfDay(for: today)
-        return todayIncomplete.filter { habit in
-            guard !habit.isSkipped(on: today) else { return false }
-            guard let first = habit.reminderTimes.first else { return false }
-            let scheduledToday = calendar.date(bySettingHour: calendar.component(.hour, from: first), minute: calendar.component(.minute, from: first), second: 0, of: startOfToday)
-            guard let scheduled = scheduledToday else { return false }
-            return today < scheduled
-        }
-    }
-    /// Due today and skipped (one per habit name).
-    private var skippedHabitsDisplay: [Habit] {
-        let skipped = todayHabits.filter { $0.isSkipped(on: today) }
-        let grouped = Dictionary(grouping: skipped, by: \.name)
-        return grouped.compactMap { _, group in group.first }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-    }
+    private var todayHabits: [Habit] { snapshot.dueToday }
+    private var habitsCompletedToday: [Habit] { snapshot.completed }
+    private var completedCount: Int { snapshot.doneCount }
+    private var progressTotal: Int { snapshot.actionableCount }
+    private var progress: Double { snapshot.progress }
 
-    /// One row per habit name in Active; exclude names already completed today.
-    private var activeHabitsDisplay: [Habit] {
-        let completedNames = uniqueNamesCompletedToday
-        let grouped = Dictionary(grouping: activeHabits.filter { !completedNames.contains($0.name) }, by: \.name)
-        return grouped.compactMap { _, group in group.first }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-    }
-    /// One row per habit name in Scheduled; exclude names completed today.
-    private var scheduledHabitsDisplay: [Habit] {
-        let completedNames = uniqueNamesCompletedToday
-        let grouped = Dictionary(grouping: scheduledHabits.filter { !completedNames.contains($0.name) }, by: \.name)
-        return grouped.compactMap { _, group in group.first }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-    }
-    /// One row per habit name in Completed.
-    private var habitsCompletedTodayDisplay: [Habit] {
-        let grouped = Dictionary(grouping: habitsCompletedToday, by: \.name)
-        return grouped.compactMap { _, group in group.first }.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
-    }
+    private var activeHabitsDisplay: [Habit] { snapshot.dueNow }
+    private var scheduledHabitsDisplay: [Habit] { snapshot.later }
+    private var habitsCompletedTodayDisplay: [Habit] { snapshot.completed }
+    private var skippedHabitsDisplay: [Habit] { snapshot.skipped }
 
     /// Show floating + only when there’s no Add habit on the page (i.e. when we have habits and we’re not in empty state).
     private var showFloatingAddButton: Bool { !habits.isEmpty && !isEmptyState }
 
-    private var isEmptyState: Bool {
-        uniqueNamesActiveToday.isEmpty && uniqueNamesCompletedToday.isEmpty
-    }
+    private var isEmptyState: Bool { snapshot.isEmpty }
 
     var body: some View {
         NavigationStack {
@@ -301,7 +249,7 @@ struct HomeView: View {
         if habits.isEmpty {
             return "Your day at a glance"
         }
-        if uniqueNamesActiveToday.isEmpty {
+        if todayHabits.isEmpty {
             return "All set for today"
         }
         return "Your habits for today"
@@ -324,7 +272,7 @@ struct HomeView: View {
                 )
             } else {
                 VStack(spacing: config.spacingL) {
-                    if !uniqueNamesActiveToday.isEmpty {
+                    if !todayHabits.isEmpty {
                         activeCard
                     } else if !habitsCompletedTodayDisplay.isEmpty || !skippedHabitsDisplay.isEmpty {
                         noHabitsDueTodayLine
