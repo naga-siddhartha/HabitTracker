@@ -178,15 +178,7 @@ extension Habit {
 
     /// All entries recorded for the same day (normally one; more only after sync conflicts).
     func entries(on date: Date) -> [HabitEntry] {
-        let cal = Calendar.current
-        let key = cal.dayKey(for: date)
-        // Cheap time-window check first so calendar math only runs for nearby entries.
-        let center = cal.noon(of: key).timeIntervalSinceReferenceDate
-        let window: TimeInterval = 26 * 3600
-        return entriesOrEmpty.filter {
-            abs($0.date.timeIntervalSinceReferenceDate - center) < window
-                && cal.storedDayKey(for: $0.date) == key
-        }
+        EntryDayIndex.shared.entries(of: self, on: Calendar.current.dayKey(for: date))
     }
 
     /// How many times this habit was completed on a given day.

@@ -102,13 +102,27 @@ struct ContributionGraphView: View {
             }
             .frame(maxWidth: .infinity, alignment: .center)
         }
-        .onAppear { computeLevels() }
-        .onChange(of: habits.count) { computeLevels() }
+        // Recompute when any entry changes, not just when the habit count does (checking a habit
+        // off used to leave the graph stale until relaunch).
+        .task(id: activitySignature) { computeLevels() }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Activity graph, past \(weeks) weeks")
         .accessibilityHint("Each cell is a day; darker green means more habits completed. Swipe horizontally to see more.")
     }
     
+    private var activitySignature: Int {
+        var hasher = Hasher()
+        for h in habit.map({ [$0] }) ?? Array(habits) {
+            let entries = h.entriesOrEmpty
+            hasher.combine(h.id)
+            hasher.combine(entries.count)
+            hasher.combine(entries.lazy.map(\.updatedAt).max())
+            hasher.combine(h.activeDaysRaw)
+        }
+        hasher.combine(Calendar.current.dayKey(for: .now))
+        return hasher.finalize()
+    }
+
     private func computeLevels() {
         var cache: [Date: Int] = [:]
         let targetHabits = habit.map { [$0] } ?? Array(habits)

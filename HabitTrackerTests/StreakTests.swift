@@ -170,6 +170,27 @@ final class HabitStreakIntegrationTests: XCTestCase {
         XCTAssertTrue(habit.entry(for: .now) === done)
     }
 
+    func testDayIndexSeesAddedEntriesAndEdits() {
+        let habit = makeHabit(Habit(name: "Stretch"), completedDaysAgo: [2])
+        XCTAssertTrue(habit.isCompleted(on: date(2)))
+        XCTAssertFalse(habit.isCompleted(on: date(1)))
+
+        // Adding an entry changes the count, so the index rebuilds.
+        habit.entries = habit.entriesOrEmpty + [HabitEntry(date: date(1))]
+        XCTAssertTrue(habit.isCompleted(on: date(1)))
+
+        // Editing an existing entry is visible without a rebuild.
+        habit.entry(for: date(1))?.isCompleted = false
+        XCTAssertFalse(habit.isCompleted(on: date(1)))
+    }
+
+    func testLiveStreakUpdatesAfterNewCheckIn() {
+        let habit = makeHabit(Habit(name: "Journal"), completedDaysAgo: [1, 2])
+        XCTAssertEqual(habit.liveStreak.currentStreak, 2)
+        habit.entries = habit.entriesOrEmpty + [HabitEntry(date: .now)]
+        XCTAssertEqual(habit.liveStreak.currentStreak, 3)
+    }
+
     func testIntervalHabitWithProgressCountsTowardStreak() {
         let habit = makeHabit(Habit(name: "Water", reminderIntervalMinutes: 120), completedDaysAgo: [])
         let partial = HabitEntry(date: date(1), isCompleted: false)

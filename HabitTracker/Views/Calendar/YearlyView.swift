@@ -120,6 +120,8 @@ struct YearMonthCell: View {
     }
     
     var body: some View {
+        // Computed once per render (it was evaluated twice, once per use below).
+        let completionRatio = self.completionRatio
         VStack(spacing: 8) {
             Text(month, format: .dateTime.month(.abbreviated))
                 .font(.caption.weight(.medium))
