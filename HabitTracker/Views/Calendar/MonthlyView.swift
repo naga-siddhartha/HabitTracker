@@ -158,7 +158,7 @@ struct MonthDayCell: View {
                 .foregroundStyle(isCurrentMonth ? .primary : .secondary)
         }
         .frame(height: 36)
-        .background(isSelected ? Color.blue.opacity(0.3) : .clear)
+        .background(isSelected ? Color.accentColor.opacity(0.3) : .clear)
         .clipShape(Circle())
     }
 }

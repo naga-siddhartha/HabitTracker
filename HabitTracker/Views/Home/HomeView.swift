@@ -189,6 +189,7 @@ struct HomeView: View {
         } label: {
             floatingAddButtonLabel
         }
+        .menuIndicator(.hidden)
         .accessibilityLabel("Add habit")
         .accessibilityHint("Double tap to add a new habit or choose from template")
         #endif

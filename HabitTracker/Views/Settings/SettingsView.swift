@@ -247,6 +247,7 @@ struct SettingsView: View {
                     chevronAccessory
                 }
             }
+            .menuIndicator(.hidden)
             .buttonStyle(.plain)
 
             Button {

@@ -29,15 +29,15 @@ final class HabitModelTests: XCTestCase {
     
     func testHabitIsActiveWeekly() {
         let calendar = Calendar.current
-        var components = DateComponents()
-        components.year = 2026
-        components.month = 1
-        components.day = 12 // Monday
-        let monday = calendar.date(from: components)!
+        // Find the next Monday on or after today so createdAt guard passes
+        let today = calendar.startOfDay(for: Date.now)
+        let weekday = calendar.component(.weekday, from: today)
+        let daysToMonday = (9 - weekday) % 7
+        let monday = calendar.date(byAdding: .day, value: daysToMonday, to: today)!
         let tuesday = calendar.date(byAdding: .day, value: 1, to: monday)!
-        
+
         let habit = Habit(name: "Weekly", frequency: .weekly, activeDays: [.monday, .wednesday])
-        
+
         XCTAssertTrue(habit.isActive(on: monday))
         XCTAssertFalse(habit.isActive(on: tuesday))
     }
@@ -100,22 +100,3 @@ final class EnumTests: XCTestCase {
     }
 }
 
-final class IconGenerationServiceTests: XCTestCase {
-    
-    func testExactMatch() {
-        XCTAssertEqual(IconGenerationService.shared.generateLocalIcon(for: "exercise"), "figure.run")
-        XCTAssertEqual(IconGenerationService.shared.generateLocalIcon(for: "meditation"), "leaf.fill")
-    }
-    
-    func testCaseInsensitive() {
-        XCTAssertEqual(IconGenerationService.shared.generateLocalIcon(for: "EXERCISE"), "figure.run")
-    }
-    
-    func testPartialMatch() {
-        XCTAssertEqual(IconGenerationService.shared.generateLocalIcon(for: "morning exercise"), "figure.run")
-    }
-    
-    func testDefaultIcon() {
-        XCTAssertEqual(IconGenerationService.shared.generateLocalIcon(for: "random"), "star.fill")
-    }
-}

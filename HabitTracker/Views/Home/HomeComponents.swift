@@ -158,6 +158,7 @@ struct ChecklistRow: View {
                     .font(.system(size: config.iconSizeRow + 2))
                     .foregroundStyle(.secondary)
             }
+            .menuIndicator(.hidden)
         }
         .padding(.horizontal, config.spacingL)
         .padding(.vertical, config.spacingL)
@@ -429,6 +430,7 @@ struct ScheduledRow: View {
                     .font(.system(size: config.iconSizeRow + 2))
                     .foregroundStyle(.secondary)
             }
+            .menuIndicator(.hidden)
         }
         .padding(.horizontal, config.spacingL)
         .padding(.vertical, config.spacingM)
