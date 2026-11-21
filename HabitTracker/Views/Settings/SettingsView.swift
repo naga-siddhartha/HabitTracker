@@ -111,7 +111,9 @@ struct SettingsView: View {
             notificationsSection
             appearanceSection
             dataSection
-            privacySection
+            if Analytics.isAvailable {
+                privacySection
+            }
             supportSection
             aboutSection
         }

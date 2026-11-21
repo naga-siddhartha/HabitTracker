@@ -23,6 +23,17 @@ enum Analytics {
         UserDefaults.standard.object(forKey: enabledKey) as? Bool ?? true
     }
 
+    /// True only when TelemetryDeck is linked and an app ID is set. Settings hides the toggle
+    /// otherwise, so the app never offers a setting that does nothing.
+    static var isAvailable: Bool {
+        #if canImport(TelemetryDeck)
+        let appID = Bundle.main.object(forInfoDictionaryKey: "TelemetryDeckAppID") as? String
+        return !(appID ?? "").isEmpty
+        #else
+        return false
+        #endif
+    }
+
     /// Call from `App.init()`. Turning the setting off stops all signals immediately; turning it
     /// back on takes effect at the next launch.
     static func start() {
