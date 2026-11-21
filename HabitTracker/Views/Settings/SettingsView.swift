@@ -149,6 +149,12 @@ struct SettingsView: View {
                             ProgressView()
                         } else if let price = purchases.removeAdsProduct?.displayPrice {
                             Text(price).foregroundStyle(.secondary)
+                        } else {
+                            #if DEBUG
+                            if CommandLine.arguments.contains("-mockRemoveAdsPrice") {
+                                Text("$2.99").foregroundStyle(.secondary)
+                            }
+                            #endif
                         }
                     }
                 }

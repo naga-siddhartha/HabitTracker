@@ -61,13 +61,14 @@ struct MainTabView: View {
         .environment(accountMenuState)
         #if DEBUG
         .onAppear {
-            guard MarketingDemoSeeder.isActive else { return }
             let args = CommandLine.arguments
+            // Tab switching works with or without full demo mode (used for App Review screenshots).
             if let idx = args.firstIndex(of: "-demoTab"),
                idx + 1 < args.count,
                let tab = Int(args[idx + 1]) {
                 selectedTab = tab
             }
+            guard MarketingDemoSeeder.isActive else { return }
             if args.contains("-demoTemplates") {
                 isPresentingTemplates = true
             }
